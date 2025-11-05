@@ -1,16 +1,16 @@
-# Local config with secrets
+# filepath: /home/pi/Documents/rcmrlec/insightViewer/.gitignore
+# editor local history / snapshots
+.history/
+config_*.py
+
+# local secrets
 config_private.ini
 .env
 
-# Python
+# python
 __pycache__/
 *.py[cod]
-*.so
-*.egg-info/
-build/
-dist/
 venv/
-venv/*
 
 # Editors / OS
 .vscode/
@@ -21,5 +21,5 @@ venv/*
 .pytest_cache/
 .mypy_cache/
 
-# Node
+# node
 node_modules/
