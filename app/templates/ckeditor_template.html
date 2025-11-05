@@ -1,0 +1,78 @@
+<!--
+SPDX-License-Identifier: AGPL-3.0-or-later
+Copyright (c) 2025 Robert Čmrlec
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>CKEditor 5  Classic Editor</title>
+    <style>
+        body {
+            max-width: 800px;
+            margin: 20px auto;
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        form {
+            margin-top: 20px;
+        }
+
+        button {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+<h1>CKEditor 5  Classic Editor</h1>
+
+<form method="POST" action="">
+    <div id="editor">
+        {{ content | safe }}
+    </div>
+    <textarea name="content" id="editor-content" style="display: none;"></textarea>
+    <button type="submit" onclick="submitContent()">Save</button>
+</form>
+
+<script src="{{ url_for('static', filename='ckeditor/build/ckeditor.js') }}"></script>
+<!-- <script src="https://cdn.ckeditor.com/ckeditor5/38.1.0/full/ckeditor.js"></script> -->
+<script>
+    let editorInstance;
+
+    // Initialize CKEditor
+    ClassicEditor.create(document.querySelector('#editor'))
+        .then(editor => {
+            editorInstance = editor;
+        })
+        .catch(error => {
+            console.error('There was a problem initializing the editor.', error);
+        });
+
+    // Submit content from CKEditor
+    function submitContent() {
+        const editorData = editorInstance.getData();
+        document.querySelector('#editor-content').value = editorData;
+    }
+</script>
+
+</body>
+</html>

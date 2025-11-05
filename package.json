@@ -1,0 +1,30 @@
+{
+  "name": "insightviewer",
+  "version": "0.1.0",
+  "description": "InsightViewer — interactive graph/story viewer (frontend assets)",
+  "private": true,
+  "main": "app/static/indexScript.js",
+  "scripts": {
+    "dev": "FLASK_APP=app.app FLASK_ENV=development flask run --host=0.0.0.0",
+    "start": "python3 -m gunicorn -w 4 -b 0.0.0.0:5000 app.app:app",
+    "lint": "eslint --ext .js app/static",
+    "build": "echo \"No frontend build configured\""
+  },
+  "keywords": [
+    "neo4j",
+    "flask",
+    "vis-network",
+    "ckeditor",
+    "tts"
+  ],
+  "author": "Robert Čmrlec",
+  "license": "AGPL-3.0-or-later",
+  "dependencies": {
+    "vis-network": "^9.1.0",
+    "@ckeditor/ckeditor5-build-classic": "^36.0.1"
+  },
+  "devDependencies": {
+    "eslint": "^8.0.0",
+    "prettier": "^2.0.0"
+  }
+}

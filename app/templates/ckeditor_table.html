@@ -1,0 +1,472 @@
+<!--
+SPDX-License-Identifier: AGPL-3.0-or-later
+Copyright (c) 2025 Robert Čmrlec
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CKEditor Table</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
+    <style>
+        body {
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            padding: 10px;
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            background-color: #f5f5f5;
+            box-sizing: border-box;
+            overflow: auto; /* Changed from hidden to auto */
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin: 10px 0 20px 0;
+            font-size: 24px;
+        }
+        
+        .table-container {
+            width: 100%;
+            min-height: calc(100vh - 80px); /* Changed from height to min-height */
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        form {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+            /* Removed fixed height to allow expansion */
+        }
+        
+        td {
+            width: 33.33%;
+            padding: 5px;
+            border: 2px solid #ddd;
+            vertical-align: top;
+            /* Removed fixed height to allow expansion */
+        }
+        
+        .editor-cell {
+            width: 100%;
+            border: 1px solid #ccc;
+            min-height: 150px;
+            /* Removed max-height and height constraints */
+        }
+        
+        .controls {
+            text-align: center;
+            margin-top: 20px; /* Changed from auto to fixed margin */
+            padding: 10px 0;
+        }
+        
+        .btn {
+            display: inline-block;
+            margin: 5px;
+            padding: 8px 16px;
+            font-size: 14px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #545b62;
+        }
+        
+        .btn-success {
+            background-color: #28a745;
+        }
+        
+        .btn-success:hover {
+            background-color: #218838;
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-bottom: 10px;
+            color: #007bff;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Hidden textareas for form submission */
+        .hidden-content {
+            display: none;
+        }
+
+        /* CKEditor specific adjustments - Allow natural expansion */
+        .ck-editor__editable {
+            min-height: 120px !important;
+            /* Removed height and max-height constraints */
+        }
+
+        .custom-toolbar {
+            display: flex;
+            justify-content: flex-start;
+            gap: 5px;
+            margin-bottom: 5px;
+        }
+
+        .custom-toolbar .btn-small {
+            padding: 4px 8px;
+            font-size: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .custom-toolbar .btn-small:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <a href="{{ url_for('index') }}" class="back-link">? Back to Main</a>
+    
+    <div class="table-container">
+        <h1>Editable 3x3 Table with CKEditor 5</h1>
+        
+        <form method="POST" action="/save-table-content">
+            <table>
+                <tbody>
+                    <tr>
+                        <td>
+                            <div id="editor1" class="editor-cell">{{ cell1_content | safe if cell1_content else '' }}</div>
+                            <textarea name="cell1" id="editor1-content" class="hidden-content"></textarea>
+                        </td>
+                        <td>
+                            <div id="editor2" class="editor-cell">{{ cell2_content | safe if cell2_content else '' }}</div>
+                            <textarea name="cell2" id="editor2-content" class="hidden-content"></textarea>
+                        </td>
+                        <td>
+                            <div id="editor3" class="editor-cell">{{ cell3_content | safe if cell3_content else '' }}</div>
+                            <textarea name="cell3" id="editor3-content" class="hidden-content"></textarea>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div id="editor4" class="editor-cell">{{ cell4_content | safe if cell4_content else '' }}</div>
+                            <textarea name="cell4" id="editor4-content" class="hidden-content"></textarea>
+                        </td>
+                        <td>
+                            <div id="editor5" class="editor-cell">{{ cell5_content | safe if cell5_content else '' }}</div>
+                            <textarea name="cell5" id="editor5-content" class="hidden-content"></textarea>
+                        </td>
+                        <td>
+                            <div id="editor6" class="editor-cell">{{ cell6_content | safe if cell6_content else '' }}</div>
+                            <textarea name="cell6" id="editor6-content" class="hidden-content"></textarea>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div id="editor7" class="editor-cell">{{ cell7_content | safe if cell7_content else '' }}</div>
+                            <textarea name="cell7" id="editor7-content" class="hidden-content"></textarea>
+                        </td>
+                        <td>
+                            <div id="editor8" class="editor-cell">{{ cell8_content | safe if cell8_content else '' }}</div>
+                            <textarea name="cell8" id="editor8-content" class="hidden-content"></textarea>
+                        </td>
+                        <td>
+                            <div id="editor9" class="editor-cell">{{ cell9_content | safe if cell9_content else '' }}</div>
+                            <textarea name="cell9" id="editor9-content" class="hidden-content"></textarea>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div class="controls">
+                <button type="submit" class="btn" onclick="submitAllContent()">Save All</button>
+                <button type="button" class="btn btn-secondary" onclick="loadContent()">Load</button>
+                <button type="button" class="btn btn-success" onclick="exportContent()">Export</button>
+                <button type="button" class="btn btn-secondary" onclick="clearAll()">Clear All</button>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://cdn.ckeditor.com/4.22.1/full/ckeditor.js"></script>
+    <!-- <script src="https://cdn.ckeditor.com/ckeditor5/46.0.3/ckeditor5.umd.js"></script> -->
+    <!-- <script src="https://cdn.ckeditor.com/ckeditor5/38.1.0/classic/ckeditor.js"></script> -->
+    <!-- <script src="{{ url_for('static', filename='ckeditor/build/ckeditor.js') }}"></script> -->    
+     
+    <script>
+        let editorInstances = {};
+        let cellCounter = 9; // Start after initial 9 cells
+
+        // Initialize CKEditor 4 for all cells
+        for (let i = 1; i <= 9; i++) {
+            CKEDITOR.replace(`editor${i}`, {
+                toolbar: [
+                    { name: 'basicstyles', items: ['Bold', 'Italic', 'Underline', 'Strike', '-', 'RemoveFormat'] },
+                    { name: 'paragraph', items: ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent'] },
+                    { name: 'styles', items: ['Font', 'FontSize', 'TextColor', 'BGColor'] },
+                    { name: 'insert', items: ['Image', 'Table', 'HorizontalRule'] },
+                    { name: 'tools', items: ['Maximize'] }
+                ],
+                height: 150,
+                colorButton_colors: 'ff0000,00ff00,0000ff,ffff00,00ffff,ff00ff', // Custom colors
+                colorButton_enableAutomatic: false, // Disable "Automatic" option
+                colorButton_enableMore: false // Disable "More Colors" option
+            });
+        }
+
+        // Function to submit content from all CKEditors
+        function submitAllContent() {
+            for (let i = 1; i <= 9; i++) {
+                const editorData = CKEDITOR.instances[`editor${i}`].getData();
+                document.querySelector(`#editor${i}-content`).value = editorData;
+            }
+        }
+
+        // Function to load content from localStorage
+        function loadContent() {
+            const saved = localStorage.getItem('ckeditor_table_content');
+            if (saved) {
+                const content = JSON.parse(saved);
+                for (let i = 1; i <= 9; i++) {
+                    const editor = CKEDITOR.instances[`editor${i}`];
+                    if (editor && content[`cell${i}`]) {
+                        editor.setData(content[`cell${i}`]);
+                    }
+                }
+                alert('Content loaded successfully!');
+            } else {
+                alert('No saved content found!');
+            }
+        }
+
+        // Function to export content
+        function exportContent() {
+            const content = {};
+            for (let i = 1; i <= 9; i++) {
+                const editor = CKEDITOR.instances[`editor${i}`];
+                if (editor) {
+                    content[`cell${i}`] = editor.getData();
+                }
+            }
+            
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(content, null, 2));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "table_content.json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
+
+        // Function to clear all CKEditors
+        function clearAll() {
+            if (confirm('Are you sure you want to clear all content?')) {
+                for (let i = 1; i <= 9; i++) {
+                    CKEDITOR.instances[`editor${i}`].setData('');
+                }
+            }
+        }
+
+        // Auto-save to localStorage every 30 seconds
+        setInterval(function() {
+            const content = {};
+            for (let i = 1; i <= 9; i++) {
+                const editor = CKEDITOR.instances[`editor${i}`];
+                if (editor) {
+                    content[`cell${i}`] = editor.getData();
+                }
+            }
+            localStorage.setItem('ckeditor_table_content', JSON.stringify(content));
+            console.log('Auto-saved at', new Date().toLocaleTimeString());
+        }, 30000);
+
+        // Function to add new row
+        function addRow() {
+            const table = document.querySelector('table tbody');
+            const newRow = document.createElement('tr');
+            
+            // Add 3 cells to the new row
+            for (let i = 0; i < 3; i++) {
+                cellCounter++;
+                const newCell = document.createElement('td');
+                newCell.innerHTML = `
+                    <div id="editor${cellCounter}" class="editor-cell"></div>
+                    <textarea name="cell${cellCounter}" id="editor${cellCounter}-content" class="hidden-content"></textarea>
+                `;
+                newRow.appendChild(newCell);
+                
+                // Initialize CKEditor for the new cell
+                initializeEditor(cellCounter);
+            }
+            
+            table.appendChild(newRow);
+        }
+
+        // Function to add new column
+        function addColumn() {
+            const table = document.querySelector('table tbody');
+            const rows = table.querySelectorAll('tr');
+            
+            rows.forEach(row => {
+                cellCounter++;
+                const newCell = document.createElement('td');
+                newCell.innerHTML = `
+                    <div id="editor${cellCounter}" class="editor-cell"></div>
+                    <textarea name="cell${cellCounter}" id="editor${cellCounter}-content" class="hidden-content"></textarea>
+                `;
+                row.appendChild(newCell);
+                
+                // Initialize CKEditor for the new cell
+                initializeEditor(cellCounter);
+            });
+            
+            // Update CSS for new column width
+            updateColumnWidths();
+        }
+
+        // Function to initialize a single editor
+        function initializeEditor(editorId) {
+            CKEDITOR.replace(`editor${editorId}`, {
+                toolbar: [
+                    { name: 'basicstyles', items: ['Bold', 'Italic', 'Underline', 'Strike', '-', 'RemoveFormat'] },
+                    { name: 'paragraph', items: ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent'] },
+                    { name: 'styles', items: ['Font', 'FontSize', 'TextColor', 'BGColor'] },
+                    { name: 'insert', items: ['Image', 'Table', 'HorizontalRule'] },
+                    { name: 'tools', items: ['Maximize'] }
+                ],
+                height: 150,
+                colorButton_colors: 'ff0000,00ff00,0000ff,ffff00,00ffff,ff00ff', // Custom colors
+                colorButton_enableAutomatic: false, // Disable "Automatic" option
+                colorButton_enableMore: false // Disable "More Colors" option
+            });
+        }
+
+        // Function to remove last row
+        function removeRow() {
+            const table = document.querySelector('table tbody');
+            const rows = table.querySelectorAll('tr');
+            if (rows.length > 1) {
+                const lastRow = rows[rows.length - 1];
+                const cells = lastRow.querySelectorAll('td');
+                
+                // Destroy CKEditor instances in the last row
+                cells.forEach(cell => {
+                    const editorDiv = cell.querySelector('.editor-cell');
+                    if (editorDiv) {
+                        const editorId = editorDiv.id.replace('editor', '');
+                        if (CKEDITOR.instances[`editor${editorId}`]) {
+                            CKEDITOR.instances[`editor${editorId}`].destroy();
+                            delete CKEDITOR.instances[`editor${editorId}`];
+                        }
+                    }
+                });
+                
+                lastRow.remove();
+            }
+        }
+
+        // Function to update column widths
+        function updateColumnWidths() {
+            const table = document.querySelector('table');
+            const firstRow = table.querySelector('tr');
+            const cellCount = firstRow.querySelectorAll('td').length;
+            const width = 100 / cellCount;
+            
+            const style = document.createElement('style');
+            style.textContent = `
+                table td {
+                    width: ${width}% !important;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // Add buttons to controls
+        function addDynamicControls() {
+            const controls = document.querySelector('.controls');
+            const dynamicControls = document.createElement('div');
+            dynamicControls.innerHTML = `
+                <hr style="margin: 20px 0;">
+                <h3>Dynamic Table Controls</h3>
+                <button type="button" class="btn btn-secondary" onclick="addRow()">Add Row</button>
+                <button type="button" class="btn btn-secondary" onclick="addColumn()">Add Column</button>
+                <button type="button" class="btn btn-secondary" onclick="removeRow()">Remove Row</button>
+            `;
+            controls.appendChild(dynamicControls);
+        }
+
+        // Initialize dynamic controls when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            addDynamicControls();
+        });
+
+        // Clear the content of a specific editor
+        function clearEditor(editorId) {
+            const editor = CKEDITOR.instances[`editor${editorId}`];
+            if (editor) {
+                editor.setData('');
+            }
+        }
+
+        // Apply bold formatting to the selected text in a specific editor
+        function boldEditor(editorId) {
+            const editor = CKEDITOR.instances[`editor${editorId}`];
+            if (editor) {
+                editor.execCommand('bold');
+            }
+        }
+
+        // Apply italic formatting to the selected text in a specific editor
+        function italicEditor(editorId) {
+            const editor = CKEDITOR.instances[`editor${editorId}`];
+            if (editor) {
+                editor.execCommand('italic');
+            }
+        }
+
+        // Change the text color in a specific editor
+        function changeTextColor(editorId, color) {
+            const editor = CKEDITOR.instances[`editor${editorId}`];
+            if (editor) {
+                editor.execCommand('foreColor', { value: color });
+            }
+        }
+
+        // Change the background color in a specific editor
+        function changeBackgroundColor(editorId, color) {
+            const editor = CKEDITOR.instances[`editor${editorId}`];
+            if (editor) {
+                editor.execCommand('backColor', { value: color });
+            }
+        }
+    </script>
+</body>
+</html>

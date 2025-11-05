@@ -1,0 +1,156 @@
+<!--
+SPDX-License-Identifier: AGPL-3.0-or-later
+Copyright (c) 2025 Robert Čmrlec
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Htmle editor</title>
+  <style>
+    body {
+      width: 100%;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    form {
+      margin-top: 20px;
+    }
+
+    button {
+      display: block;
+      margin: 20px auto;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+  <link rel="stylesheet" href="https://cdn.ckeditor.com/4.22.1/full-all/contents.css">
+</head>
+<body>
+
+<h1>{{ node_name }}</h1> <!-- Dynamically display the node name -->
+
+<form method="POST" action="">
+  <textarea name="content" id="editor" rows="10" cols="80">
+    {{ content | safe }}
+  </textarea>
+  <button type="submit" onclick="submitContent()">Save</button>
+</form>
+
+<div style="margin:8px 0;">
+    <button id="ask-openai-btn" type="button">Ask OpenAI to generate code</button>
+</div>
+
+<!-- Use full-all build which already includes MathJax plugin -->
+<script src="https://cdn.ckeditor.com/4.22.1/full-all/ckeditor.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js?config=TeX-AMS_HTML"></script>
+<script>
+  CKEDITOR.replace('editor', {
+    extraPlugins: 'mathjax',
+    // MathJax v2 is required by the CKEditor 4 plugin:
+    mathJaxLib: 'https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js?config=TeX-AMS_HTML',
+    toolbar: [
+      { name: 'document', items: ['Source'] },
+      { name: 'basicstyles', items: ['Bold', 'Italic', 'Underline', 'Strike', '-', 'RemoveFormat'] },
+      { name: 'paragraph', items: ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent'] },
+      { name: 'styles', items: ['Font', 'FontSize', 'TextColor', 'BGColor'] },
+      { name: 'insert', items: ['Image', 'Table', 'HorizontalRule', 'InsertTable', 'Mathjax'] },
+      { name: 'tools', items: ['Maximize'] }
+    ],
+    width: '100%',
+    height: '70vh',
+    colorButton_colors: 'ff0000,00ff00,0000ff,ffff00,00ffff,ff00ff',
+    colorButton_enableAutomatic: false,
+    colorButton_enableMore: false
+  });
+
+  // Submit content from CKEditor
+  function submitContent() {
+    const editorData = CKEDITOR.instances.editor.getData();
+    document.querySelector('#editor').value = editorData;
+  }
+
+  function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  // Clean / extract code or full HTML returned by OpenAI before inserting into CKEditor
+  function cleanOpenAIHtml(text) {
+    if (!text) return "";
+    // 1) extract fenced code block if present
+    var m = text.match(/```(?:html|javascript|js)?\s*([\s\S]*?)```/i);
+    if (m && m[1]) {
+      text = m[1];
+    }
+    // 2) remove leading "html " or "html:" or stray labels
+    text = text.replace(/^\s*html[:\s]+/i, "").trim();
+
+    // 3) If it's escaped (contains &lt;), unescape HTML entities
+    if (text.indexOf('&lt;') !== -1 || text.indexOf('&amp;') !== -1) {
+      var ta = document.createElement('textarea');
+      ta.innerHTML = text;
+      text = ta.value;
+    }
+
+    return text.trim();
+  }
+
+  document.getElementById('ask-openai-btn').addEventListener('click', async function () {
+    const userPrompt = window.prompt("Describe what you want OpenAI to generate:");
+    if (!userPrompt) return;
+    this.disabled = true;
+    try {
+      const resp = await fetch('/openai-generate', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ prompt: userPrompt, model: 'gpt-4o-mini', temperature:0.2, max_tokens:800 })
+      });
+      const data = await resp.json();
+      if (!data.success) { alert("OpenAI error: " + (data.error||"unknown")); return; }
+      const raw = data.code || data.response || "";
+      if (!raw) { alert("No code returned"); console.log(data); return; }
+
+      const cleaned = cleanOpenAIHtml(raw);
+
+      // find first CKEditor instance
+      var ck = null;
+      if (window.CKEDITOR && CKEDITOR.instances) {
+        var keys = Object.keys(CKEDITOR.instances);
+        if (keys.length) ck = CKEDITOR.instances[keys[0]];
+      }
+
+      if (ck && typeof ck.setData === 'function') {
+        // If looks like a full document, set as full HTML (no escaping)
+        if (/^\s*(?:<!doctype|<html)/i.test(cleaned)) {
+          ck.setData(cleaned);
+        } else {
+          // for snippets, insert as formatted code block
+          ck.insertHtml('<pre><code>' + escapeHtml(cleaned) + '</code></pre>');
+        }
+      } else {
+        var ta = document.getElementById('editor');
+        if (ta) ta.value = ta.value + "\n\n" + cleaned;
+        else alert("Editor instance not found.");
+      }
+    } catch (err) {
+      console.error(err); alert("Error calling OpenAI.");
+    } finally { this.disabled = false; }
+  });
+</script>
+
+</body>
+</html>

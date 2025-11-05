@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "insightviewer"
+version = "0.1.0"
+description = "InsightViewer — interactive graph/story viewer"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [
+  { name = "Robert Čmrlec" }
+]
+keywords = ["neo4j", "flask", "visualization", "tts"]
+classifiers = [
+  "License :: OSI Approved :: GNU Affero General Public License v3",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Framework :: Flask"
+]
+
+dependencies = [
+  "Flask>=2.2",
+  "neo4j>=5.0",
+  "openai>=1.0",
+  "pydub>=0.25",
+  "python-dotenv>=0.21",
+  "requests>=2.28",
+  "gunicorn>=20.1"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "black",
+  "isort",
+  "mypy"
+]
+
+[tool.setuptools]
+packages = { find = {} }
+
+[tool.setuptools.package-data]
+"app" = ["static/*", "static/**", "templates/*", "templates/**"]
+
+# Convenience scripts (invoked with `python -m pip install .` to expose console scripts)
+[project.scripts]
+insightviewer-run = "gunicorn:main" # placeholder; use `gunicorn app.app:app` to run production

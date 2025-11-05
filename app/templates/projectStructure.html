@@ -1,0 +1,113 @@
+<!--
+SPDX-License-Identifier: AGPL-3.0-or-later
+Copyright (c) 2025 Robert Čmrlec
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flask + Neo4j Project Structure</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1, h2, h3 {
+            color: #333;
+        }
+        pre {
+            background-color: #333;
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        code {
+            font-family: "Courier New", Courier, monospace;
+        }
+        .container {
+            max-width: 800px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Flask + Neo4j Project Structure</h1>
+        
+        <h2>1. Directory Structure</h2>
+        <pre><code>/flask_neo4j_app
+│── /app
+│   │── /models           # Neo4j database models (Define node and relationship structures)
+│   │── /routes           # Flask API routes (Define API endpoints for interacting with Neo4j)
+│   │── /utils            # Utility functions (Database connections, helpers, logging, etc.)
+│   │── __init__.py       # Initializes the app module
+│── /config               # Configuration files (Environment variables, credentials, settings)
+│── /tests                # Unit and integration tests (Test API and database functionality)
+│── main.py               # Entry point (Initializes Flask and registers blueprints)
+│── requirements.txt      # Dependencies (List of required Python packages)
+│── .env                  # Environment variables (Neo4j URI, user credentials, debug mode)</code></pre>
+        
+        <h2>2. Database Connection (`utils/db.py`)</h2>
+        <pre><code>from neo4j import GraphDatabase
+import os
+
+NEO4J_URI = os.getenv("NEO4J_URI", "bolt://localhost:7687")
+NEO4J_USER = os.getenv("NEO4J_USER", "neo4j")
+NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD", "password")
+
+driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
+
+def query_neo4j(cypher_query, parameters=None):
+    try:
+        with driver.session() as session:
+            return session.run(cypher_query, parameters)
+    except Exception as e:
+        print(f"Database query failed: {e}")
+        return None</code></pre>
+        
+        <h2>3. API Routes (`routes/person.py`)</h2>
+        <pre><code>from flask import Blueprint, request, jsonify
+from app.utils.db import query_neo4j
+
+person_bp = Blueprint("person", __name__)
+
+@person_bp.route("/add_person", methods=["POST"])
+def add_person():
+    data = request.json
+    name = data.get("name", "").strip()
+    if not name or len(name) > 50:
+        return jsonify({"error": "Invalid name"}), 400
+    query = "CREATE (p:Person {name: $name}) RETURN p"
+    result = query_neo4j(query, {"name": name})
+    return jsonify({"message": "Person added"})</code></pre>
+        
+        <h2>4. Application Entry Point (`main.py`)</h2>
+        <pre><code>from flask import Flask
+from app.routes.person import person_bp
+from app.utils.db import close_connection
+import os
+
+app = Flask(__name__)
+app.register_blueprint(person_bp, url_prefix="/api")
+
+@app.route("/")
+def home():
+    return "Flask + Neo4j API Running!"
+
+@app.teardown_appcontext
+def shutdown_app(exception=None):
+    close_connection()
+
+if __name__ == "__main__":
+    DEBUG_MODE = os.getenv("FLASK_DEBUG", "False").lower() == "true"
+    app.run(debug=DEBUG_MODE)</code></pre>
+    </div>
+</body>
+</html>
