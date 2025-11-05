@@ -1,0 +1,18 @@
+<project name="InsightViewer" default="compile" basedir=".">
+    <!-- ...existing code... -->
+
+    <!-- Define a classpath -->
+    <path id="project.classpath">
+        <fileset dir="lib">
+            <include name="**/*.jar" />
+        </fileset>
+    </path>
+
+    <!-- Compile task -->
+    <target name="compile">
+        <mkdir dir="build/classes" />
+        <javac srcdir="src" destdir="build/classes" classpathref="project.classpath" />
+    </target>
+
+    <!-- ...existing code... -->
+</project>
