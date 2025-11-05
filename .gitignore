@@ -13,3 +13,4 @@ venv/
 
 # node
 node_modules/
+insightviewer.backup/
