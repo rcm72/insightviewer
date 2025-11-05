@@ -1,4 +1,3 @@
-# filepath: /home/pi/Documents/rcmrlec/insightViewer/.gitignore
 # editor local history / snapshots
 .history/
 config_*.py
@@ -11,15 +10,6 @@ config_private.ini
 __pycache__/
 *.py[cod]
 venv/
-
-# Editors / OS
-.vscode/
-.idea/
-.DS_Store
-
-# Test / caches
-.pytest_cache/
-.mypy_cache/
 
 # node
 node_modules/
