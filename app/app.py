@@ -6,6 +6,8 @@
 # pkill -f code-server 
 # ps aux | grep code-server 
 
+# pkill -f git || true
+
 # CREATE CONSTRAINT cg_name IF NOT EXISTS
 # FOR (n:CustomGraph) REQUIRE n.name IS UNIQUE;
 
