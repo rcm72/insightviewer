@@ -46,7 +46,7 @@
   <h2>🎬 Enough Talk. Let’s View the Insight and Have Fun.</h2>
   <p>Clone it, run it, and start exploring your data the visual way.</p>
 
-    <h1>License</h1>
+  <h2>License</h2>
     <p>InsightViewer is licensed under the [GNU Affero General Public License v3.0 or later](LICENSE).
 
     This means you are free to use, modify, and share it — but if you make it available
