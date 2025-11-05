@@ -1,0 +1,25 @@
+# Local config with secrets
+config_private.ini
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+build/
+dist/
+venv/
+venv/*
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Test / caches
+.pytest_cache/
+.mypy_cache/
+
+# Node
+node_modules/
