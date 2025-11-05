@@ -2,23 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>InsightViewer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">  
 </head>
 <body>
-  <h1>License</h1>
-  <p>InsightViewer is licensed under the [GNU Affero General Public License v3.0 or later](LICENSE).
-
-This means you are free to use, modify, and share it — but if you make it available
-to others over a network (for example, as a hosted web service), you must also
-make your modified source code available to those users.
-
-It also uses:
-- Neo4j Community Edition (GPLv3)
-- vis-network (MIT/Apache-2.0)
-- CKEditor 5 Community (GPL-2.0+)	
-</p>
-  <h2>Had Fun Building Anything Lately?</h2>
+  <h1>Had Fun Building Anything Lately?</h1>
   <p>Let me tell you why I built <strong>InsightViewer</strong>.</p>
   <p>I’ve always loved knowledge graphs, Neo4j, and tools like Browser and Bloom. They make exploring connected data both powerful and intuitive. But there’s a catch — Bloom only works with the Enterprise edition, which is out of reach for many of us. And while Browser is great for developers, it’s not designed for end users.</p>
   <p>So, I decided to build something that fills the gap.</p>
@@ -58,5 +45,18 @@ It also uses:
 
   <h2>🎬 Enough Talk. Let’s View the Insight and Have Fun.</h2>
   <p>Clone it, run it, and start exploring your data the visual way.</p>
+
+    <h1>License</h1>
+    <p>InsightViewer is licensed under the [GNU Affero General Public License v3.0 or later](LICENSE).
+
+    This means you are free to use, modify, and share it — but if you make it available
+    to others over a network (for example, as a hosted web service), you must also
+    make your modified source code available to those users.
+
+    It also uses:
+    - Neo4j Community Edition (GPLv3)
+    - vis-network (MIT/Apache-2.0)
+    - CKEditor 5 Community (GPL-2.0+)	
+    </p>  
 </body>
 </html>
