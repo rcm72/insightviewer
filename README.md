@@ -10,6 +10,8 @@
   <p>I’ve always loved knowledge graphs, Neo4j, and tools like Browser and Bloom. They make exploring connected data both powerful and intuitive. But there’s a catch — Bloom only works with the Enterprise edition, which is out of reach for many of us. And while Browser is great for developers, it’s not designed for end users.</p>
   <p>So, I decided to build something that fills the gap.</p>
 
+  
+
   <h2>🧠 Introducing InsightViewer</h2>
   <p><strong>InsightViewer</strong> is a lightweight, flexible visualization tool that complements Neo4j Browser and Bloom. It’s designed to make knowledge graphs more accessible, interactive, and fun to explore — without requiring an Enterprise license.</p>
   <p>During development, I realized that knowledge graphs are everywhere. They’re not just about data — they’re about connecting ideas. Here are a few ways you can use InsightViewer:</p>
@@ -45,6 +47,17 @@
 
   <h2>🎬 Enough Talk. Let’s View the Insight and Have Fun.</h2>
   <p>Clone it, run it, and start exploring your data the visual way.</p>
+
+  <!-- Embed YouTube video -->
+  <div class="video-container" style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;max-width:100%;margin:1rem 0;">
+    <iframe src="https://www.youtube.com/embed/3pGsi4NpQdQ"
+            title="InsightViewer demo"
+            style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen>
+    </iframe>
+  </div>
+  <p><a href="https://youtu.be/3pGsi4NpQdQ" target="_blank" rel="noopener">Open video on YouTube</a></p>
 
   <h2>License</h2>
     <p>InsightViewer is licensed under the [GNU Affero General Public License v3.0 or later](LICENSE).
