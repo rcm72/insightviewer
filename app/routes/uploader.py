@@ -41,6 +41,7 @@ from flask import (
     request,
     send_from_directory,
     abort,
+    url_for,
 )
 from werkzeug.utils import secure_filename
 
@@ -262,6 +263,29 @@ def config():
 def upload():
     # Accepts multiple files under the same field name ("files") or a single file
     files = []
+    # Special-case CKEditor simple upload (field name 'upload') -> return {"url": "..."}
+    if "upload" in request.files:
+        f = request.files["upload"]
+        if not f or f.filename == "":
+            abort(400, "No file uploaded.")
+        if not allowed_file(f.filename):
+            abort(415, f"File type not allowed: {f.filename}")
+        upload_dir = _upload_dir()
+        final_name = uniquify_filename(f.filename)
+        dest = upload_dir / final_name
+        f.save(str(dest))
+
+        # Try to return a static URL if upload dir is inside Flask static folder
+        try:
+            static_folder = Path(current_app.static_folder).resolve()
+            rel = Path(dest).resolve().relative_to(static_folder)
+            url = url_for("static", filename=str(rel).replace(os.sep, "/"), _external=False)
+        except Exception:
+            # Fallback to the downloader route (may return as attachment depending on implementation)
+            url = url_for(".download", filename=final_name, _external=False)
+
+        return jsonify({"url": url}), 201
+
     if "files" in request.files:
         # Can be many if sent as FormData with the same key
         files = request.files.getlist("files")
