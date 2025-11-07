@@ -9,12 +9,13 @@
 # pkill -f git || true
 
 # CREATE CONSTRAINT cg_name IF NOT EXISTS
-# FOR (n:CustomGraph) REQUIRE n.name IS UNIQUE;
+# FOR (n:CustomGraph) REQUIRE n.name IS UNIQUE; 
 
 # CREATE CONSTRAINT cgn_name IF NOT EXISTS
 # FOR (n:CustomGraphNode) REQUIRE n.name IS UNIQUE;
 # curl -X POST "http://192.168.1.6:5000/openai-cypher" -H "Content-Type: application/json" -d "{\"query\":\" poi��i najkraj�o pot med nodom tipa table in nodom tipa package \",\"task\":\"explain\",\"execute\":false}"   
 # git remote set-url origin https://github.com/rcm72/insightviewer.git
+# test
 
 import os
 import sys
