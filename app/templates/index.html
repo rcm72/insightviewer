@@ -354,6 +354,28 @@ RETURN s, r, t
         <button onclick="testAdd()">Test Add</button>
     </div>
 
+    <!-- Image picker dialog: choose existing uploads or open uploader -->
+    <div id="image-picker-dialog" class="floating-dialog" style="display:none; width:560px; max-width:95vw;">
+      <div class="dialog-header">
+        <span>Choose Image</span>
+        <button onclick="closeImagePickerDialog()">X</button>
+      </div>
+
+      <div style="padding:8px;">
+        <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+          <input id="image-filter" placeholder="Filter by name..." style="flex:1;" oninput="loadImageList()">
+          <button id="refresh-images" onclick="loadImageList()">Refresh</button>
+          <button onclick="openUploaderWindow()">Upload new</button>
+        </div>
+
+        <div id="image-list" style="max-height:320px; overflow:auto; display:grid; gap:8px;"></div>
+
+        <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:8px;">
+          <button onclick="closeImagePickerDialog()">Close</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Floating Edge Dialog -->
     <div id="floating-edge-dialog" class="floating-dialog">
         <div class="dialog-header" id="dialog-header">Select Edge Type</div>
@@ -628,6 +650,118 @@ window.showHtmlEditorDialog = function() {
   setTimeout(resizeHtmlEditorComponents, 60);
 };
 </script>
+
+<script>
+      // expose helper to open image picker from node dialog
+      function openImagePickerDialog() {
+        const dlg = document.getElementById('image-picker-dialog');
+        if (!dlg) return;
+        dlg.style.display = 'block';
+        // reset filter and load images
+        const f = document.getElementById('image-filter');
+        if (f) f.value = '';
+        loadImageList();
+      }
+      function closeImagePickerDialog() {
+        const dlg = document.getElementById('image-picker-dialog');
+        if (!dlg) return;
+        dlg.style.display = 'none';
+      }
+
+      async function loadImageList() {
+        const listEl = document.getElementById('image-list');
+        const filter = (document.getElementById('image-filter') || {}).value || '';
+        listEl.innerHTML = '<div style="padding:12px;color:#777">Loading…</div>';
+        try {
+          const res = await fetch('/uploader/files');
+          if (!res.ok) throw new Error('Failed to list images');
+          const items = await res.json();
+          // show only image extensions
+          const images = (items || []).filter(it => /\.(png|jpe?g|gif|webp|svg)$/i.test(it.name));
+          const filtered = images.filter(it => it.name.toLowerCase().includes(filter.toLowerCase()));
+          if (filtered.length === 0) {
+            listEl.innerHTML = '<div style="padding:12px;color:#777">No images found.</div>';
+            return;
+          }
+          listEl.innerHTML = '';
+          filtered.forEach(it => {
+            const row = document.createElement('div');
+            row.style.display = 'flex';
+            row.style.alignItems = 'center';
+            row.style.gap = '8px';
+            row.style.padding = '6px';
+            row.style.borderBottom = '1px solid #eee';
+
+            const thumb = document.createElement('img');
+            thumb.alt = it.name;
+            thumb.style.width = '72px';
+            thumb.style.height = '54px';
+            thumb.style.objectFit = 'cover';
+            // Try static path first, fallback to download endpoint on error
+            thumb.src = `/static/images/${encodeURIComponent(it.name)}`;
+            thumb.onerror = function() {
+              this.onerror = null;
+              this.src = `/uploader/download/${encodeURIComponent(it.name)}`;
+            };
+
+            const info = document.createElement('div');
+            info.style.flex = '1';
+            info.innerHTML = `<div style="font-size:13px;">${it.name}</div><div style="font-size:12px;color:#666">${(it.size/1024).toFixed(1)} KB</div>`;
+
+            const chooseBtn = document.createElement('button');
+            chooseBtn.textContent = 'Choose';
+            chooseBtn.onclick = function() {
+              selectImageForNode(it.name);
+              closeImagePickerDialog();
+            };
+
+            row.appendChild(thumb);
+            row.appendChild(info);
+            row.appendChild(chooseBtn);
+            listEl.appendChild(row);
+          });
+        } catch (err) {
+          listEl.innerHTML = `<div style="padding:12px;color:#c00">Failed to load images: ${err.message}</div>`;
+        }
+      }
+
+      function openUploaderWindow() {
+        // Open your existing uploader UI in a new tab/window so user can upload.
+        // After upload user can close it and click Refresh in the picker.
+        window.open('/uploader', '_blank', 'noopener,noreferrer,width=900,height=700');
+      }
+
+      // When an image is selected, populate node-image-url and preview
+      function selectImageForNode(filename) {
+        const urlStatic = `/static/images/${encodeURIComponent(filename)}`;
+        const urlDownload = `/uploader/download/${encodeURIComponent(filename)}`;
+        const input = document.getElementById('node-image-url');
+        const previewWrap = document.getElementById('node-image-preview');
+        const previewImg = document.getElementById('node-image-preview-img');
+        if (!input) return;
+        // prefer static url; preview will handle fallback
+        input.value = urlStatic;
+        if (previewWrap && previewImg) {
+          previewImg.src = urlStatic;
+          previewImg.onerror = function() {
+            this.onerror = null;
+            this.src = urlDownload;
+          };
+          previewWrap.style.display = 'block';
+        }
+      }
+
+      // wire a small convenience button into the existing node dialog
+      (function injectNodeDialogButtons(){
+        const nodeField = document.getElementById('node-image-field');
+        if (!nodeField) return;
+        const actions = document.createElement('div');
+        actions.style.marginTop = '8px';
+        actions.innerHTML = `<button type="button" onclick="openImagePickerDialog()">Choose existing image</button>
+                             <button type="button" onclick="openUploaderWindow()" style="margin-left:8px;">Upload image</button>`;
+        nodeField.appendChild(actions);
+      })();
+    </script>
 
 <script src="{{ url_for('static', filename='indexScript.js') }}"></script>
 </body>

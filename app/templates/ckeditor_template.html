@@ -58,18 +58,54 @@ Copyright (c) 2025 Robert Čmrlec
 <script>
     let editorInstance;
 
-    // Initialize CKEditor
-    ClassicEditor.create(document.querySelector('#editor'))
-        .then(editor => {
-            editorInstance = editor;
-        })
-        .catch(error => {
-            console.error('There was a problem initializing the editor.', error);
-        });
+    class MyUploadAdapter {
+        constructor(loader) { this.loader = loader; }
+        upload() {
+            return this.loader.file
+                .then(file => {
+                    const data = new FormData();
+                    data.append('upload', file, file.name);
+                    return fetch('/uploader/upload', { method: 'POST', body: data })
+                        .then(res => {
+                            if (!res.ok) throw new Error('Upload failed');
+                            return res.json();
+                        })
+                        .then(json => {
+                            const url = json.url || json.default || (json.data && json.data.link);
+                            if (!url) throw new Error('No URL in upload response');
+                            return { default: url };
+                        });
+                });
+        }
+        abort() {
+            // optional: implement abort logic if needed
+        }
+    }
 
-    // Submit content from CKEditor
+    function MyCustomUploadAdapterPlugin(editor) {
+        editor.plugins.get('FileRepository').createUploadAdapter = loader => new MyUploadAdapter(loader);
+    }
+
+    ClassicEditor.create(document.querySelector('#editor'), {
+        toolbar: [
+            'heading', '|',
+            'bold','italic','link','bulletedList','numberedList',
+            '|','imageUpload','insertTable','tableColumn','tableRow','mergeTableCells',
+            '|','undo','redo'
+        ],
+        image: {
+            toolbar: [ 'imageTextAlternative', 'imageStyle:full', 'imageStyle:side' ]
+        },
+        table: {
+            contentToolbar: [ 'tableColumn', 'tableRow', 'mergeTableCells', 'tableProperties', 'tableCellProperties' ]
+        },
+        extraPlugins: [ MyCustomUploadAdapterPlugin ]
+    })
+    .then(editor => { editorInstance = editor; })
+    .catch(error => { console.error('CKEditor init error:', error); });
+
     function submitContent() {
-        const editorData = editorInstance.getData();
+        const editorData = editorInstance ? editorInstance.getData() : '';
         document.querySelector('#editor-content').value = editorData;
     }
 </script>

@@ -515,7 +515,7 @@ def editor():
 def edit_node(node_id):
     try:
         with driver.session() as session:
-            # Check if the node has the `name_unique` property
+            # Check if the node has the `name_unique` property which will be used for the filename
             query = """
             MATCH (n)
             WHERE n.id_rc = $node_id
@@ -572,9 +572,26 @@ def edit_node(node_id):
                 else:
                     final_html = content
 
-                content_with_mathjax = f"{mathjax_script}\n{final_html}"
+                # build a complete HTML document (includes MathJax, minimal head)
+                full_html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{name_unique}</title>
+{mathjax_script}
+<style>
+/* minimal styling — adjust as needed */
+body{{font-family:system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;line-height:1.6;margin:1rem;max-width:900px;color:#111}}
+</style>
+</head>
+<body>
+{final_html}
+</body>
+</html>"""
+
                 with open(file_path, 'w', encoding='utf-8') as f:
-                    f.write(content_with_mathjax)
+                    f.write(full_html)
                 return jsonify({"success": True, "message": f"Content saved for {name_unique}"})
             except Exception as save_err:
                 app.logger.exception("Failed saving editor content")
