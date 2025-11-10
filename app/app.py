@@ -15,7 +15,10 @@
 # FOR (n:CustomGraphNode) REQUIRE n.name IS UNIQUE;
 # curl -X POST "http://192.168.1.6:5000/openai-cypher" -H "Content-Type: application/json" -d "{\"query\":\" poi��i najkraj�o pot med nodom tipa table in nodom tipa package \",\"task\":\"explain\",\"execute\":false}"   
 # git remote set-url origin https://github.com/rcm72/insightviewer.git
-# test
+# test¸
+# git commit -m "message"
+# git push
+# source venv/bin/activate
 
 import os
 import sys
