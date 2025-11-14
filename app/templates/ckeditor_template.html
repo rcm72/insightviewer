@@ -4,63 +4,109 @@ Copyright (c) 2025 Robert Čmrlec
 -->
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>CKEditor 5  Classic Editor</title>
-    <style>
-        body {
-            max-width: 800px;
-            margin: 20px auto;
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-        }
-
-        h1 {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        form {
-            margin-top: 20px;
-        }
-
-        button {
-            display: block;
-            margin: 20px auto;
-            padding: 10px 20px;
-            font-size: 16px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background-color: #0056b3;
-        }
-    </style>
-</head>
+    <head>
+        <meta charset="utf-8">
+        <title>CKEditor 5 Classic Editor</title>
+    
+        <style>
+            html, body {
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+    
+            body {
+                /* global page style */
+                font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                line-height: 1.6;
+                min-height: 100vh;
+                color: #111;
+                box-sizing: border-box;
+                padding: 20px;
+            }
+    
+            h1 {
+                text-align: center;
+                margin-bottom: 20px;
+            }
+    
+            form {
+                margin-top: 20px;
+            }
+    
+            /* 🔥 Force CKEditor wrapper to full browser width */
+            body > form > .ck.ck-editor {
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                border-radius: 0 !important;
+            }
+    
+            /* 🔥 Make the editable area full-width & tall */
+            body > form .ck-editor__editable_inline,
+            body > form .ck-content {
+                width: 100% !important;
+                max-width: 100% !important;
+                box-sizing: border-box;
+                min-height: calc(100vh - 140px) !important; /* adjust 140 as you like */
+            }
+    
+            button {
+                display: block;
+                margin: 20px auto;
+                padding: 10px 20px;
+                font-size: 16px;
+                background-color: #007bff;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+            }
+    
+            button:hover {
+                background-color: #0056b3;
+            }
+            img {
+                max-width: 100%;
+                height: auto;
+            }
+            figure.image.image_resized > img {
+                width: 100%;
+                height: auto;
+                display: block;
+            }
+            /* Optional: nicer captions */
+            figure.image > figcaption {
+                font-size: 0.85em;
+                color: #555;
+                text-align: center;
+            }
+        </style>
+    </head>    
 <body>
 
 <h1>CKEditor 5  Classic Editor</h1>
 
-<form method="POST" action="">
+<form method="POST" action="" onsubmit="return submitContent(event)">
     <div id="editor">
         {{ content | safe }}
     </div>
     <textarea name="content" id="editor-content" style="display: none;"></textarea>
-    <button type="submit" onclick="submitContent()">Save</button>
+    <button type="submit">Save</button>
 </form>
 
 <script src="{{ url_for('static', filename='ckeditor/build/ckeditor.js') }}"></script>
-<!-- <script src="https://cdn.ckeditor.com/ckeditor5/38.1.0/full/ckeditor.js"></script> -->
 <script>
     let editorInstance;
 
     class MyUploadAdapter {
-        constructor(loader) { this.loader = loader; }
+        constructor(loader, editor) {
+            this.loader = loader;
+            this.editor = editor;
+        }
+
         upload() {
+            console.log('change 0:');
             return this.loader.file
                 .then(file => {
                     const data = new FormData();
@@ -73,42 +119,287 @@ Copyright (c) 2025 Robert Čmrlec
                         .then(json => {
                             const url = json.url || json.default || (json.data && json.data.link);
                             if (!url) throw new Error('No URL in upload response');
+
+                            const ext = (file.name.split('.').pop() || '').toLowerCase();
+
+                            console.log('ext link:', ext);
+
+                            // Image — let CKEditor insert <img> that was avoided
+                            if (['png','jpg','jpeg','gif','svg','webp'].includes(ext)) {
+                                console.log('Inserting image:', url);
+                                return { default: url };
+                            }
+
+                            // Excel / CSV / other documents — insert a download link into the editor
+                            // for insert loog at insert viewer link AND a download link
+                            const editor = this.editor;
+                            console.log('change 10:', ext);
+                            editor.model.change(writer => {
+                                const insertPos = editor.model.document.selection.getFirstPosition();
+                                // create link text
+                                const linkText = file.name;
+                                const textNode = writer.createText(linkText, { linkHref: url });
+                                editor.model.insertContent(textNode, insertPos);
+
+                                // if uploader returned sheets metadata, append as plain text
+                                if (json.sheets && Array.isArray(json.sheets) && json.sheets.length) {
+                                    const note = writer.createText(' (' + json.sheets.join(', ') + ')');
+                                    editor.model.insertContent(note, editor.model.document.selection.getLastPosition());
+                                }
+                            });
+                            console.log('change 20:', ext);
+
+                            // resolve with default so adapter contract is satisfied
+                            console.log('Inserting link:', url);
                             return { default: url };
                         });
                 });
         }
+
         abort() {
-            // optional: implement abort logic if needed
+            // optional abort implementation
         }
     }
 
     function MyCustomUploadAdapterPlugin(editor) {
-        editor.plugins.get('FileRepository').createUploadAdapter = loader => new MyUploadAdapter(loader);
+        editor.plugins.get('FileRepository').createUploadAdapter = loader => new MyUploadAdapter(loader, editor);
     }
 
-    ClassicEditor.create(document.querySelector('#editor'), {
-        toolbar: [
-            'heading', '|',
+    //'tableProperties','tableCellProperties','tableResize', 
+    // Build a toolbar but only include items for which the build exposes required plugins.
+    (function initEditor(){
+        const desiredToolbar = [
+            'heading','|',
             'bold','italic','link','bulletedList','numberedList',
-            '|','imageUpload','insertTable','tableColumn','tableRow','mergeTableCells',
+            '|','imageUpload','resizeImage', 'insertTable','tableColumn','tableRow','mergeTableCells','tableProperties','tableCellProperties','tableResize', 
             '|','undo','redo'
-        ],
-        image: {
-            toolbar: [ 'imageTextAlternative', 'imageStyle:full', 'imageStyle:side' ]
-        },
-        table: {
-            contentToolbar: [ 'tableColumn', 'tableRow', 'mergeTableCells', 'tableProperties', 'tableCellProperties' ]
-        },
-        extraPlugins: [ MyCustomUploadAdapterPlugin ]
-    })
-    .then(editor => { editorInstance = editor; })
-    .catch(error => { console.error('CKEditor init error:', error); });
+        ];
 
-    function submitContent() {
-        const editorData = editorInstance ? editorInstance.getData() : '';
-        document.querySelector('#editor-content').value = editorData;
+        // map toolbar items -> required plugin names (conservative)
+        const requires = {
+            heading: ['Heading'],
+            bold: ['Bold'],
+            italic: ['Italic'],
+            link: ['Link'],
+            bulletedList: ['List'],
+            numberedList: ['List'],
+            imageUpload: ['ImageUpload','Image','FileRepository'],
+            resizeImage: ['ImageResize','Image'],   // ⬅️ add this
+            insertTable: ['Table'],
+            tableColumn: ['Table','TableToolbar'],
+            tableRow: ['Table','TableToolbar'],
+            mergeTableCells: ['Table','TableToolbar'],
+            tableProperties: ['Table','TableProperties'],
+            tableCellProperties: ['Table','TableCellProperties'],
+            tableResize: ['Table','TableResize'],            
+            undo: ['Undo'],
+            redo: ['Undo']
+        };
+
+        // detect available plugin names from the build (fall back gracefully)
+        const availablePluginNames = (window.ClassicEditor && Array.isArray(ClassicEditor.builtinPlugins))
+            ? ClassicEditor.builtinPlugins.map(p => (p.pluginName || p.name || '').toString())
+            : [];
+
+        // helper: check if any of the required plugins is present
+        function hasRequired(item) {
+            const req = requires[item];
+            if (!req) return true; // no requirement known -> keep it
+            return req.some(r => availablePluginNames.includes(r));
+        }
+
+        // filter desired toolbar by presence of required plugins
+        const toolbar = desiredToolbar.filter(it => it === '|' ? true : hasRequired(it));
+
+        ClassicEditor.create(document.querySelector('#editor'), {
+            licenseKey: 'GPL',   // <<< add this line
+            toolbar: toolbar,
+            image: {
+                toolbar: [
+                    'toggleImageCaption',
+                    'imageTextAlternative',
+                    'imageStyle:full',
+                    'imageStyle:side',
+                    'resizeImage'
+                ].filter(item => {
+                    if (item === 'resizeImage') {
+                        // only keep if ImageResize plugin is present
+                        return availablePluginNames.includes('ImageResize');
+                    }
+                    // for the rest, just require Image
+                    return availablePluginNames.includes('Image');
+                })
+            },
+            table: {
+                contentToolbar: [
+                    'tableColumn',
+                    'tableRow',
+                    'mergeTableCells',
+                    'tableProperties',
+                    'tableCellProperties'
+                ]
+            },
+            extraPlugins: [ MyCustomUploadAdapterPlugin ],
+            htmlSupport: {
+                allow: [
+                    {
+                        name: 'iframe',
+                        attributes: true,
+                        classes: true,
+                        styles: true
+                    },
+                    { name: 'table', attributes: true, classes: true, styles: true },
+                    { name: 'a', attributes: ['target','rel'] },
+                    { name: 'tr', attributes: true, classes: true, styles: true },
+                    { name: 'td', attributes: true, classes: true, styles: true },
+                    { name: 'th', attributes: true, classes: true, styles: true }
+                ]
+            },
+            link: {
+                decorators: {
+                    openViewerInNewTab: {
+                        mode: 'automatic',
+                        // treat /uploader/view/* as "external" for this decorator
+                        callback: url => typeof url === 'string' && url.includes('/uploader/view/'),
+                        attributes: {
+                            target: '_blank',
+                            rel: 'noopener noreferrer'
+                        }
+                    }
+                }
+            }
+        })
+        .then(editor => {
+            window.editorInstance = editor;
+            console.log('CKEditor initialized. Toolbar items:', toolbar);
+
+            const editableEl = editor.ui.getEditableElement();
+
+            async function uploadFileAndInsert(file) {
+                try {
+                    const ext = (file.name.split('.').pop() || '').toLowerCase();
+                    const imageExts = ['png','jpg','jpeg','gif','svg','webp'];
+
+                    // if it's an image, skip here — let CKEditor (FileRepository + our upload adapter)
+                    // handle image uploads to avoid duplicate inserts.
+                    if (imageExts.includes(ext)) {
+                        console.log('skip image in custom handler (let CKEditor handle it):', file.name);
+                        return;
+                    }
+
+                    console.log('uploading dropped file:', file.name);
+                    const fd = new FormData();
+                    fd.append('upload', file, file.name);
+                    const res = await fetch('/uploader/upload', { method: 'POST', body: fd });
+                    if (!res.ok) throw new Error('upload failed: ' + res.status);
+                    const json = await res.json();
+                    const url = json.url || json.default || (json.data && json.data.link);
+                    if (!url) throw new Error('no url returned');
+
+                    // prefer returned saved filename, otherwise extract from URL
+                    const savedName = json.filename || json.name || decodeURIComponent((url.split('/').pop() || file.name));
+
+                    // Insert into editor model
+                    editor.model.change(writer => {
+                        const pos = editor.model.document.selection.getFirstPosition();
+
+                        // (images already skipped above)
+
+                        // Spreadsheet: insert viewer link AND a download link
+                        if (['xlsx','xls'].includes(ext)) {
+                            const viewUrl = '/uploader/view/' + encodeURIComponent(savedName);
+                            const downloadUrl = url; // uploader returns a download URL in json.url
+
+                            if (editor.plugins.has('LinkEditing') || editor.plugins.has('Link')) {
+                                const viewerLink = writer.createText(file.name, {
+                                    linkHref: viewUrl,
+                                    linkTarget: '_blank',
+                                    linkRel: 'noopener noreferrer'
+                                });
+                                editor.model.insertContent(viewerLink, pos);
+
+                                const spacer = writer.createText(' ');
+                                editor.model.insertContent(spacer, editor.model.document.selection.getLastPosition());
+
+                                const dlLinkText = writer.createText('[download]', {
+                                    linkHref: downloadUrl,
+                                    linkTarget: '_blank',
+                                    linkRel: 'noopener noreferrer'
+                                });
+                                editor.model.insertContent(dlLinkText, editor.model.document.selection.getLastPosition());
+                            } else {
+                                // fallback: plain readable text with both URLs
+                                const plain = writer.createText(`${file.name} (viewer: ${viewUrl} download: ${downloadUrl})`);
+                                editor.model.insertContent(plain, pos);
+                            }
+                            return;
+                        }
+
+                        // other non-image files: insert a download link
+                        const textNode = writer.createText(file.name, { linkHref: url });
+                        editor.model.insertContent(textNode, pos);
+                    });
+
+                    console.log('inserted', file.name, url);
+                } catch (err) {
+                    console.error('upload+insert error', err);
+                }
+            }
+
+            // handle drag-and-drop of arbitrary files (only non-images processed here)
+            editableEl.addEventListener('drop', evt => {
+                evt.preventDefault();
+                evt.stopImmediatePropagation();
+                const dt = evt.dataTransfer;
+                if (!dt) return;
+                const files = Array.from(dt.files || []);
+                if (!files.length) return;
+                (async () => {
+                    for (const f of files) await uploadFileAndInsert(f);
+                })();
+            });
+
+            // handle paste-from-clipboard for file items (we upload and insert, but skip images)
+            editableEl.addEventListener('paste', evt => {
+                const clipboard = evt.clipboardData;
+                if (!clipboard) return;
+                const items = Array.from(clipboard.items || []);
+                const files = items.filter(it => it.kind === 'file').map(it => it.getAsFile()).filter(Boolean);
+                if (!files.length) return;
+                evt.preventDefault();
+                evt.stopImmediatePropagation();
+                (async () => {
+                    for (const f of files) await uploadFileAndInsert(f);
+                })();
+            });
+        })
+        .catch(error => {
+            console.error('CKEditor init error:', error);
+        });
+    })();
+
+    // helper to submit editor content into hidden textarea before form submit
+    function submitContent(event) {
+        try {
+            const editorData = window.editorInstance ? window.editorInstance.getData() : '';
+            const ta = document.querySelector('#editor-content');
+            if (!ta) {
+                console.error('No hidden textarea #editor-content found');
+                // allow submit to proceed so server can handle absence as needed
+                return true;
+            }
+            ta.value = editorData;
+            console.log('submitContent: data length=', editorData.length);
+        } catch (err) {
+            console.error('submitContent error:', err);
+        }
+        // return true to allow the form to submit
+        return true;
     }
 </script>
 
+
+
 </body>
 </html>
+

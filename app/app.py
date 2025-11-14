@@ -6,7 +6,7 @@
 # pkill -f code-server 
 # ps aux | grep code-server 
 
-# pkill -f git || true
+# pkill -f git || true 
 
 # CREATE CONSTRAINT cg_name IF NOT EXISTS
 # FOR (n:CustomGraph) REQUIRE n.name IS UNIQUE; 
@@ -518,7 +518,6 @@ def editor():
 def edit_node(node_id):
     try:
         with driver.session() as session:
-            # Check if the node has the `name_unique` property which will be used for the filename
             query = """
             MATCH (n)
             WHERE n.id_rc = $node_id
@@ -531,7 +530,6 @@ def edit_node(node_id):
                 name_unique = record["name_unique"]
                 print(f"Node {node_id} already has name_unique: {name_unique}")
             else:
-                # Generate a unique value if `name_unique` doesn't exist
                 name_unique = f"node_{node_id}_{uuid.uuid4().hex[:8]}"
                 print(f"Generating name_unique for node {node_id}: {name_unique}")
                 update_query = """
@@ -543,39 +541,18 @@ def edit_node(node_id):
                 session.run(update_query, node_id=node_id, name_unique=name_unique)
                 print(f"Updated node {node_id} with name_unique: {name_unique}")
 
-        # Construct the file path using name_unique
         file_path = os.path.join(app.root_path, 'static', 'editor_files', f"{name_unique}.html")
 
-        # Handle POST request to save content
+        # ---------- POST: save content ----------
         if request.method == 'POST':
+            # CKEditor data = fragment we want inside <body>
             content = request.form.get('content') or ""
             mathjax_script = """
             <script src="https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js?config=TeX-AMS_HTML"></script>
             """
             try:
-                # If CKEditor escaped a full HTML page, unescape and extract the real HTML
-                if ('&lt;!DOCTYPE' in content) or ('&lt;html' in content) or content.strip().startswith('html &lt;') or content.strip().startswith('&lt;!DOCTYPE'):
-                    un = unescape(content)
-                    # try to extract full document from first <!doctype or <html to closing </html>
-                    lo = un.lower()
-                    start_idx = lo.find('<!doctype')
-                    if start_idx == -1:
-                        start_idx = lo.find('<html')
-                    if start_idx != -1:
-                        end_idx = lo.rfind('</html>')
-                        if end_idx != -1:
-                            final_html = un[start_idx:end_idx+7]
-                        else:
-                            final_html = un[start_idx:]
-                    else:
-                        # fallback: strip surrounding <p>...</p> added by editor
-                        import re
-                        m = re.match(r'^\s*<p>(.*)</p>\s*$', un, re.S)
-                        final_html = m.group(1) if m else un
-                else:
-                    final_html = content
+                fragment = content  # just use it as-is
 
-                # build a complete HTML document (includes MathJax, minimal head)
                 full_html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -585,32 +562,92 @@ def edit_node(node_id):
 {mathjax_script}
 <style>
 /* minimal styling — adjust as needed */
-body{{font-family:system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;line-height:1.6;margin:1rem;max-width:900px;color:#111}}
+body{{
+    font-family:system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    line-height:1.6;
+    margin:1rem;
+    max-width:100%;
+    color:#111;
+}}
+
+/* Table defaults: collapse and readable padding */
+table {{
+    border-collapse: collapse;
+    width: 100%;
+}}
+
+/* Image / figure rules requested by user */
+img {{
+    max-width: 100%;
+    height: auto;
+    display: block;
+    object-fit: contain;
+}}
+
+figure.image.image_resized > img {{
+    width: 100%;
+    height: auto;
+    display: block;
+}}
+
+figure.image > figcaption {{
+    font-size: 0.85em;
+    color: #555;
+    text-align: center;
+}}
+
+/* Apply a default solid border only when the cell does not declare a border-style inline.
+   This avoids overriding user-chosen styles such as 'dotted' or 'dashed'. */
+th:not([style*="dotted"]):not([style*="dashed"]):not([style*="double"]):not([style*="solid"]):not([style*="ridge"]):not([style*="groove"]):not([style*="inset"]):not([style*="outset"]),
+td:not([style*="dotted"]):not([style*="dashed"]):not([style*="double"]):not([style*="solid"]):not([style*="ridge"]):not([style*="groove"]):not([style*="inset"]):not([style*="outset"]) {{
+    border: 2px solid #000;
+    padding: 6px;
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
+}}
+
+/* If you prefer not to rely on inline styles, have CKEditor set 'border-style' or use classes so CSS can detect them. */
+
 </style>
 </head>
 <body>
-{final_html}
+{fragment}
 </body>
 </html>"""
 
                 with open(file_path, 'w', encoding='utf-8') as f:
                     f.write(full_html)
+
                 return jsonify({"success": True, "message": f"Content saved for {name_unique}"})
             except Exception as save_err:
                 app.logger.exception("Failed saving editor content")
                 return jsonify({"success": False, "error": str(save_err)}), 500
 
-        # Handle GET request to load content
+        # ---------- GET: load content for editing ----------
         if os.path.exists(file_path):
             with open(file_path, 'r', encoding='utf-8') as f:
-                content = f.read()
-        else:
-            content = "<p>Start editing...</p>"  # Default content if the file doesn't exist
+                full_html = f.read()
 
-        return render_template('ckeditor_template.html', content=content, ckeditor_config={"extraPlugins": "mathjax"})
+            # Extract only what's inside <body>...</body> for the editor
+            import re
+            m = re.search(r'<body[^>]*>(.*)</body>', full_html,
+                          flags=re.IGNORECASE | re.DOTALL)
+            if m:
+                content = m.group(1).strip()
+            else:
+                # fallback: if no <body>, just use whole file
+                content = full_html
+        else:
+            content = "<p>Start editing...</p>"
+
+        # CKEditor now gets only the fragment (no nested <html>, <head>, etc)
+        return render_template('ckeditor_template.html',
+                               content=content,
+                               ckeditor_config={"extraPlugins": "mathjax"})
     except Exception as e:
         print(f"Error in edit_node: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
+
 
 @app.route('/edit_v4/<node_id>', methods=['GET', 'POST'])
 def edit_node_v4(node_id):
@@ -1136,7 +1173,7 @@ def save_html(node_id):
 #    curl.exe -X POST "http://localhost:5000/openai-generate" -H "Content-Type: application/json" -d "{\"prompt\":\"Hello, list 3 nodes\",\"model\":\"gpt-4o-mini\",\"temperature\":0.2,\"max_tokens\":200}"
 #
 # 2) PowerShell (call curl.exe to avoid the Invoke-WebRequest alias):
-#    curl.exe -X POST "http://localhost:5000/openai-generate" -H "Content-Type: application/json" --data-raw '{"prompt":"Hello, list 3 nodes","model":"gpt-4o-mini","temperature":0.2,"max_tokens":200}'
+#    curl.exe -X POST "http://localhost:5000/openai-generate" -H "Content-Type: application/json" --data-raw '{"prompt":"Hello, list 3 nodes","model":"gpt-4o-mini"}'
 #
 # Notes:
 # - Replace http://localhost:5000 with your server host/port or use the full URL.

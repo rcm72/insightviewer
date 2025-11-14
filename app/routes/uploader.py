@@ -275,14 +275,48 @@ def upload():
         dest = upload_dir / final_name
         f.save(str(dest))
 
+        # try to construct public URL
+        try:
+            static_folder = Path(current_app.static_folder).resolve()
+            rel = Path(dest).resolve().relative_to(static_folder)
+            url = url_for("static", filename=str(rel).replace(os.sep, "/"), _external=False)
+        except Exception:
+            url = url_for(".download", filename=final_name, _external=False)
+
+        # return filename + url so front-end can build viewer URL
+        return jsonify({"url": url, "filename": final_name}), 201
+
+        # --- NEW: special-case Excel files: save + (optionally) return sheet names ---
+        ext = dest.suffix.lower()
+        excel_meta = None
+        if ext in (".xlsx", ".xls"):
+            try:
+                # optional dependency: openpyxl. If missing, return file saved but no sheet info.
+                import openpyxl  # type: ignore
+                wb = openpyxl.load_workbook(str(dest), read_only=True)
+                excel_meta = {"sheets": wb.sheetnames}
+                wb.close()
+            except Exception:
+                excel_meta = {"sheets": None, "note": "openpyxl not available or failed to read file"}
+
         # Try to return a static URL if upload dir is inside Flask static folder
         try:
             static_folder = Path(current_app.static_folder).resolve()
             rel = Path(dest).resolve().relative_to(static_folder)
             url = url_for("static", filename=str(rel).replace(os.sep, "/"), _external=False)
         except Exception:
-            # Fallback to the downloader route (may return as attachment depending on implementation)
+            # Fallback to the downloader route
             url = url_for(".download", filename=final_name, _external=False)
+
+        # Return JSON shaped for CKEditor image upload OR for Excel meta
+        if ext in (".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"):
+            return jsonify({"url": url}), 201
+
+        # For Excel return file info + optional sheet list
+        if excel_meta is not None:
+            resp = {"ok": True, "filename": final_name, "url": url}
+            resp.update(excel_meta)
+            return jsonify(resp), 201
 
         return jsonify({"url": url}), 201
 
@@ -330,6 +364,68 @@ def download(filename: str):
     if not path.exists():
         abort(404)
     return send_from_directory(str(upload_dir), safe, as_attachment=True)
+
+
+@uploader_bp.route("/view/<filename>")
+def view_spreadsheet(filename):
+    """
+    Lightweight spreadsheet viewer page that loads the uploaded file via the existing
+    download endpoint and renders sheets using SheetJS (XLSX).
+    """
+    safe = secure_filename(filename)
+    download_url = url_for(".download", filename=safe, _external=False)
+
+    html = f"""<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{safe} - Spreadsheet viewer</title>
+<style>
+  body{{font-family:system-ui, Arial, sans-serif;margin:12px}}
+  #xls-tabs button{{margin-right:6px;padding:6px 10px;border:1px solid #ddd;border-radius:6px;cursor:pointer;background:#f7f7f7}}
+  #xls-container table{{border-collapse:collapse;width:100%}}
+  #xls-container table td, #xls-container table th{{border:1px solid #ddd;padding:6px}}
+</style>
+</head>
+<body>
+  <h3>{safe}</h3>
+  <div id="xls-tabs" style="margin-bottom:8px;"></div>
+  <div id="xls-container"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <script>
+  (async () => {{
+    try {{
+      const res = await fetch('{download_url}');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const buf = await res.arrayBuffer();
+      const wb = XLSX.read(buf, {{ type: 'array' }});
+      const tabs = document.getElementById('xls-tabs');
+      const container = document.getElementById('xls-container');
+      tabs.innerHTML = '';
+      container.innerHTML = '';
+      function renderSheet(name) {{
+        const sheet = wb.Sheets[name];
+        const html = XLSX.utils.sheet_to_html(sheet, {{ id: "excel-table", editable: false }});
+        container.innerHTML = html;
+      }}
+      wb.SheetNames.forEach((name, idx) => {{
+        const btn = document.createElement('button');
+        btn.textContent = name;
+        btn.addEventListener('click', () => renderSheet(name));
+        tabs.appendChild(btn);
+        if (idx === 0) renderSheet(name);
+      }});
+    }} catch (err) {{
+      console.error(err);
+      document.getElementById('xls-container').textContent =
+        'Failed to load spreadsheet. Check the network path, CORS, and server headers.';
+    }}
+  }})();
+  </script>
+</body>
+</html>"""
+    return render_template_string(html)
 
 
 @uploader_bp.errorhandler(413)
