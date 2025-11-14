@@ -576,25 +576,6 @@ table {{
     width: 100%;
 }}
 
-/* Image / figure rules requested by user */
-img {{
-    max-width: 100%;
-    height: auto;
-    display: block;
-    object-fit: contain;
-}}
-
-figure.image.image_resized > img {{
-    width: 100%;
-    height: auto;
-    display: block;
-}}
-
-figure.image > figcaption {{
-    font-size: 0.85em;
-    color: #555;
-    text-align: center;
-}}
 
 /* Apply a default solid border only when the cell does not declare a border-style inline.
    This avoids overriding user-chosen styles such as 'dotted' or 'dashed'. */
