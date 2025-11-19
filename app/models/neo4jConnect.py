@@ -5,15 +5,45 @@
 # app/models/neo4jConnect.py
 from neo4j import GraphDatabase
 import configparser
+from pathlib import Path
+import os
+import sys
 #import rcmrlec.insightViewer.config as config  # Import the configuration file
 
-CONFIG_PATH = "/home/pi/Documents/rcmrlec/insightViewer/config.ini"  # <-- Fixed path
+# Locate config.ini:
+# 1) environment variable INSIGHTVIEWER_CONFIG or CONFIG_PATH
+# 2) project locations (project/config.ini, project/app/config.ini)
+# 3) CWD, user home, /etc
+env_path = os.environ.get("INSIGHTVIEWER_CONFIG") or os.environ.get("CONFIG_PATH")
+candidates = []
+if env_path:
+    candidates.append(Path(env_path))
 
-# Load configuration
+here = Path(__file__).resolve()
+project_root = here.parents[2] if len(here.parents) >= 3 else here.parent
+candidates += [
+    project_root / "config.ini",
+    project_root / "app" / "config.ini",
+    Path.cwd() / "config.ini",
+    Path.home() / ".config" / "insightViewer" / "config.ini",
+    Path.home() / "config.ini",
+    Path("/etc/insightViewer/config.ini"),
+]
+
 config = configparser.ConfigParser()
-config.read('/home/pi/Documents/rcmrlec/insightViewer/config.ini')
+found = None
+for p in candidates:
+    if p and p.exists():
+        found = p
+        break
 
-# Check if config loaded correctly
+if not found:
+    searched = ", ".join(str(p) for p in candidates)
+    raise RuntimeError(f"config.ini not found. Searched: {searched}. Set INSIGHTVIEWER_CONFIG env var to point to config.ini.")
+
+CONFIG_PATH = str(found)
+config.read(CONFIG_PATH)
+
 if "NEO4J" not in config:
     raise RuntimeError(f"NEO4J section is missing in {CONFIG_PATH}!")
 
@@ -34,3 +64,4 @@ class Neo4jConnector:
     def close(self):
         """Close Neo4j connection."""
         self.driver.close()
+
