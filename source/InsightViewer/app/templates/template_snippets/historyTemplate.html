@@ -1,0 +1,168 @@
+<!-- name: History template -->
+<!-- description: History learning template -->
+<!doctype html>
+<html lang="sl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Poglavje — Insight Viewer</title>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="/static/quiz.css">
+  <link rel="stylesheet" href="/static/flashcards.css"> 
+  <link rel="stylesheet" href="/static/historyTemplate.css"> 
+  
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      document.querySelectorAll("h2").forEach(function(header) {
+        header.addEventListener("click", function() {
+          let content = header.nextElementSibling;
+          if (content && content.classList.contains("content")) {
+            content.classList.toggle("open");
+          }
+        });
+      });
+    });
+  </script>  
+
+
+</head>
+<body>
+  <header>
+    <img class="logo" src="/static/images/hamurabi_icon.png" alt="logo">
+    <div>
+      <h1>Poglavje: Poglavje</h1>
+    </div>
+    <nav>
+      <a href="/" style="color:inherit; text-decoration:none">Domov</a>
+    </nav>
+  </header>
+
+  <main>
+    <section>
+      <h2>📜 Zgodbica: Podpoglavje</h2>
+      <div class="content">
+        <p>Vnesi zgodico</p>
+      </div>
+    </section>
+
+    <hr />
+
+    <section>
+      <h2>🎭 Dramatizirana zgodbica</h2>
+      <div class="content">
+        <div class="dialogue">
+          <p><strong>Pripovedovalec:</strong>Kratka igra</p>
+          <p><strong>Hamurabi:</strong></p>
+        </div>
+      </div>
+    </section>
+
+    <hr />
+
+    <section>      
+        <h2>📝 Znam dobesedno</h2>
+        <div class="content">
+          <h3>Podpoglavje</h3>
+          <div class="mono">
+            <!-- primer kode/izvlečka za učenje -->
+            <pre>Prensi list profesorja</pre>
+          </div>
+        </div>
+      </section>
+
+        <hr />
+
+      <section>
+        <h2>📜 Kviz</h2>
+        <div class="content">
+          <div id="quiz">
+            <div id="progress"></div>
+            <div id="question" class="lead"></div>
+            <div id="options"></div>
+            <div id="score" class="score"></div>
+          </div>
+  
+           <!-- Banka vprašanj iz HTML (če želiš raje pisati v HTML). -->
+  
+          <!-- Skriti “bank” vprašanj v HTML (ostanejo v dokumentu) -->
+          <ol id="question-bank" hidden>
+            <li data-answer="Hamurabi">
+              <span class="q">Kdo je najpomembnejši vladar starobabilonskega kraljestva?</span>
+              <ul class="opts">
+                <li>Hamurabi</li>
+                <li>Nabukodonozor</li>
+                <li>Sargon</li>
+                <li>Nebukadnezar</li>
+              </ul>
+            </li>
+            <li data-answer="Božja vrata">
+              <span class="q">Kaj pomeni babilon?</span>
+              <ul class="opts">
+                <li>Hamurabi</li>
+                <li>Nabukodonozor</li>
+                <li>Sargon</li>
+                <li>Nebukadnezar</li>
+              </ul>
+            </li>
+          </ol>        
+  
+          <!-- skripte -->
+          <script src="/static/quiz.js"></script>        
+        </div>
+      </section>
+
+    <section>
+        <!-- Place the Flipcards title and root directly under the quiz -->
+        <h2>🔁 Kartice (Flipcards)</h2>
+        <div class="content">
+          <ul id="fc-bank" hidden>
+            <li data-answer="Ljubljana">Katero je glavno mesto Slovenije?</li>
+            <li data-answer="Mount Everest">Katera je najvišja gora na svetu?</li>
+            <li data-answer="3.14159…">Katera je približna vrednost števila π?</li>
+            <li data-answer="H2O">Kemična formula za vodo?</li>
+          </ul>
+      
+          <!-- Tu bo mreža kartic -->
+          <div id="flashcards"></div>
+      
+          <section class="controls">
+            <button id="fc-reset" type="button">Zapri vse kartice</button>
+            <button id="fc-reveal" type="button">Pokaži vse odgovore</button>
+          </section>
+      
+        <script src="/static/flashcards.js"></script>      
+        </div>
+
+      </section>
+    
+      <section>
+        <h3>Viri</h3>
+        <ul>
+          <li><a href="https://en.wikipedia.org/wiki/Hammurabi" target="_blank" rel="noopener">Hamurabi — Wikipedia (EN)</a></li>
+          <li><a href="#" target="_blank" rel="noopener">Dodatni viri</a></li>
+        </ul>          
+      </section>
+
+    
+
+    <footer>
+      <small>Ustvarjeno za učno rabo • &copy; družina Čmrlec</small>
+    </footer>
+  </main>
+
+  
+  
+
+  <script>
+    // Ensure flipcard root exists so flipcard.js can attach (if flipcard.js is non-self-invoking)
+    document.addEventListener('DOMContentLoaded', function(){
+      // If flipcard.js expects #flipcard-root and it's empty, flipcard.js will initialise automatically.
+      // quiz.js auto-initializes on load (reads #question-bank).
+      // No further bootstrap required; these logs help debugging.
+      console.log('History template loaded: quiz questions', document.querySelectorAll('#question-bank > li').length, 'flipcards', document.querySelectorAll('#flipcard-bank > li').length);
+    });
+  </script>
+</body>
+</html>
+

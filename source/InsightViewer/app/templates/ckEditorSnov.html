@@ -1,0 +1,324 @@
+<!--
+SPDX-License-Identifier: AGPL-3.0-or-later
+Copyright (c) 2025 Robert Čmrlec
+-->
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Interaktivni kvadrati template</title>
+  <style>
+    :root {
+      --bg-blur: 2px;
+      --overlay: rgba(0,0,0,0.35);
+      --card-bg: rgba(255,255,255,0.9);
+      --card-text: #0f172a; /* slate-900 */
+      --accent: #2563eb; /* blue-600 */
+      --accent-2: #1d4ed8; /* blue-700 */
+      --radius: 18px;
+      --gap: 18px;
+      --shadow: 0 10px 25px rgba(0,0,0,0.15);
+    }
+
+    /* Full-bleed background image */
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color: white;
+      min-height: 100svh;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image: var(--bg-url, url('/static/images/geo_ozadje.jpg'));
+      background-size: cover;
+      background-position: center;
+      filter: blur(var(--bg-blur));
+      transform: scale(1.02);
+      z-index: -2;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: var(--overlay);
+      z-index: -1;
+    }
+
+    .wrap {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: var(--gap);
+      padding: 32px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 24px;
+    }
+
+    .title {
+      font-size: clamp(18px, 2.2vw, 24px);
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+
+    /* Start button */
+    .start {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: none;
+      background: white;
+      color: var(--accent-2);
+      font-weight: 800;
+      font-size: clamp(18px, 2.5vw, 28px);
+      padding: 16px 22px;
+      border-radius: 999px;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      transition: transform .15s ease, box-shadow .2s ease;
+    }
+    .start:hover { transform: translateY(-2px); }
+    .start:active { transform: translateY(0); box-shadow: 0 6px 18px rgba(0,0,0,.18); }
+
+    /* Card */
+    .card {
+      background: var(--card-bg);
+      color: var(--card-text);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-auto-rows: min-content;
+      gap: 10px;
+      cursor: default;
+      outline: 2px solid transparent;
+      transition: outline-color .2s ease, transform .12s ease;
+      user-select: none;
+    }
+    .card:focus-within, .card:hover { outline-color: rgba(37,99,235,.35); transform: translateY(-2px); }
+
+    .badge {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .3px;
+      background: rgba(37,99,235,.12);
+      color: #1e3a8a;
+      padding: 6px 10px;
+      border-radius: 999px;
+      width: max-content;
+    }
+
+    .clickable { cursor: pointer; }
+
+    .h {
+      font-size: 18px;
+      font-weight: 800;
+      margin: 4px 0 2px;
+    }
+
+    .q, .a {
+      font-size: 16px;
+      line-height: 1.4;
+      margin: 0;
+    }
+
+    .hidden { display: none !important; }
+
+    .footer {
+      position: fixed;
+      inset-inline: 0;
+      bottom: 0;
+      display: flex;
+      justify-content: center;
+      padding: 14px;
+      pointer-events: none;
+    }
+
+    .hint {
+      background: rgba(255,255,255,0.9);
+      color: #111827;
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      box-shadow: var(--shadow);
+      pointer-events: auto;
+    }
+
+    /* Accessibility helpers */
+    .sr-only{ position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="title">Interaktivni "slide" – primer</div>
+    <button id="startBtn" class="start" aria-labelledby="startLabel">?<span id="startLabel">Začni</span></button>
+  </header>
+
+  <main id="grid" class="wrap" aria-live="polite" aria-atomic="false"></main>
+
+  <div class="footer">
+    <div class="hint">Potek: gumb ? naslov ? vprašanje ? odgovor ? nov naslov …</div>
+  </div>
+
+  <script>
+    const ITEMS = [
+      {
+        title: 'Naslov 1',
+        question: 'Katero leto je prestopno?',
+        answer: 'Leto, deljivo s 4, razen stoletij, ki morajo biti deljiva s 400.'
+      },
+      {
+        title: 'Naslov 2',
+        question: 'Kaj pomeni HTML?',
+        answer: 'HyperText Markup Language.'
+      },
+      {
+        title: 'Naslov 3',
+        question: 'Zakaj uporabljamo CSS?',
+        answer: 'Za opis videza/zasnove dokumentov (barve, postavitve, pisave…).'
+      },
+      {
+        title: 'Naslov 4',
+        question: 'Kaj je JavaScript?',
+        answer: 'Programski jezik za interaktivnost spletnih strani.'
+      }
+    ];
+
+    // === Logika ===
+    const grid = document.getElementById('grid');
+    const startBtn = document.getElementById('startBtn');
+
+    let lastRevealedIndex = -1; // -1 pomeni, da še ni kartic
+
+    function createCard(idx) {
+      const data = ITEMS[idx];
+      const card = document.createElement('article');
+      card.className = 'card';
+      card.tabIndex = 0;
+      card.setAttribute('data-index', idx);
+
+      // trak
+      const badge = document.createElement('span');
+      badge.className = 'badge';
+      badge.textContent = `#${idx + 1}`;
+      card.appendChild(badge);
+
+      // naslov
+      const h = document.createElement('h2');
+      h.className = 'h clickable';
+      h.textContent = data.title;
+      h.title = 'Klikni za vprašanje';
+      h.addEventListener('click', () => revealQuestion(card));
+      card.appendChild(h);
+
+      // vprašanje
+      const q = document.createElement('p');
+      q.className = 'q hidden clickable';
+      q.textContent = data.question;
+      q.title = 'Klikni za odgovor';
+      q.addEventListener('click', () => revealAnswer(card));
+      card.appendChild(q);
+
+      // odgovor
+      const a = document.createElement('p');
+      a.className = 'a hidden clickable';
+      a.textContent = data.answer;
+      a.title = 'Klikni za naslednji naslov';
+      a.addEventListener('click', () => revealNext(card));
+      card.appendChild(a);
+
+      grid.appendChild(card);
+      card.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+      return card;
+    }
+
+    function revealQuestion(card){
+      const q = card.querySelector('.q');
+      q.classList.remove('hidden');
+    }
+
+    function revealAnswer(card){
+      const a = card.querySelector('.a');
+      a.classList.remove('hidden');
+    }
+
+    function revealNext(card){
+      const idx = parseInt(card.getAttribute('data-index'), 10);
+      if (idx >= lastRevealedIndex) {
+        lastRevealedIndex = idx;
+      }
+      // Če imamo naslednjo kartico, jo dodamo
+      const next = lastRevealedIndex + 1;
+      if (next < ITEMS.length) {
+        lastRevealedIndex = next;
+        createCard(next);
+      } else {
+        // konec seznama ? ponudi ponovni začetek
+        toast('Konec! Klikni  za ponovno igro.');
+      }
+    }
+
+    // preprost toast/hint
+    let toastTimer;
+    function toast(msg){
+      const hint = document.querySelector('.hint');
+      hint.textContent = msg;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(()=>{
+        hint.textContent = 'Potek: gumb ? naslov ? vprasanje ? odgovor ? nov naslov …';
+      }, 4000);
+    }
+
+    // Začetek: pokaži prvo kartico
+    startBtn.addEventListener('click', () => {
+      if (grid.children.length === 0) {
+        lastRevealedIndex = 0;
+        createCard(0);
+      } else {
+        // Reset
+        grid.innerHTML = '';
+        lastRevealedIndex = 0;
+        createCard(0);
+      }
+    });
+
+    // Tipkovnica (dostopnost): Enter/Space na fokusiranih elementih
+    document.addEventListener('keydown', (e) => {
+      const active = document.activeElement;
+      if (!active) return;
+
+      const isCard = active.classList.contains('card');
+      if (!isCard) return;
+
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        const q = active.querySelector('.q');
+        const a = active.querySelector('.a');
+        if (q.classList.contains('hidden')) {
+          revealQuestion(active);
+        } else if (a.classList.contains('hidden')) {
+          revealAnswer(active);
+        } else {
+          revealNext(active);
+        }
+      }
+    });
+  </script>
+</body>
+</html>
