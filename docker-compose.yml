@@ -1,0 +1,63 @@
+version: "3.9"
+
+services:
+  neo4j:
+    image: neo4j:5.25-community
+    container_name: neo4j
+    restart: unless-stopped
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      # You can export NEO4J_PASSWORD in your shell or define it in a .env file
+      NEO4J_AUTH: "neo4j/${NEO4J_PASSWORD:-changeme}"
+    volumes:
+      - neo4j_data:/data
+    networks:
+      - appnet
+
+  flask:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: flask
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./app:/app              # �� allows live-editing in development
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      FLASK_APP: app.py
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USER: neo4j
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-changeme}
+    depends_on:
+      - neo4j
+    networks:
+      - appnet
+
+  insightviewer:
+    build:
+      context: ./source/InsightViewer
+      dockerfile: Dockerfile
+    container_name: insightviewer
+    restart: unless-stopped
+    ports:
+      - "5001:5000"   # host:container
+    volumes:
+      - ./source/InsightViewer/app/static/editor_files:/app/app/static/editor_files
+      - ./source/InsightViewer/app/static/images:/app/app/static/images
+    depends_on:
+      - neo4j
+      - flask
+    networks:
+      - appnet
+
+volumes:
+  neo4j_data:
+
+networks:
+  appnet:
+    driver: bridge
+

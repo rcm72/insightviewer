@@ -1,0 +1,16 @@
+# editor local history / snapshots
+.history/
+config_*.py
+
+# local secrets
+config_private.ini
+.env
+
+# python
+__pycache__/
+*.py[cod]
+venv/
+
+# node
+node_modules/
+insightviewer.backup/

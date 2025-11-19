@@ -1,0 +1,95 @@
+<!--
+SPDX-License-Identifier: AGPL-3.0-or-later
+Copyright (c) 2025 Robert Čmrlec
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Choose Template</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabulator/5.0.7/css/tabulator.min.css">
+    <style>
+        .floating-dialog {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border: 1px solid #ccc;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            display: none;
+            padding: 20px;
+            width: 80%;
+            max-width: 600px;
+        }
+        .dialog-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="choose-template-dialog" class="floating-dialog">
+        <div class="dialog-header">
+            <span>Choose Template</span>
+            <button onclick="closeChooseTemplateDialog()">X</button>
+        </div>
+        <div id="template-table"></div>
+        <div style="margin-top: 10px; display: flex; justify-content: flex-end;">
+            <button onclick="selectTemplate()">Select</button>
+            <button onclick="closeChooseTemplateDialog()">Cancel</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tabulator/5.0.7/js/tabulator.min.js"></script>
+    <script src="{{ url_for('static', filename='js/templatesTabulator.js') }}"></script>
+    <script>
+        function openChooseTemplateDialog() {
+            document.getElementById('choose-template-dialog').style.display = 'block';
+            loadTemplates();
+        }
+
+        function closeChooseTemplateDialog() {
+            document.getElementById('choose-template-dialog').style.display = 'none';
+        }
+
+        function loadTemplates() {
+            fetch('/get_templates')
+                .then(response => response.json())
+                .then(data => {
+                    const table = new Tabulator("#template-table", {
+                        data: data.templates,
+                        layout: "fitColumns",
+                        columns: [
+                            { title: "Name", field: "name", width: 150 },
+                            { title: "Description", field: "description", width: 300 },
+                            { title: "File", field: "file", width: 150 }
+                        ],
+                        rowClick: function(e, row) {
+                            row.getElement().classList.toggle("selected");
+                        }
+                    });
+                });
+        }
+
+        function selectTemplate() {
+            const selectedRows = table.getSelectedRows();
+            if (selectedRows.length > 0) {
+                const selectedData = selectedRows[0].getData();
+                fetch(`/get_template_content/${selectedData.file}`)
+                    .then(response => response.text())
+                    .then(htmlContent => {
+                        // Assuming you have a function to insert HTML into the editor
+                        insertHtmlIntoEditor(htmlContent);
+                        closeChooseTemplateDialog();
+                    });
+            } else {
+                alert("Please select a template.");
+            }
+        }
+    </script>
+</body>
+</html>

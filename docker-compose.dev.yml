@@ -1,0 +1,8 @@
+services:
+  web:
+    environment:
+      APP_ENV: development
+      FLASK_ENV: development
+    volumes:
+      - ./app:/app         # live code mount for auto-reload
+    # Optional: narrower logs, etc.
