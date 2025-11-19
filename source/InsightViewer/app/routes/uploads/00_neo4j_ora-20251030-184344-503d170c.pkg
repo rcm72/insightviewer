@@ -1,0 +1,28 @@
+CREATE OR REPLACE PACKAGE PROVIS.NEO4J_ORA AS
+/******************************************************************************
+   NAME:       NEO4J_ORA
+   PURPOSE:
+
+   REVISIONS:
+   Ver        Date        Author           Description
+   ---------  ----------  ---------------  ------------------------------------
+   1.0        19/09/2024      CmrlecR       1. Created this package.
+******************************************************************************/
+  
+  PROCEDURE CompileIdentifiers(pOwner in varchar2, pPackage in varchar2, pType in varchar2 default 'pkg') 
+;
+   
+  PROCEDURE fillAllPackageTabs (pDbName in varchar2, pOwner in varchar2, pPackage in varchar2, pType in varchar2);  
+  
+  PROCEDURE REMOVE_PKG_ALL_IDENT(pDbName in varchar2, pOwner in varchar2, pPackage in varchar2);
+  
+  function getCRUD(pOwner in varchar2, pPackage in varchar2, pLine in number) return varchar2;
+  
+    procedure extractCypher(pv_database in varchar2,
+                            pv_owner in varchar2,
+                            pv_package_name in varchar2,
+                            pv_predicate in varchar2 default '%'
+                            );    
+
+END NEO4J_ORA;
+/
