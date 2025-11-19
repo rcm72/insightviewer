@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (c) 2025 Robert Čmrlec
 
-# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*- 
 # app.py
 # pkill -f code-server 
 # ps aux | grep code-server 
@@ -21,13 +21,21 @@
 # source venv/bin/activate
 
 import os
+import re
 import sys
 import json 
 import configparser
 from datetime import datetime, date
+import uuid
 from flask import Flask, abort, render_template, request, jsonify, render_template_string, url_for, send_from_directory, send_file
-from neo4j import GraphDatabase
+from neo4j import GraphDatabase, Relationship, Node
 import os
+
+import requests
+
+from source.InsightViewer.app.routes.createNodeTypes import get_node_types
+from source.InsightViewer.app.routes.createRelationsTypes import get_edge_types
+from source.InsightViewer.source.InsightViewer.app.app import SYSTEM_BUNDLE, SYSTEM_SPLIT, _extract_full_html, _strip_fences
 
 app = Flask(__name__)
 
@@ -871,7 +879,7 @@ def openai_cypher():
       - If 'natural_language' is provided: the endpoint asks OpenAI to produce a Cypher query and returns the suggested query in 'suggested_cypher'.
       - Otherwise: forwards the provided Cypher to OpenAI for explanation/validation/rewrite and returns assistant text / suggested Cypher.
     """
-    api_key = OPENAI_API_KEY
+    api_key = os.environ.get("OPENAI_API_KEY", None)  # Retrieve from environment variable or set to None
     if not api_key:
         return jsonify({"success": False, "error": "OPENAI_API_KEY not set"}), 500
 
@@ -1093,6 +1101,7 @@ def openai_generate():
     Response JSON (split):
       { success, html, css, js, code, raw }
     """
+    OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", None)  # Retrieve from environment variable or set to None
     if not OPENAI_API_KEY:
         return jsonify({"success": False, "error": "OPENAI_API_KEY not set"}), 500
 
@@ -1215,7 +1224,7 @@ def openai_generate():
                 "js": js,
                 "code": bundled,   # keep legacy 'code' as a ready-to-render doc
                 "raw": body
-            })
+            }) 
 
         # mode == "bundle"
         full_html = _extract_full_html(content)
@@ -1242,6 +1251,7 @@ def openai_generate():
 
 @app.route('/favicon.ico')
 def favicon():
+    print();
     return '', 204  # Empty response, no error
 
 if __name__ == '__main__':
