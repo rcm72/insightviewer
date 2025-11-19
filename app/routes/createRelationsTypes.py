@@ -7,13 +7,40 @@ import configparser
 from flask import Blueprint, jsonify, request
 import uuid
 import re
+from pathlib import Path
+import os
+import sys
 
 # Create a Flask Blueprint
 relations_bp = Blueprint("createRelationsTypes", __name__)
 
-# Load credentials from config.ini
+# Load credentials from config.ini (search locations / env override)
 config = configparser.ConfigParser()
-config.read("/home/pi/Documents/rcmrlec/insightViewer/config.ini")
+env_path = os.environ.get("INSIGHTVIEWER_CONFIG") or os.environ.get("CONFIG_PATH")
+candidates = []
+if env_path:
+    candidates.append(Path(env_path))
+here = Path(__file__).resolve()
+project_root = here.parents[2] if len(here.parents) >= 3 else here.parent
+candidates += [
+    project_root / "config.ini",
+    project_root / "app" / "config.ini",
+    Path.cwd() / "config.ini",
+    Path.home() / ".config" / "insightViewer" / "config.ini",
+    Path.home() / "config.ini",
+    Path("/etc/insightViewer/config.ini"),
+]
+found = None
+for p in candidates:
+    if p and p.exists():
+        found = p
+        break
+if not found:
+    searched = ", ".join(str(p) for p in candidates)
+    raise RuntimeError(f"config.ini not found. Searched: {searched}. Set INSIGHTVIEWER_CONFIG env var to point to config.ini.")
+config.read(str(found))
+if "NEO4J" not in config:
+    raise RuntimeError(f"NEO4J section is missing in {found}!")
 
 URI = config["NEO4J"]["URI"]
 USERNAME = config["NEO4J"]["USERNAME"]
@@ -186,3 +213,4 @@ def get_edge_types():
 if __name__ == "__main__":
     create_nodetype_relationships()
     driver.close()
+
