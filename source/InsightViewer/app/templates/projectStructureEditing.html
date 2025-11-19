@@ -1,0 +1,161 @@
+<!--
+SPDX-License-Identifier: AGPL-3.0-or-later
+Copyright (c) 2025 Robert Čmrlec
+-->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Neo4j Node & Relationship Structure Guide</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            line-height: 1.6;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: Consolas, monospace;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Neo4j Node & Relationship Structure Guide</h1>
+    <p>This document explains how to structure and enforce rules for node types and relationships in Neo4j.</p>
+    
+    <h2>1. Storing Allowed Node Types</h2>
+    <p>We define the allowed node types in Neo4j along with their shapes, colors, and sizes for visualization.</p>
+    
+    <h3>Example Cypher Query:</h3>
+    <pre><code>
+    CREATE (:NodeType {name: 'Person', shape: 'ellipse', color: '#4ef542', size: 15});
+    CREATE (:NodeType {name: 'Package', shape: 'box', color: '#f5f242', size: 15});
+    CREATE (:NodeType {name: 'Database', shape: 'database', color: '#FF9900', size: 15});
+    </code></pre>
+    
+    <h2>2. Retrieving Allowed Node Types in Flask</h2>
+    <p>The following Flask API retrieves all allowed node types.</p>
+    <pre><code>
+    @app.route("/get-node-types", methods=["GET"])
+    def get_node_types():
+        query = "MATCH (t:NodeType) RETURN t.name AS name, t.shape AS shape, t.color AS color, t.size AS size"
+        with driver.session() as session:
+            result = session.run(query)
+            node_types = [{"name": record["name"], "shape": record["shape"], "color": record["color"], "size": record["size"]} for record in result]
+        return jsonify(node_types)
+    </code></pre>
+    
+    <h2>3. Storing Allowed Relationships</h2>
+    <p>We define allowed relationships so users can only create specific connections.</p>
+    
+    <h3>Example Cypher Query:</h3>
+    <pre><code>
+    CREATE (:AllowedRelationship {from: 'Person', to: 'Package', type: 'OWNER'});
+    CREATE (:AllowedRelationship {from: 'Person', to: 'Package', type: 'ADMINISTRATOR'});
+    CREATE (:AllowedRelationship {from: 'Person', to: 'Car', type: 'DRIVER'});
+    </code></pre>
+    
+    <h2>4. Retrieving Allowed Relationships in Flask</h2>
+    <p>The following API fetches allowed relationships.</p>
+    <pre><code>
+    @app.route("/get-allowed-relationships", methods=["GET"])
+    def get_allowed_relationships():
+        query = "MATCH (r:AllowedRelationship) RETURN r.from AS fromType, r.to AS toType, r.type AS relationshipType"
+        with driver.session() as session:
+            result = session.run(query)
+            relationships = [{"from": record["fromType"], "to": record["toType"], "type": record["relationshipType"]} for record in result]
+        return jsonify(relationships)
+    </code></pre>
+    
+    <h2>5. Enforcing Allowed Relationships in vis.js</h2>
+    <p>When a user adds an edge, the system checks if it's valid.</p>
+    <pre><code>
+    var options = {
+        manipulation: {
+            enabled: true,
+            addEdge: function (data, callback) {
+                let fromNode = nodes.get(data.from);
+                let toNode = nodes.get(data.to);
+
+                let validTypes = allowedRelationships
+                    .filter(rel => rel.from === fromNode.label && rel.to === toNode.label)
+                    .map(rel => rel.type);
+
+                if (validTypes.length === 0) {
+                    alert(`No valid relationships between ${fromNode.label} and ${toNode.label}`);
+                    return;
+                }
+
+                let selectedType = prompt(`Enter relationship type (${validTypes.join(", ")})`);
+                if (!validTypes.includes(selectedType)) {
+                    alert("Invalid relationship type!");
+                    return;
+                }
+
+                data.label = selectedType;
+                fetch("/add-edge", {
+                    method: "POST",
+                    body: JSON.stringify(data),
+                    headers: { "Content-Type": "application/json" }
+                })
+                .then(response => response.json())
+                .then(newEdge => {
+                    edges.add(newEdge);
+                    callback(newEdge);
+                });
+            }
+        }
+    };
+    </code></pre>
+    
+    <h2>6. Summary</h2>
+    <ul>
+        <li>Allowed node types are stored in Neo4j.</li>
+        <li>Flask provides APIs to fetch node types and relationships.</li>
+        <li>Users can only create allowed node types.</li>
+        <li>Users can only create relationships that are pre-defined in Neo4j.</li>
+        <li>The front-end (vis.js) enforces these restrictions dynamically.</li>
+    </ul>
+
+    <h1>Implementacija </h1>
+    <ul>
+        <li>
+            CREATE (:NodeType {name: 'pkgproc', shape: 'ellipse', color: '#4ef542', size: 15});<br>
+               CREATE (:NodeType {name: 'package', shape: 'box', color: '#f5f242', size: 15}); <br>
+                CREATE (:NodeType {name: 'table', shape: 'box', color: '#f5dd42', size: 15});<br>
+                CREATE (:NodeType {name: 'server', shape: 'database', color: '#FF9900', size: 20});<br>
+                CREATE (:NodeType {name: 'procedure', shape: 'ellipse', color: '#fcba03', size: 15});<br>
+                CREATE (:NodeType {name: 'view', shape: 'box', color: '#c77c6c', size: 15});<br>
+                CREATE (:NodeType {name: 'A', shape: 'ellipse', color: '#fcba15', size: 15});<br>
+                CREATE (:NodeType {name: 'materialized_view', shape: 'box', color: '#ff9900', size: 15});<br>
+                CREATE (:NodeType {name: 'package_body', shape: 'ellipse', color: '#4e8ef5', size: 15});<br>
+                CREATE (:NodeType {name: 'apex_workspace', shape: 'box', color: '#ff0000', size: 15});<br>
+                CREATE (:NodeType {name: 'apex', shape: 'box', color: '#ff6600', size: 15});<br>
+                CREATE (:NodeType {name: 'apex_application', shape: 'ellipse', color: '#ffcc00', size: 15});<br>
+                CREATE (:NodeType {name: 'apex_page', shape: 'ellipse', color: '#ffcc66', size: 15});<br>
+                CREATE (:NodeType {name: 'apex_region', shape: 'box', color: '#ff9966', size: 15});<br>
+                CREATE (:NodeType {name: 'apex_table_name', shape: 'box', color: '#ff6699', size: 15});<br><br>
+        </li>
+        <li>
+            Dovoljene relacije<br>
+            <p>MATCH (a)-[r]->(b)<br>                      
+                MERGE (ar:AllowedRelationship {from: labels(a)[0], to: labels(b)[0], type: type(r)});</p><br><br>
+        </li>
+
+
+    </ul>
+
+
+</body>
+</html>
+

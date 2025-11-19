@@ -1,0 +1,305 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+}
+
+/* Menu container */
+.menu-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 250px;
+    height: 100vh;
+    background: black;
+    border-right: 2px solid #ccc;
+    transition: width 0.3s ease-in-out;
+}
+
+/* Drag handle between menu and graph */
+#drag-handle {
+    position: absolute;
+    top: 0;
+    left: 250px; /* Align with menu width */
+    width: 10px;
+    height: 100vh;
+    background: #ddd;
+    cursor: ew-resize;
+    z-index: 10; /* Ensure it's above everything */
+}
+
+/* Graph container */
+#network-container {
+    position: absolute;
+    top: 0;
+    left: 260px; /* Ensure it starts after menu */
+    width: calc(100% - 260px);
+    height: 100vh;
+    border: 1px solid black;
+    background: white;
+}
+
+.menu-container.hidden {
+    width: 0;
+    padding: 0;
+}
+
+.menu-container ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.menu-container ul li {
+    padding: 10px;
+    text-align: left;
+    color: white;
+    cursor: pointer;
+    border-bottom: 1px solid #444;
+}
+
+/* .menu-container ul li:hover {
+    background-color: #555;
+} */
+
+
+.menu-container ul li ul {
+    display: none;
+    list-style-type: none;
+    padding-left: 20px;
+}
+
+.menu-container ul li ul li {
+    background-color: #444;
+    border-bottom: none;
+}
+
+.content {
+    margin-left: 260px;
+    padding: 0;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: margin-left 0.3s ease;
+}
+
+.content.hidden {
+    margin-left: 20px;
+}
+
+.content iframe {
+    flex: 1;
+}
+
+/* Floating Cypher Query Dialog */
+.floating-dialog {
+    position: absolute;
+    top: 200px;
+    left: 300px;
+    width: 300px;
+    height: 225px;
+    min-width: 300px; /* Set minimum width */
+    min-height: 225px; /* Set minimum height */    
+    border: 1px solid #ccc;
+    background-color: #fff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    resize: both; /* Allow resizing both horizontally and vertically */
+    overflow: auto; /* Ensure content is scrollable if it overflows */
+    display: none; /* Hide dialogs initially */
+}
+
+/* Floating Cypher Query Dialog (make dialogs responsive to viewport) */
+.floating-dialog {
+    position: absolute;
+    top: 200px;
+    left: 300px;
+    width: 300px;
+    /* allow height to grow but cap to viewport so dialog can expand */
+    height: auto;
+    max-height: calc(100vh - 80px);
+    min-width: 300px;
+    min-height: 220px;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    resize: both;
+    overflow: auto; /* ensure scroll if content overflows */
+    display: none;
+    box-sizing: border-box;
+}
+
+.dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f2f2f2;
+    padding: 5px;
+    cursor: move;
+}
+
+textarea {
+    width: 100%;
+    height: 100px;
+    margin: 5px 0;
+}
+
+.floating-dialog button {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+}
+
+.menu-container  button {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+}
+
+
+.context-menu {
+    display: block;
+    position: absolute;
+    z-index: 1000;
+    background-color: white;
+    border: 1px solid #ccc;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    padding: 10px;
+    list-style: none;
+}
+
+.context-menu ul {
+    margin: 0;
+    padding: 0;
+}
+
+.context-menu ul li {
+    padding: 5px 10px;
+    cursor: pointer;
+}
+
+.context-menu ul li:hover {
+    background-color: #f0f0f0;
+}
+
+/* .floating-dialog button:hover {
+    background: #0056b3;
+} */
+
+#node-properties-dialog {
+    position: absolute;
+    top: 100px;
+    left: 100px;
+    width: 300px;
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    padding: 10px;
+}
+
+#node-properties-dialog .dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: bold;
+    cursor: move;
+}
+
+#node-properties-dialog .dialog-header button {
+    background: none;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+/* Let the whole dialog be resizable and vertically stack children */
+#html-editor-dialog {
+    display: flex;
+    flex-direction: column;
+    resize: both;           /* if you want drag-resize */
+    overflow: hidden;       /* or auto if you prefer scrollbars */
+  }
+  
+  /* Toolbar shouldn’t stretch */
+  #html-editor-dialog > .dialog-header + div {
+    flex: 0 0 auto;
+  }
+  
+  /* Editor container grows to fill remaining space (when preview hidden) */
+  #html-editor-container {
+    flex: 1 1 auto;
+    min-height: 120px;
+  }
+  
+  /* When preview is shown, its block takes a fixed (changeable) height */
+  #html-editor-preview {
+    flex: 0 0 auto;
+  }
+  
+  /* Make CodeMirror truly fill its container */
+  #html-editor-container .CodeMirror,
+  #html-editor-container .CodeMirror-scroll,
+  #html-editor-container .cm-editor {
+    height: 100%;
+  }
+
+/* HTML editor dialog: use flex layout and cap height to viewport */
+#html-editor-dialog {
+  display: flex;
+  flex-direction: column;
+  /* Use viewport-aware max height so it can grow */
+  /* max-height: calc(100vh - 80px);  */
+  max-height: none !important;
+  height: auto;
+  min-height: 240px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* Toolbar shouldn’t stretch */
+#html-editor-dialog > .dialog-header + div {
+  flex: 0 0 auto;
+}
+
+/* Editor container grows to fill remaining space (when preview hidden) */
+#html-editor-container {
+  flex: 1 1 auto;
+  min-height: 160px;
+  /* ensure scrollbar inside if editor content overflows */
+  overflow: auto;
+}
+
+/* When preview is shown, its block takes a fixed (changeable) height */
+#html-editor-preview {
+  flex: 0 0 auto;
+  max-height: 45vh;
+  overflow: auto;
+  box-sizing: border-box;
+}
+
+/* Make CodeMirror / editor fill its container */
+#html-editor-container .CodeMirror,
+#html-editor-container .CodeMirror-scroll,
+#html-editor-container .cm-editor,
+#html-editor-container textarea {
+  height: 100%;
+  min-height: 120px;
+  box-sizing: border-box;
+}
+
+/* Ensure dialogs positioned nicely on small viewports */
+@media (max-height: 520px) {
+  .floating-dialog, #html-editor-dialog {
+    top: 40px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-height: calc(100vh - 64px);
+  }
+}

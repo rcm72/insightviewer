@@ -1,0 +1,32 @@
+services:
+  neo4j:
+    image: neo4j:5.25-community
+    container_name: neo4j
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD}
+    volumes:
+      - neo4j_data:/data
+
+  web:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: flask
+    ports:
+      - "5000:5000"
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      FLASK_APP: app.py
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USER: neo4j
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD}
+    depends_on:
+      - neo4j
+
+    # No dev volume mounts in prod
+
+volumes:
+  neo4j_data:
