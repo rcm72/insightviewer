@@ -1,5 +1,0 @@
-Flask==2.0.1
-tabulator==5.0.7
-Jinja2==3.0.1
-Werkzeug==2.0.1
-requests==2.25.1
