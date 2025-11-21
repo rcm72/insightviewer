@@ -1,0 +1,113 @@
+<!--
+SPDX-License-Identifier: AGPL-3.0-or-later
+Copyright (c) 2025 Robert Čmrlec
+-->
+<!doctype html>
+<html lang="en">
+<head>
+  <script>
+    // expose session values to other scripts on the page
+    window.currentProject = localStorage.getItem("iv_project");
+    window.currentEmail = localStorage.getItem("iv_email");
+  </script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>About InsightViewer</title>
+  <style>
+    body { font-family: Arial, Helvetica, sans-serif; color:#222; max-width:800px; margin:2rem auto; padding:0 1rem; }
+    header h1 { margin:0 0 .25rem; }
+    header p { margin:.25rem 0 1rem; color:#555; }
+    dl { display:grid; grid-template-columns:160px 1fr; gap:.4rem 1rem; }
+    dt { font-weight:600; color:#333; }
+    dd { margin:0; color:#111; }
+    a { color:#0366d6; text-decoration:none; }
+    a:hover { text-decoration:underline; }
+    footer { margin-top:1.25rem; font-size:.9rem; color:#666; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>InsightViewer</h1>
+    <h2>Program for creating and viewing knowledge graphs.</h2>
+  </header>
+
+  <section>
+    <dl>
+      <dt>Logged-in user</dt>
+      <dd id="user"></dd>
+
+      <dt>Current project</dt>
+      <dd id="project">Not available</dd> 
+
+      <!-- full-width separator -->
+      <dd style="grid-column:1 / -1; padding:0.5rem 0;">
+        <hr style="border:0; border-top:1px solid #e0e0e0; margin:0;">
+      </dd>          
+
+      <dt>Author</dt>
+      <dd id="author">RobertČmrlec</dd>
+
+      <dt>GitHub</dt>
+      <dd><a id="github" href="https://github.com/rcm72/insightviewer" target="_blank" rel="noopener">github.com/your-org/insightviewer</a></dd>
+
+      <dt>Copyright</dt>
+      <dd>&copy; SPDX-License-Identifier: AGPL-3.0-or-later
+        Copyright (c) 2025 Robert Čmrlec
+      </dd>
+
+  
+
+     
+
+    </dl>
+  </section>
+
+  <footer>
+      <!-- full-width separator -->
+      <dd style="grid-column:1 / -1; padding:0.5rem 0;">
+        <hr style="border:0; border-top:1px solid #e0e0e0; margin:0;">
+      </dd>    
+    <div style="margin-top:8px;">
+      <button id="change-user-btn" style="padding:.4rem .6rem; border-radius:6px; border:1px solid #ccc; background:#f5f5f5; cursor:pointer;"
+              onclick="goToLogin()">Change user / Project</button>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      function getParam(name) { try { return new URLSearchParams(location.search).get(name); } catch { return null; } }
+      // navigate to login page to change user/project
+      window.goToLogin = function () {
+        // preserve return location if desired:
+        // location.href = '/login.html?next=' + encodeURIComponent(location.pathname);
+        location.href = '/login.html';
+      };
+
+      var user = (window.__INSIGHT_USER__ || localStorage.getItem('insightViewerUser') || getParam('user')) || null;
+      var project = (window.__INSIGHT_PROJECT__ || localStorage.getItem('insightViewerProject') || getParam('project')) || null;
+      var gh = window.__INSIGHT_GITHUB__ || 'https://github.com/your-org/insightviewer';
+
+      // prefer values exposed from sessionStorage (window.currentEmail/currentProject)
+      var user = user || window.currentEmail || window.__INSIGHT_USER__ || localStorage.getItem('insightViewerUser') || getParam('user') || null;
+      var project = project || window.currentProject || window.__INSIGHT_PROJECT__ || localStorage.getItem('insightViewerProject') || getParam('project') || null;
+      var gh = window.__INSIGHT_GITHUB__ || 'https://github.com/your-org/insightviewer';
+
+      var userEl = document.getElementById('user');
+      var projectEl = document.getElementById('project');
+      var ghEl = document.getElementById('github');
+
+      if (user) userEl.textContent = String(user);
+      if (project) projectEl.textContent = String(project);
+
+      try {
+        var url = new URL(gh, location.origin);
+        ghEl.href = url.href;
+        ghEl.textContent = url.host + url.pathname.replace(/\/$/, '');
+      } catch (e) {
+        ghEl.href = gh;
+        ghEl.textContent = gh;
+      }
+    })();
+  </script>
+</body>
+</html>

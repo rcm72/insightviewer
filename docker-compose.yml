@@ -16,27 +16,6 @@ services:
     networks:
       - appnet
 
-  flask:
-    build:
-      context: ./app
-      dockerfile: Dockerfile
-    container_name: flask
-    restart: unless-stopped
-    ports:
-      - "5000:5000"
-    volumes:
-      - ./app:/app              # �� allows live-editing in development
-    environment:
-      APP_ENV: ${APP_ENV:-production}
-      FLASK_APP: app.py
-      NEO4J_URI: bolt://neo4j:7687
-      NEO4J_USER: neo4j
-      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-changeme}
-    depends_on:
-      - neo4j
-    networks:
-      - appnet
-
   insightviewer:
     build:
       context: ./source/InsightViewer
@@ -48,9 +27,9 @@ services:
     volumes:
       - ./source/InsightViewer/app/static/editor_files:/app/app/static/editor_files
       - ./source/InsightViewer/app/static/images:/app/app/static/images
+      - ./source/InsightViewer:/app
     depends_on:
       - neo4j
-      - flask
     networks:
       - appnet
 

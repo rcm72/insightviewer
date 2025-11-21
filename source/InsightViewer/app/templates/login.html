@@ -1,0 +1,219 @@
+<!--
+SPDX-License-Identifier: AGPL-3.0-or-later
+Copyright (c) 2025 Robert Čmrlec
+-->
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Insight Viewer1 Login</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: #1e1e1e;
+      color: #f0f0f0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .login-card {
+      background: #2b2b2b;
+      border-radius: 12px;
+      padding: 24px 28px;
+      max-width: 400px;
+      width: 100%;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    .login-card h1 {
+      margin-top: 0;
+      margin-bottom: 4px;
+      font-size: 1.4rem;
+    }
+
+    .login-card p {
+      margin-top: 0;
+      margin-bottom: 16px;
+      font-size: 0.9rem;
+      color: #c0c0c0;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.85rem;
+    }
+
+    input[type="email"],
+    select {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid #444;
+      background: #1b1b1b;
+      color: #f0f0f0;
+      font-size: 0.9rem;
+      box-sizing: border-box;
+    }
+
+    input[type="email"]:focus,
+    select:focus {
+      outline: none;
+      border-color: #6ea8fe;
+      box-shadow: 0 0 0 1px #6ea8fe40;
+    }
+
+    .btn-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 16px;
+      gap: 8px;
+    }
+
+    button {
+      border-radius: 6px;
+      border: none;
+      padding: 8px 14px;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: #3b82f6;
+      color: white;
+    }
+
+    .btn-secondary {
+      background: #3a3a3a;
+      color: #eee;
+    }
+
+    .error-msg {
+      color: #f97373;
+      font-size: 0.8rem;
+      margin-top: 6px;
+      min-height: 1em;
+    }
+
+    .small {
+      font-size: 0.8rem;
+      color: #a0a0a0;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <h1>Insight Viewer</h1>
+    <p>Vpišite svoj e-poštni naslov in izberite projekt (podgraf).</p>
+
+    <form id="login-form">
+      <div style="margin-bottom:12px;">
+        <label for="email">E-pošta</label>
+        <input type="email" id="email" name="email" required placeholder="vas.email@primer.si">
+      </div>
+
+      <div style="margin-bottom:8px;">
+        <label for="project">Projekt</label>
+        <select id="project" name="project" required>
+          <option value="">Nalaganje projektov…</option>
+        </select>
+      </div>
+
+      <div id="error" class="error-msg"></div>
+
+      <div class="btn-row">
+        <button type="button" class="btn-secondary" onclick="window.location.reload()">Prekliči</button>
+        <button type="submit" class="btn-primary">Naprej</button>
+      </div>
+
+      <div class="small">
+        Prijava je namenjena samo izbiri uporabnika in projekta (ni gesla).
+      </div>
+    </form>
+  </div>
+
+  <script>
+    // Load projects from backend (adjust URL to your API)
+    async function loadProjects() {
+      const select = document.getElementById('project');
+      try {
+        const res = await fetch('/api/projects'); // <-- you’ll implement this endpoint
+        if (!res.ok) throw new Error('Response not OK');
+        const data = await res.json();
+
+        // Expected formats:
+        // [ "Project A", "Project B" ]
+        // or [ {id: "proj1", name: "Project A"}, ... ]
+        select.innerHTML = '';
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = '-- izberite projekt --';
+        select.appendChild(placeholder);
+
+        data.forEach(p => {
+          const opt = document.createElement('option');
+          if (typeof p === 'string') {
+            opt.value = p;
+            opt.textContent = p;
+          } else {
+            opt.value = p.id || p.name;
+            opt.textContent = p.name || p.id;
+          }
+          select.appendChild(opt);
+        });
+      } catch (err) {
+        console.error('Failed to load projects', err);
+        select.innerHTML = '<option value="">Napaka pri nalaganju projektov</option>';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadProjects();
+
+      // Prefill from previous session if present
+      const storedEmail = localStorage.getItem('iv_email');
+      const storedProject = localStorage.getItem('iv_project');
+      //const storedEmail = sessionStorage.getItem('iv_email');
+      //const storedProject = sessionStorage.getItem('iv_project');      
+      if (storedEmail) document.getElementById('email').value = storedEmail;
+
+      document.getElementById('login-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('email').value.trim();
+        const project = document.getElementById('project').value;
+        const errorEl = document.getElementById('error');
+        errorEl.textContent = '';
+
+        if (!email || !project) {
+          errorEl.textContent = 'Prosimo, vnesite e-pošto in izberite projekt.';
+          return;
+        }
+
+        // store on client (for now)
+        localStorage.setItem('iv_email', email);
+        localStorage.setItem('iv_project', project);
+//        sessionStorage.setItem('iv_email', email);
+//        sessionStorage.setItem('iv_project', project);
+
+        // (optional) tell backend who logged in
+        try {
+          await fetch('/api/login', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ email, project })
+          });
+        } catch (e) {
+          console.warn('Login tracking failed, continuing anyway', e);
+        }
+        // redirect to main app
+        window.location.href = '/index.html';
+      });
+    });
+  </script>
+</body>
+</html>
