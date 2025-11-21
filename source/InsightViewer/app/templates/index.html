@@ -162,10 +162,25 @@ Copyright (c) 2025 Robert Čmrlec
     console.log('createCM6HtmlEditor -> CodeMirror5 (highlighting) installed:', typeof window.createCM6HtmlEditor);
     </script>
 </head>
-<body>    
+<body> 
+    <script>
+      (function() {
+        const email = localStorage.getItem('iv_email');
+        const project = localStorage.getItem('iv_project');
+    
+        if (!email || !project) {
+          window.location.href = '/login';
+          return;
+        }
+    
+        // Expose globally so indexScript.js / other code can read it
+        window.IV_CURRENT_USER = { email, project };
+        console.log('Logged in as', window.IV_CURRENT_USER);
+      })();
+    </script>   
     <div class="menu-container" id="menu">
         <ul>
-            <li>Graphing 1
+            <li>Let's make some graphs
                 <ul>
                     <li onclick="openCypherDialog()">Explore with cypher</li>   
 
@@ -188,6 +203,8 @@ Copyright (c) 2025 Robert Čmrlec
                 <ul>
                     <li onclick="openNodePropertiesDialog()">Show Node Properties</li>
                     <li id="physicsToggle"  onclick="changePhysics()">Disable physics</li>
+                    <li id="About"><a href="/about.html" target="_blank" rel="noopener">About</a></li>
+                    <!-- <li id="About"><a href="/about.html">About</a></li> -->
                 </ul>
             </li>                 
         </ul>

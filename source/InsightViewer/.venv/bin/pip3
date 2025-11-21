@@ -1,4 +1,4 @@
-#!/home/pi/Documents/rcmrlec/insightViewer/.venv/bin/python
+#!/home/robert/insightViewer/source/InsightViewer/.venv/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys

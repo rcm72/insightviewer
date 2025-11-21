@@ -1,6 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2025 Robert Čmrlec
 
+// Get current project and user email
+ const currentProject = window.IV_CURRENT_USER?.project;
+ const currentEmail = window.IV_CURRENT_USER?.email;
+// const currentProject = sessionStorage.getItem("iv_project");
+// const currentEmail = sessionStorage.getItem("iv_email");
+
+
 //indexScript.js
 var gAllowedNodeLabels = [];  // Global variable to store allowed node labels
 var gAllowedEdgeTypes = [];  // Global variable to store allowed edge types
@@ -759,7 +766,8 @@ document.addEventListener("DOMContentLoaded", function () {
         fetch("/run-cypher", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ query: cypherQuery })
+            //body: JSON.stringify({ query: cypherQuery })
+             body: JSON.stringify({query: cypherQuery, project: currentProject, email: currentEmail})
         })
         .then(response => response.json())
         .then(data => {

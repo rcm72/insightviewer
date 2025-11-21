@@ -1,7 +1,7 @@
-# SPDX-License-Identifier: AGPL-3.0-or-later
-# Copyright (c) 2025 Robert ÄŒmrlec
-
 # -*- coding: utf-8 -*-
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (c) 2025 Robert Èmrlec
+
 # app.py
 # pkill -f code-server 
 # ps aux | grep code-server 
@@ -25,13 +25,13 @@ import os
 import sys
 import json 
 import configparser
-from datetime import datetime, date
+from datetime import datetime, date 
 from flask import Flask, abort, render_template, request, jsonify, render_template_string, url_for, send_from_directory, send_file
 from neo4j import GraphDatabase
 import uuid  # For generating unique IDs
 from neo4j.graph import Node, Relationship  # Import for type checking
-import requests
-import re
+import requests 
+import re 
 from html import unescape
 
 # Ensure the app directory is in Python's path
@@ -52,6 +52,8 @@ SYSTEM_SPLIT = (
     "Do not add Markdown, comments, or explanations. "
     "html must NOT include <style> or <script>. Put all CSS in css and all JS in js."
 )
+
+
 
 def _strip_fences(text: str) -> str:
     if not text: 
@@ -75,6 +77,7 @@ def _extract_full_html(text: str) -> str:
 
 
 app = Flask(__name__)
+app.config['TEMPLATES_AUTO_RELOAD'] = True # for development; auto-reload templates on change
 app.config.setdefault("UPLOAD_FOLDER", os.path.join(app.root_path, "static", "images"))
 app.config.setdefault("MAX_CONTENT_LENGTH", 512 * 1024 * 1024)
 
@@ -127,16 +130,20 @@ app.register_blueprint(relations_bp, url_prefix="/relations")
 app.register_blueprint(nodes_bp, url_prefix="/nodes")
 app.register_blueprint(templates_api_bp, url_prefix="/api")
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+
 
 @app.route('/<path:page>')
 def render_page(page):
-#    try:
-        return render_template(f"{page}")
-#   except Exception as e:#        print("Template error:", e)
-#        abort(404)
+#     # don't capture API or static requests — use request.path (leading slash)
+#     # This is safer if the catch-all was registered before other routes/blueprints.
+#     if request.path.startswith('/api/') or request.path.startswith('/static/'):
+#         abort(404)
+
+#     try:
+    return render_template(page)
+#     except Exception:
+#         app.logger.exception("Template error rendering %s", page)
+#         abort(404)
 
 def convert_dates(obj):
     """
@@ -158,11 +165,44 @@ def convert_dates(obj):
         print(f"convert_dates else: {obj}")
         return obj  # Return other objects as-is
 
+
+@app.route("/login")
+def login_page():
+    return render_template("login.html")
+
+@app.route("/", endpoint="root_login")
+def index_page():
+    return render_template("login.html")
+
+@app.route("/index", endpoint="root_index")
+def index_page():
+    return render_template("index.html")
+
+@app.get("/api/projects")
+def get_projects():
+    # TODO: fetch from Neo4j, config file, etc.
+    projects = [
+        {"id": "default", "name": "Default project"},
+        {"id": "demo", "name": "Demo project"},
+        {"id": "test1", "name": "Test project 1"},
+    ]
+    return jsonify(projects)
+
+@app.post("/api/login")
+def api_login():
+    data = request.get_json() or {}
+    email = data.get("email")
+    project = data.get("project")
+    return jsonify({"ok": True})
+
 @app.route("/run-cypher", methods=["POST"])
 def run_cypher():
     try:
-        query = request.json.get("query")
-        print("run-cpyher query: ", query)  # Debugging log
+        data = request.json or {}
+        query = data.get("query")
+        project = data.get("project")  # <-- NEW: current project from frontend
+        print("run-cpyher query: ", query)
+        print("run-cpyher project: ", project)
 
         nodes = {}
         edges = []
@@ -173,66 +213,73 @@ def run_cypher():
             result = session.run(query)
             for record in result:
                 for value in record.values():
-                    # Debugging: Print the value object and its labels
+                    # Debugging
                     print("Debugging value:", value)
                     print("Labels:", getattr(value, "labels", None))
 
-                    # Process nodes
+                    # ---- NODES ----
                     if hasattr(value, "id") and hasattr(value, "labels"):
-                        properties = dict(value)  # Get all node properties
+                        properties = dict(value)
 
-                        # Derive a stable id: prefer id_rc property, fallback to internal id
+                        # FILTER BY PROJECT for nodes
+                        if project and properties.get("projectName") != project:
+                            # Node is from another project -> skip
+                            continue
+
                         node_id = properties.get("id_rc", str(value.id))
                         if node_id not in nodes:
-                            # Convert Date objects to strings
                             properties = convert_dates(properties)
 
-                            full_name = properties.get("name", f"Node {node_id}")  # Extract name property
-                            short_name = full_name.split(".")[-1]  # Get last part after the last dot
-
-                            # Safely extract the node type
+                            full_name = properties.get("name", f"Node {node_id}")
+                            short_name = full_name.split(".")[-1]
                             nodeType = next(iter(value.labels), "Unknown")
 
                             nodes[node_id] = {
                                 "id": node_id,
                                 "label": short_name,
-                                "nodeType": nodeType,  # Add node type
-                                "labels": list(value.labels),  # Include all labels 20250425
-                                "properties": properties  # Store all properties
+                                "nodeType": nodeType,
+                                "labels": list(value.labels),
+                                "properties": properties
                             }
 
-                    # Process edges
+                    # ---- RELATIONSHIPS ----
                     if hasattr(value, "start_node") and hasattr(value, "end_node"):
                         print("run_cypher relationship edges:", value)
+
                         rel_props = dict(value)
                         start_props = dict(value.start_node)
-                        end_props = dict(value.end_node)
+                        end_props   = dict(value.end_node)
+
+                        # FILTER BY PROJECT for relationships
+                        if project:
+                            start_proj = start_props.get("projectName")
+                            end_proj   = end_props.get("projectName")
+
+                            # if neither end is in this project, skip the relationship
+                            if start_proj != project and end_proj != project:
+                                continue
 
                         start_id = start_props.get("id_rc", str(value.start_node.id))
-                        end_id = end_props.get("id_rc", str(value.end_node.id))
-                        rel_id = rel_props.get("id_rc", str(value.id))
+                        end_id   = end_props.get("id_rc", str(value.end_node.id))
+                        rel_id   = rel_props.get("id_rc", str(value.id))
 
                         edge = {
-                            "id": rel_id,  # Use relationship id_rc if present, otherwise internal id as string
+                            "id": rel_id,
                             "from": start_id,
                             "to": end_id,
                             "type": value.type,
-                            "label": value.type  # Set the label to the relationship type
+                            "label": value.type
                         }
 
-                        # Convert Date objects in edge properties to strings
                         edge = convert_dates(edge)
 
-                        # Avoid duplicate edges
                         if edge not in edges:
                             edges.append(edge)
 
-        # Convert any remaining Date objects in nodes and edges
         nodes = convert_dates(nodes)
         edges = convert_dates(edges)
 
         print(f"[{datetime.now()}] Stop.")
-
         print(f"[{datetime.now()}] Nodes: {len(nodes)}, Edges: {len(edges)}")
         print()
         print(json.dumps({"nodes": list(nodes.values()), "edges": edges}, indent=4))
