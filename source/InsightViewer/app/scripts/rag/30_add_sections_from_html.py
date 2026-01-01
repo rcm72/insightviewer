@@ -6,6 +6,7 @@ povezati člena v pravo sekcijo
 """
 
 import configparser
+from pathlib import Path
 import os, re
 from typing import Optional, Tuple, List
 import uuid
@@ -15,7 +16,17 @@ from neo4j import GraphDatabase
 PROJECT = "ZGD1"
 ACT_ID = "ZGD-1"
 
-BASE_DIR = os.path.dirname(__file__)
+#BASE_DIR = os.path.dirname(__file__)
+#config = configparser.ConfigParser()
+#config.read(os.path.join(BASE_DIR, "..", "..", "..", "config.ini"))
+
+# BASE_DIR should point to project root: /home/robert/insightViewer/source/InsightViewer
+BASE_DIR = Path(__file__).resolve().parents[2]
+CONFIG_PATH = BASE_DIR / "config.ini"
+
+config = configparser.ConfigParser()
+config.read(CONFIG_PATH)
+
 HTML_PATH = os.path.join(
     BASE_DIR,
     "",
@@ -26,8 +37,7 @@ HTML_PATH = os.path.join(
 )
 
 
-config = configparser.ConfigParser()
-config.read(os.path.join(BASE_DIR, "..", "..", "..", "config.ini"))
+
 NEO4J_URI = config['NEO4J']['URI']
 NEO4J_USER = config['NEO4J']['USERNAME']
 NEO4J_PASSWORD = config['NEO4J']['PASSWORD']

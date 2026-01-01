@@ -1,3 +1,4 @@
+from pathlib import Path
 from neo4j import GraphDatabase
 import importlib.util
 import configparser
@@ -12,14 +13,21 @@ rag_chat_api = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(rag_chat_api)
 
 # Load config.ini
-BASE_DIR = "/home/robert/insightViewer/source/InsightViewer/app/scripts/rag"
-config = configparser.ConfigParser()
-config.read(os.path.join(BASE_DIR, "..", "..", "..", "config.ini"))
+# BASE_DIR = "/home/robert/insightViewer/source/InsightViewer/app/scripts/rag"
+# config = configparser.ConfigParser()
+# config.read(os.path.join(BASE_DIR, "..", "..", "..", "config.ini"))
 
-driver = GraphDatabase.driver(
-    config["NEO4J"]["URI"],
-    auth=(config["NEO4J"]["USERNAME"], config["NEO4J"]["PASSWORD"]),
-)
+# driver = GraphDatabase.driver(
+#     config["NEO4J"]["URI"],
+#     auth=(config["NEO4J"]["USERNAME"], config["NEO4J"]["PASSWORD"]),
+# )
+
+# BASE_DIR should point to project root: /home/robert/insightViewer/source/InsightViewer
+BASE_DIR = Path(__file__).resolve().parents[2]
+CONFIG_PATH = BASE_DIR / "config.ini"
+
+config = configparser.ConfigParser()
+config.read(CONFIG_PATH)
 
 q = "Kaj določa 10.a člen ZGD-1?"
 qvec = rag_chat_api.ollama_embed(q)
