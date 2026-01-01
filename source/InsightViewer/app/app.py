@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # SPDX-License-Identifier: AGPL-3.0-or-later
-# Copyright (c) 2025 Robert »mrlec
+# Copyright (c) 2025 Robert ÔøΩmrlec
 
 # app.py
 # pkill -f code-server 
@@ -27,12 +27,14 @@ import json
 import configparser
 from datetime import datetime, date 
 from flask import Flask, abort, render_template, request, jsonify, render_template_string, url_for, send_from_directory, send_file
+from flask.json.provider import DefaultJSONProvider
 from neo4j import GraphDatabase
 import uuid  # For generating unique IDs
 from neo4j.graph import Node, Relationship  # Import for type checking
 import requests 
 import re 
 from html import unescape
+from neo4j.time import Date as Neo4jDate
 
 # Ensure the app directory is in Python's path
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
@@ -76,7 +78,16 @@ def _extract_full_html(text: str) -> str:
     return f"<!DOCTYPE html><html><head><meta charset='utf-8'><title>AI</title></head><body>{frag}</body></html>"
 
 
+class CustomJSONProvider(DefaultJSONProvider):
+    def default(self, obj):
+        if isinstance(obj, (datetime, date)):
+            return obj.isoformat()
+        return super().default(obj)
+
 app = Flask(__name__)
+app.json_provider_class = CustomJSONProvider
+app.json = CustomJSONProvider(app)
+
 app.config['TEMPLATES_AUTO_RELOAD'] = True # for development; auto-reload templates on change
 app.config.setdefault("UPLOAD_FOLDER", os.path.join(app.root_path, "static", "images"))
 app.config.setdefault("MAX_CONTENT_LENGTH", 512 * 1024 * 1024)
@@ -108,7 +119,7 @@ URI = config["NEO4J"]["URI"]
 print("DEBUG: final NEO4J URI to be used:", repr(URI))
 USERNAME = config["NEO4J"]["USERNAME"]
 PASSWORD = config["NEO4J"]["PASSWORD"]
-OPENAI_API_KEY = config["NEO4J"].get("OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
+OPENAI_API_KEY = config["OPENAI"].get("OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
 driver = GraphDatabase.driver(URI, auth=(USERNAME, PASSWORD))
 
 # --- initialize route modules that need the driver BEFORE registering blueprints ---
@@ -130,47 +141,51 @@ app.register_blueprint(relations_bp, url_prefix="/relations")
 app.register_blueprint(nodes_bp, url_prefix="/nodes")
 app.register_blueprint(templates_api_bp, url_prefix="/api")
 
+@app.route("/")
+def root():
+    # vedno poka≈æi login (frontend sam poskrbi za redirect naprej)
+    return render_template("login.html")
+
+@app.route("/home")
+def main_app():
+    return render_template("index.html")
+
+@app.route("/about")
+def about_app():
+    return render_template("about.html")
+
+@app.route("/quiz_rag")
+def quiz_rag():
+    return render_template("quiz_rag.html")
 
 
-@app.route('/<path:page>')
+
 def render_page(page):
-#     # don't capture API or static requests ó use request.path (leading slash)
-#     # This is safer if the catch-all was registered before other routes/blueprints.
-#     if request.path.startswith('/api/') or request.path.startswith('/static/'):
-#         abort(404)
-
-#     try:
+    if request.path.startswith('/api/') or request.path.startswith('/static/'):
+        abort(404)
     return render_template(page)
-#     except Exception:
-#         app.logger.exception("Template error rendering %s", page)
-#         abort(404)
 
 def convert_dates(obj):
     """
-    Recursively convert all datetime.date and datetime.datetime objects in a dictionary or list to ISO 8601 strings.
+    Recursively convert datetime/date/neo4j.time.Date to ISO strings
+    in nested dict/list structures.
     """
+    if isinstance(obj, (datetime, date, Neo4jDate)):
+        return obj.isoformat()
+    if isinstance(obj, dict):
+        return {k: convert_dates(v) for k, v in obj.items()}
     if isinstance(obj, list):
-        print("convert_dates list")
-        return [convert_dates(item) for item in obj]
-    elif isinstance(obj, dict):
-        print("convert_dates dict")
-        return {key: convert_dates(value) for key, value in obj.items()}
-    elif isinstance(obj, date):  # Check if the object is a date
-        print(f"convert_dates date: {obj}")
-        return obj.isoformat()  # Convert date to ISO 8601 string
-    elif isinstance(obj, datetime):  # Check if the object is a datetime
-        print(f"convert_dates datetime: {obj}")
-        return obj.isoformat()  # Convert datetime to ISO 8601 string
-    else:
-        print(f"convert_dates else: {obj}")
-        return obj  # Return other objects as-is
+        return [convert_dates(v) for v in obj]
+    if isinstance(obj, tuple):
+        return tuple(convert_dates(v) for v in obj)
+    return obj
 
 
 @app.route("/login")
 def login_page():
     return render_template("login.html")
 
-@app.route("/", endpoint="root_login")
+#@app.route("/", endpoint="root_login")
 def index_page():
     return render_template("login.html")
 
@@ -178,15 +193,24 @@ def index_page():
 def index_page():
     return render_template("index.html")
 
+@app.route("/quiz")
+def quiz_page():
+    return render_template("quiz_rag_egipt.html")
+
 @app.get("/api/projects")
 def get_projects():
-    # TODO: fetch from Neo4j, config file, etc.
-    projects = [
-        {"id": "default", "name": "Default project"},
-        {"id": "demo", "name": "Demo project"},
-        {"id": "test1", "name": "Test project 1"},
-    ]
-    return jsonify(projects)
+    """
+    Fetch list of projects from Neo4j (Project nodes).
+    Returns JSON array of {id, name} objects.
+    """
+    try:
+        with driver.session() as session:
+            result = session.run("MATCH (s:Project) RETURN s.name AS name ORDER BY s.name")
+            projects = [{"id": record["name"], "name": record["name"]} for record in result]
+        return jsonify(projects)
+    except Exception as e:
+        app.logger.exception("Failed to fetch projects from Neo4j")
+        return jsonify({"error": str(e)}), 500
 
 @app.post("/api/login")
 def api_login():
@@ -276,15 +300,25 @@ def run_cypher():
                         if edge not in edges:
                             edges.append(edge)
 
-        nodes = convert_dates(nodes)
-        edges = convert_dates(edges)
+        # Convert all dates/datetimes to strings on the FULL payload
+        payload = {
+            "success": True,
+            "nodes": list(nodes.values()),
+            "edges": edges,
+        }
+        payload = convert_dates(payload)
+
+        print("DEBUG payload repr in run_cypher:")
+        print(repr(payload))   # <--- NEW: raw repr, no JSON encoding
 
         print(f"[{datetime.now()}] Stop.")
-        print(f"[{datetime.now()}] Nodes: {len(nodes)}, Edges: {len(edges)}")
-        print()
-        print(json.dumps({"nodes": list(nodes.values()), "edges": edges}, indent=4))
+        print(f"[{datetime.now()}] Nodes: {len(payload['nodes'])}, Edges: {len(payload['edges'])}")
+        try:
+            print(json.dumps(payload, indent=4))
+        except TypeError as e:
+            print("DEBUG json.dumps failed in run_cypher:", e)
 
-        return jsonify({"nodes": list(nodes.values()), "edges": edges})
+        return jsonify(payload)
     except Exception as e:
         print(f"Error in run_cypher: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
@@ -382,129 +416,113 @@ def get_edge_types_route():
 
 @app.route("/expand-node", methods=["POST"])
 def expand_node():
-    data = request.json
-    node_id = data.get("node_id")
+    print("Executing expand_node start...")
+    try:
+        data = request.get_json() or {}
+        node_id = data.get("node_id")
+        print(f"expand_node called with node_id: {node_id}")
 
-    if not node_id:
-        return jsonify({"success": False, "error": "Missing node ID"}), 400
+        if not node_id:
+            return jsonify({"success": False, "error": "Missing node ID"}), 400
 
-    query = """
-    MATCH (n)-[r]->(m)
-    WHERE (m.id_rc = $node_id OR n.id_rc = $node_id)
-        and NOT 'CustomGraph' IN labels(m)
-        and NOT 'customGraphNode' IN labels(m)
-        and NOT 'customGraphNodePosition' IN labels(m)
-        and NOT 'CustomGraph' IN labels(n)
-        and NOT 'customGraphNode' IN labels(n)
-        and NOT 'customGraphNodePosition' IN labels(n)
-    RETURN n, r, m
-    """
+        query = """
+        MATCH (n)-[r]-(m)
+        WHERE (n.id_rc = $node_id OR m.id_rc = $node_id)
+          AND NOT 'CustomGraph' IN labels(n)
+          AND NOT 'CustomGraph' IN labels(m)
+          AND NOT 'customGraphNode' IN labels(n)
+          AND NOT 'customGraphNode' IN labels(m)
+          AND NOT 'customGraphNodePosition' IN labels(n)
+          AND NOT 'customGraphNodePosition' IN labels(m)
+        RETURN n, r, m
+        """
+        query1 = """
+        MATCH (n)-[r]-(m)
+        WHERE n.id_rc = $node_id OR m.id_rc = $node_id
+        RETURN n, r, m
+        """        
 
-    nodes = {}
-    edges = []
+        nodes_dict = {}
+        edges_dict = {}  # use dict keyed by edge_id to deduplicate
 
-    print(query)
-    print(f"Node ID: {node_id}")
-    with driver.session() as session:
-        result = session.run(query, node_id=node_id)
-        for record in result:
-            # Add the 'from' node (n)
-            from_node = record["n"]
-            from_props = dict(from_node)
-            print("from_props: " + str(from_props))
-            from_id = from_props.get("id_rc")
-            nodFromProperties=convert_neo4j_id(from_node)
-            short_name = from_node.get("name").split(".")[-1]  # Get last part after the last dot              
+        print("Executing expand_node query...")
+        with driver.session() as session:
+            result = session.run(query, node_id=node_id)
+            records = list(result)
+            print(f"expand_node query returned {len(records)} records")
 
-            #search for original shape in NodeType
-            origNodeLabels = list(from_node.labels)
-            origNodeName=from_node.get("name")
-            print("origNodeName: " + str(origNodeName))
-            print("origNodeLabels: " +origNodeLabels[0])
-        
-            queryNodeType ="""match(s:NodeType) where s.name=$NodeTypeName RETURN s"""
-            resultNodeType = session.run(queryNodeType, NodeTypeName=origNodeLabels[0])        
-            recordNodeType = resultNodeType.single()
-            # check if recordNodeType is not None
-            if recordNodeType is None:
-                print("No NodeType found for: " + origNodeLabels[0])
-                shape_value = "ellipse"  # default shape
-            else:
-                node_data = recordNodeType["s"]  # Access the Node object from the Record
-                node_properties = dict(node_data)  # Convert the Node object to a dictionary		
-                shape_value = node_properties.get("shape") 
-            
-            #add property shape with value stored in shape_value to the properties of from_node
+            for record in records:
+                n_node = record.get("n")
+                m_node = record.get("m")
+                r_rel  = record.get("r")
 
+                print("expand_node raw record:", record)
+                print("  n:", n_node)
+                print("  m:", m_node)
+                print("  r:", r_rel, "type:", type(r_rel))
 
-            print("from_node: " + str(from_node))
+                # --- nodes ---
+                for node in (n_node, m_node):
+                    if not node:
+                        continue
+                    node_id_rc = node.get("id_rc")
+                    if not node_id_rc or node_id_rc in nodes_dict:
+                        continue
 
-            if from_id not in nodes: 
-                nodFromProperties = convert_neo4j_id(from_node)
-                nodFromProperties["shape"] = shape_value  # add shape property to the properties dictionary
-                nodes[from_id] = {
-                    "id": from_id,
-                    "label": short_name,
-                    "labels" : list(from_node.labels),  # Include all labels
-                    "properties": nodFromProperties,
-                    "color": nodFromProperties.get("color", "#97C2FC"),
-                    "shape": shape_value,
-                }
+                    nodes_dict[node_id_rc] = {
+                        "id": node_id_rc,
+                        "id_rc": node_id_rc,
+                        "label": node.get("name") or (list(node.labels)[0] if node.labels else "Unknown"),
+                        "labels": list(node.labels),
+                        "properties": dict(node),
+                        "color": node.get("color", "#97C2FC"),
+                        "shape": node.get("shape", "ellipse"),
+                    }
 
-            # Add the 'to' node (m)
-            connected_node = record["m"]
-            to_props = dict(connected_node)
-            to_id = to_props.get("id_rc", str(connected_node.id))
+                # --- edges ---
+                if isinstance(r_rel, Relationship) and n_node and m_node:
+                    from_id = n_node.get("id_rc")
+                    to_id   = m_node.get("id_rc")
+                    if not from_id or not to_id:
+                        print("  skip edge, missing from_id/to_id:", from_id, to_id)
+                        continue
 
-            
-            
+                    rel_props  = dict(r_rel)
+                    edge_id_rc = rel_props.get("id_rc") or str(r_rel.id)
 
-            
-            if to_id not in nodes:
-                nodProperties=convert_neo4j_id(connected_node)
+                    # Deduplicate by relationship id_rc / id
+                    #if edge_id_rc in edges_dict:
+                        # already added this relationship once; skip the reverse duplicate
+                        #continue
 
-                #search for original shape in NodeType
-                origNodeLabels = list(connected_node.labels)
-                queryNodeType ="""match(s:NodeType) where s.name=$NodeTypeName RETURN s"""
-                print("origNodeLabel: "+ origNodeLabels[0])
-                resultNodeType = session.run(queryNodeType, NodeTypeName=origNodeLabels[0])
-                recordNodeType = resultNodeType.single()
-                node_data = recordNodeType["s"]  # Access the Node object from the Record
-                node_properties = dict(node_data)  # Convert the Node object to a dictionary		
-                shape_value = node_properties.get("shape")
-                short_name = connected_node.get("name").split(".")[-1]  # Get last part after the last dot              
+                    edge = {
+                        "id": edge_id_rc,
+                        "id_rc": edge_id_rc,
+                        "from": from_id,
+                        "to": to_id,
+                        "label": r_rel.type or rel_props.get("name", ""),
+                    }
+                    edges_dict[edge_id_rc] = edge
+                    print("  added edge:", edge)
+                else:
+                    print("  Warning: missing relationship or nodes in record")
 
-                nodes[to_id] = {
-                    "id": to_id,
-                    "label": short_name,
-                    "nodeType": next(iter(getattr(connected_node, "labels", [])), "Unknown"),
-                    "labels" : list(getattr(connected_node, "labels", [])),  # Include all labels 20250425                    
-                    "properties": nodProperties,
-                    "color": nodProperties.get("color", "#97C2FC"),
-                    "shape": shape_value,
-                }
+        print("expand_node sample nodes:", list(nodes_dict.values())[:3])
+        print("expand_node sample edges:", list(edges_dict.values())[:5])
+        print(f"expand_node returning {len(nodes_dict)} nodes, {len(edges_dict)} edges")
 
-            # Add edges
-            relationship = record["r"]
-            rel_props = dict(relationship)
-            rel_id = rel_props.get("id_rc", f"{relationship.start_node.id}-{relationship.end_node.id}-{relationship.type}")
-            start_props = dict(relationship.start_node)
-            end_props = dict(relationship.end_node)
-            edge = {
-                "id": rel_id,  # Unique edge ID (prefer id_rc)
-                "from": start_props.get("id_rc", str(relationship.start_node.id)),
-                "to": end_props.get("id_rc", str(relationship.end_node.id)),
-                "type": relationship.type,
-                "label": relationship.type  # Set the label to the relationship type
-            }
-            if edge not in edges:
-                edges.append(edge)
+        payload = {
+            "success": True,
+            "nodes": list(nodes_dict.values()),
+            "edges": list(edges_dict.values()),
+        }
+        payload = convert_dates(payload)
+        return jsonify(payload)
 
-    # Debugging: Print the response
-    print("Nodes:", json.dumps(list(nodes.values()), indent=4))
-    print("Edges:", json.dumps(edges, indent=4))
-
-    return jsonify({"success": True, "nodes": list(nodes.values()), "edges": edges})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/delete-selected", methods=["POST"])
 def delete_selected():

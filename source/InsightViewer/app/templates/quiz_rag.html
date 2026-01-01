@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="UTF-8">
+  <title>Egipt kviz (OpenAI RAG)</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card-bg: #ffffff;
+      --accent: #2563eb;
+      --accent-soft: #e0edff;
+      --danger: #b91c1c;
+      --text-main: #111827;
+      --text-muted: #6b7280;
+      --border: #e5e7eb;
+      --radius: 10px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 24px 12px 40px;
+      background: radial-gradient(circle at top left, #e0edff 0, #f9fafb 45%, #f3f4f6 100%);
+      color: var(--text-main);
+    }
+
+    .page {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 18px;
+    }
+
+    header h1 {
+      margin: 0 0 4px;
+      font-size: 2.1rem;          /* večje */
+      letter-spacing: 0.02em;
+      color: #1d4ed8;             /* modra barva naslova */
+      text-shadow: 0 1px 0 rgba(255,255,255,0.7);
+    }
+
+    header p {
+      margin: 0;
+      color: var(--text-muted);
+      font-size: 1.02rem;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      box-shadow:
+        0 18px 45px rgba(15, 23, 42, 0.08),
+        0 4px 12px rgba(15, 23, 42, 0.04);
+      padding: 18px 18px 20px;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .controls label {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+    }
+
+    select {
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: #f9fafb;
+      font-size: 0.95rem;
+      color: var(--text-main);
+      outline: none;
+    }
+
+    select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+    }
+
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 6px 16px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background-color 0.15s ease, transform 0.08s ease;
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    #btn-start {
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+
+    #btn-start:hover {
+      background: #1d4ed8;
+    }
+
+    #btn-grade {
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+
+    #btn-grade:disabled,
+    #btn-next:disabled {
+      opacity: 0.5;
+      cursor: default;
+      transform: none;
+    }
+
+    #btn-next {
+      background: #e5e7eb;
+      color: #111827;
+      font-weight: 500;
+    }
+
+    #btn-next:hover:not(:disabled) {
+      background: #d1d5db;
+    }
+
+    #meta {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 6px;
+    }
+
+    #question {
+      font-weight: 650;
+      margin-bottom: 12px;
+      font-size: 1.2rem;          /* večje vprašanje */
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 150px;          /* malo višje polje */
+      padding: 11px 12px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      font-family: inherit;
+      font-size: 1.02rem;         /* večja pisava odgovora */
+      resize: vertical;
+      outline: none;
+      background: #f9fafb;
+    }
+
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.18);
+      background: white;
+    }
+
+    #result {
+      margin-top: 14px;
+      border-top: 1px dashed var(--border);
+      padding-top: 10px;
+    }
+
+    #result h3 {
+      margin: 0 0 4px;
+      font-size: 1.02rem;
+    }
+
+    #score {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    #feedback {
+      white-space: pre-wrap;
+      font-size: 0.95rem;
+      color: var(--text-main);
+    }
+
+    #summary {
+      margin-top: 8px;
+      font-weight: 600;
+      font-size: 0.96rem;
+      color: var(--text-main);
+    }
+
+    #error {
+      color: var(--danger);
+      margin-top: 10px;
+      white-space: pre-wrap;
+      font-size: 0.94rem;
+    }
+
+    #quiz-controls[hidden],
+    #quiz-main[hidden] {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <h1>Egipt kviz (OpenAI RAG)</h1>
+      <p>
+        Odgovori na vprašanja o starem Egiptu. Izberi število vprašanj, nato sledi navodilom.
+      </p>
+    </header>
+
+    <div class="card">
+      <!-- izbira števila vprašanj -->
+      <div id="quiz-controls">
+        <div class="controls">
+          <label for="questionCountSelect">Število vprašanj:</label>
+          <select id="questionCountSelect">
+            <option value="5">5</option>
+            <option value="10" selected>10</option>
+            <option value="15">15</option>
+            <option value="20">20</option>
+          </select>
+          <button id="btn-start">Začni kviz</button>
+        </div>
+      </div>
+
+      <!-- glavni kviz UI -->
+      <div id="quiz-main" hidden>
+        <div id="meta"></div>
+        <div id="question"></div>
+
+        <textarea id="answer" placeholder="Vnesi svoj odgovor..."></textarea>
+
+        <div style="margin-top: 10px;">
+          <button id="btn-grade" disabled>Oceni odgovor</button>
+          <button id="btn-next" disabled>Naslednje vprašanje</button>
+        </div>
+
+        <div id="result">
+          <h3>Rezultat</h3>
+          <div id="score"></div>
+          <div id="feedback"></div>
+        </div>
+
+        <div id="summary"></div>
+      </div>
+
+      <div id="error"></div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "http://localhost:8001";
+
+    // preberi ?quiz=... iz URL, npr. /quiz?quiz=egipt ali /quiz?quiz=reinsurance
+    function getQuizIdFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const q = params.get("quiz");
+      return q || "egipt"; // privzeto "egipt", če ni podano
+    }
+
+    const QUIZ_ID = getQuizIdFromUrl();
+
+    let current = {
+      context: null,
+      question: null,
+      ideal_answer: null,
+      source: null,
+      chunk: null,
+    };
+
+    let MAX_QUESTIONS = 10;
+    let questionCount = 0;
+    let totalScore = 0;
+    const MAX_SCORE_PER_Q = 5; // mora biti usklajeno z backendom
+
+    function setError(msg) {
+      document.getElementById("error").textContent = msg || "";
+    }
+
+    function updateSummary() {
+      const summaryEl = document.getElementById("summary");
+      if (questionCount === 0) {
+        summaryEl.textContent = "";
+        return;
+      }
+      const maxTotal = MAX_QUESTIONS * MAX_SCORE_PER_Q;
+      const percent = Math.round((totalScore / maxTotal) * 100);
+      summaryEl.textContent =
+        `Povzetek: ${totalScore} / ${maxTotal} točk (${percent} % pravilnih).`;
+    }
+
+    async function loadQuestion() {
+      if (questionCount >= MAX_QUESTIONS) {
+        setError(`Kviz je končan. Odgovoril si na ${MAX_QUESTIONS} vprašanj.`);
+        document.getElementById("btn-grade").disabled = true;
+        document.getElementById("btn-next").disabled = true;
+        updateSummary();
+        return;
+      }
+
+      setError("");
+      document.getElementById("btn-grade").disabled = true;
+      document.getElementById("btn-next").disabled = true;
+      document.getElementById("answer").value = "";
+      document.getElementById("score").textContent = "";
+      document.getElementById("feedback").textContent = "";
+      document.getElementById("meta").textContent = "Nalagam vprašanje...";
+      document.getElementById("question").textContent = "";
+
+      try {
+        const res = await fetch(`${API_BASE}/quiz/next?quiz=${encodeURIComponent(QUIZ_ID)}`);
+        if (!res.ok) {
+          throw new Error(`Napaka pri nalaganju vprašanja: ${res.status}`);
+        }
+        const data = await res.json();
+
+        questionCount += 1;
+
+        current.context = data.context;
+        current.question = data.question;
+        current.ideal_answer = data.ideal_answer;
+        current.source = data.source;
+        current.chunk = data.chunk;
+
+        document.getElementById("meta").textContent =
+          `Kviz: ${QUIZ_ID} | Vprašanje ${questionCount}/${MAX_QUESTIONS} — vir: ${data.source}, chunk ${data.chunk}`;
+        document.getElementById("question").textContent = data.question;
+
+        document.getElementById("btn-grade").disabled = false;
+        document.getElementById("btn-next").disabled = true;
+      } catch (err) {
+        console.error(err);
+        setError("Napaka pri nalaganju vprašanja. Preveri, ali obstaja kviz s takim imenom in ali teče quiz-api na portu 8001.");
+      }
+    }
+
+    async function gradeAnswer() {
+      setError("");
+      const ans = document.getElementById("answer").value.trim();
+      if (!ans) {
+        setError("Prosim vnesi odgovor.");
+        return;
+      }
+
+      const payload = {
+        context: current.context,
+        question: current.question,
+        ideal_answer: current.ideal_answer,
+        student_answer: ans,
+      };
+
+      document.getElementById("btn-grade").disabled = true;
+
+      try {
+        const res = await fetch(`${API_BASE}/quiz/grade?quiz=${encodeURIComponent(QUIZ_ID)}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+          throw new Error(`Napaka pri ocenjevanju: ${res.status}`);
+        }
+        const data = await res.json();
+
+        const score = Number.isFinite(data.score) ? data.score : 0;
+        totalScore += score;
+
+        document.getElementById("score").textContent =
+          `Ocena: ${score} / ${MAX_SCORE_PER_Q}`;
+        document.getElementById("feedback").textContent =
+          data.feedback || "";
+
+        updateSummary();
+
+        if (questionCount < MAX_QUESTIONS) {
+          document.getElementById("btn-next").disabled = false;
+        } else {
+          setError(`Kviz je končan. Odgovoril si na ${MAX_QUESTIONS} vprašanj.`);
+          updateSummary();
+        }
+      } catch (err) {
+        console.error(err);
+        setError("Napaka pri ocenjevanju odgovora.");
+        document.getElementById("btn-grade").disabled = false;
+      }
+    }
+
+    function startQuiz() {
+      const select = document.getElementById("questionCountSelect");
+      const selected = parseInt(select.value, 10);
+      if (!Number.isFinite(selected) || selected <= 0) {
+        setError("Neveljavno število vprašanj.");
+        return;
+      }
+
+      MAX_QUESTIONS = selected;
+      questionCount = 0;
+      totalScore = 0;
+      updateSummary();
+      setError("");
+
+      document.getElementById("quiz-controls").hidden = true;
+      document.getElementById("quiz-main").hidden = false;
+
+      loadQuestion();
+    }
+
+    document.getElementById("btn-start").addEventListener("click", startQuiz);
+    document.getElementById("btn-grade").addEventListener("click", gradeAnswer);
+    document.getElementById("btn-next").addEventListener("click", loadQuestion);
+  </script>
+</body>
+</html>

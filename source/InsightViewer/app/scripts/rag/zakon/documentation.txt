@@ -1,0 +1,132 @@
+1️⃣ Strukturni node-i zakona (izhajajo neposredno iz strukture zakona)
+
+To so organizacijski nivoji, ki obstajajo neodvisno od besedila členov:
+
+Act
+ActVersion
+Part        (Del)
+Chapter     (Poglavje)
+
+
+Značilnosti:
+so del formalne strukture zakona
+obstajajo tudi, če bi členi bili prazni
+predstavljajo “okvir” dokumenta
+niso umetni
+
+Primer:
+
+Zakon
+ └── Verzija
+      └── Del
+           └── Poglavje
+
+
+Ti node-i so struktura, ne vsebina.
+
+2️⃣ Vsebinski node-i (izluščeni iz besedila)
+
+To so node-i, ki nastanejo šele, ko začneš razbijati vsebino zakona:
+
+Section     (oddelek / pododdelek / odsek / chapter_root)
+Article     (člen)
+Paragraph   (odstavek)
+Point       (številčna točka)
+IndentItem  (alinea)
+Chunk       (RAG kos besedila)
+Reference   (sklic) Reference v grafu predstavlja zaznan pravni sklic v besedilu, ki povezuje izvorni odstavek z drugim delom zakona in omogoča semantično navigacijo, analizo in zanesljiv RAG.
+
+Značilnosti:
+nastanejo z parsiranjem besedila
+niso samostojni brez vsebine
+omogočajo:
+- natančno iskanje
+- RAG
+- reference
+- UI navigacijo
+
+To so modelirani deli vsebine.
+
+
+Ključna razlika (zelo pomembno)
+“Vsebinski node-i so modelirani (izpeljani) iz besedila, ne pa iz čiste organizacijske strukture zakona.”
+
+So:
+izpeljani
+sekundarni
+analitični
+
+
+Poseben primer: Section
+Section je most med strukturo in vsebino:
+- oddelek/pododdelek/odsek:
+    - pravno obstajajo,
+    - a niso vedno dosledno strukturirani v viru
+- chapter_root:
+    - je čisto tehnični kontejner
+- Zato je Section:
+    - delno pravna,
+    - delno tehnična entiteta.
+
+En stavek, ki si ga lahko zapomniš
+
+Act / ActVersion / Part / Chapter so strukturni nosilci zakona,
+Section / Article / Paragraph in naprej pa so vsebinski modeli, izpeljani iz besedila zakona.
+
+
+(Act)  Zakon o gospodarskih družbah  [projectName=ZGD1, id_rc=...]
+  |
+  |  :HAS_VERSION
+  v
+(ActVersion)  ZGD-1_NPB22  [projectName=ZGD1, id_rc=...]
+  |
+  |  :HAS_PART
+  v
+(Part)  "I. DEL ..."  [projectName=ZGD1, id_rc=...]
+  |
+  |  :HAS_CHAPTER
+  v
+(Chapter)  "Prvo poglavje ..."  [projectName=ZGD1, id_rc=...]
+  |
+  |  :HAS_SECTION
+  v
+(Section) type="oddelek" title="..."  [projectName=ZGD1, id_rc=...]
+  |
+  |  :HAS_SECTION
+  v
+(Section) type="pododdelek" title="..."  [projectName=ZGD1, id_rc=...]
+  |
+  |  :HAS_SECTION
+  v
+(Section) type="odsek" title="..."  [projectName=ZGD1, id_rc=...]
+  |
+  |  :HAS_ARTICLE
+  v
+(Article) num="70.a" heading="(…)"  [projectName=ZGD1, id_rc=...]
+  |
+  |  :HAS_PARAGRAPH
+  v
+(Paragraph) order=1 text="..."  [projectName=ZGD1, id_rc=...]
+  |
+  |  :HAS_POINT            (če obstajajo številčne točke)
+  v
+(Point) order=1 marker="1." text="..."  [projectName=ZGD1, id_rc=...]
+
+(Paragraph)
+  |
+  |  :HAS_ITEM             (če obstajajo alineje “- ...”)
+  v
+(IndentItem) order=1 text="..."  [projectName=ZGD1, id_rc=...]
+
+
+FALLBACK (če člen NI v oddelek/pododdelek/odsek):
+
+(Chapter)  "..."  [projectName=ZGD1, id_rc=...]
+  |
+  |  :HAS_SECTION
+  v
+(Section) type="chapter_root" sid="ZGD1:SECROOT:<chapterCid>"  [projectName=ZGD1, id_rc=...]
+  |
+  |  :HAS_ARTICLE
+  v
+(Article) num="1."  [projectName=ZGD1, id_rc=...]

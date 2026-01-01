@@ -95,14 +95,39 @@ def update_node_properties():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500    
     
-@nodes_bp.route("/get_node_types", methods=["GET"]) 
+@nodes_bp.route("/get_node_types", methods=["GET"])
 def get_node_types():
     _ensure_driver()
-    query = "MATCH (t:NodeType)   RETURN t.name AS name, t.shape AS shape, t.color AS color"
+
+    # Prefer query string, then JSON body (silent)
+    data = request.get_json(silent=True) or {}
+    projectName = request.args.get("projectName") or data.get("projectName") or None
+    createdBy = request.args.get("createdBy") or data.get("createdBy") or None
+
+    # Build query with optional filters
+    base = "MATCH (t:NodeType)"
+    conditions = []
+    params = {}
+    if projectName:
+        conditions.append("t.projectName = $projectName OR $projectName = 'ALL'")
+        params["projectName"] = projectName
+    if createdBy:
+        conditions.append("t.createdBy = $createdBy")
+        params["createdBy"] = createdBy
+
+    query = base
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
+    query += " RETURN t.name AS name, t.shape AS shape, t.color AS color"
+
+    print("get_node_types query:", query)
+    print("get_node_types params:", params)
+
     with driver.session() as session:
-        result = session.run(query)
+        result = session.run(query, **params) if params else session.run(query)
         node_types = [{"name": record["name"], "shape": record["shape"], "color": record["color"]} for record in result]
-    return jsonify(node_types)    
+
+    return jsonify(node_types)
 
 #windows curl for testing
 # curl -X POST -H "Content-Type: application/json" -d "{\"nodeType\": \"Person\"}" http://localhost:5000/get_node_type_visuals  
@@ -167,62 +192,89 @@ def test_post():
 
 
 @nodes_bp.route("/add_node_type", methods=["POST"])
-def add_node_type():    
+def add_node_type():
+    print("add_node_type start")
     _ensure_driver()
-    data = request.json
-    nodeType = data.get("pNodeType","NodeType") # if there is no nodeType in the request, default to "NodeType"
+    data = request.json or {}
+    print("add_node_type request.json:", data)
+
+    nodeType = data.get("pNodeType", "NodeType")
     name = data.get("name")
-    shape = data.get("shape", "ellipse")  # Default shape
-    color = data.get("color", "#000000")  # Default color
-    size = data.get("size", 25)          # Default size
-    properties = data.get("properties", {})  # Default to an empty dictionary
-    
+    shape = data.get("shape", "ellipse")
+    color = data.get("color", "#000000")
+    size = data.get("size", 25)
+    properties = data.get("properties", {}) or {}
+
+    projectName = data.get("projectName")
+    createdBy = data.get("createdBy")
+
     if not name:
         return jsonify({"success": False, "error": "Node type name is required"}), 400
 
-    # generate id_rc for this NodeType if it does not already exist
     id_rc = str(uuid.uuid4())
 
-    if properties == {}:
-        query = """
-        MERGE (t:<<nodeType>> {name: $name})
-        SET t.shape = $shape, t.color = $color, t.size = $size, t.id_rc = coalesce(t.id_rc, $id_rc)
-        WITH t
-        RETURN t.name AS name, t.shape AS shape, t.color AS color, t.size AS size, t.id_rc AS id_rc
-        """        
-    else:
-        query = """
-        MERGE (t:<<nodeType>> {name: $name})
-        SET t.shape = $shape, t.color = $color, t.size = $size, t.id_rc = coalesce(t.id_rc, $id_rc)
-        WITH t
-        UNWIND keys($properties) AS key
-        SET t[key] = $properties[key]    
-        RETURN t.name AS name, t.shape AS shape, t.color AS color, t.size AS size, t.id_rc AS id_rc
-        """
-    
-    query = query.replace("<<nodeType>>", nodeType)  # Replace placeholder with actual node type
-
+    query = """
+    MERGE (t:<<nodeType>> {name: $name})
+    // merge then apply arbitrary properties map
+    SET t += $properties
+    WITH t, $createdBy AS _createdBy
+    SET t.shape = $shape,
+        t.color = $color,
+        t.size = $size,
+        t.projectName = coalesce(t.projectName, $projectName),
+        t.id_rc = coalesce(t.id_rc, $id_rc)
+    // only set createdBy when provided (avoid overwriting with null)
+    FOREACH (_ IN CASE WHEN _createdBy IS NOT NULL THEN [1] ELSE [] END |
+      SET t.createdBy = _createdBy
+    )
+    RETURN t.name AS name,
+           t.shape AS shape,
+           t.color AS color,
+           t.size AS size,
+           t.id_rc AS id_rc,
+           t.projectName AS projectName,
+           t.createdBy AS createdBy
+    """
+    query = query.replace("<<nodeType>>", nodeType)
 
     try:
         with driver.session() as session:
-            result = session.run(query, name=name, shape=shape, color=color, size=size, properties=properties, id_rc=id_rc)
-            node_type = result.single()
-        print(40);  
-        print("Query:", query)
-        print("Parameters:", {"name": name, "shape": shape, "color": color, "size": size, "properties": properties, "id_rc": id_rc})        
-        if node_type:
+            result = session.run(
+                query,
+                name=name,
+                shape=shape,
+                color=color,
+                size=size,
+                properties=properties,
+                id_rc=id_rc,
+                projectName=projectName,
+                createdBy=createdBy
+            )
+            record = result.single()
+            print("add_node_type record:", record)
+        print("Query add_node_type:", query)
+        print("Parameters add_node_type:", {
+            "name": name, "shape": shape, "color": color, "size": size,
+            "properties": properties, "id_rc": id_rc,
+            "projectName": projectName, "createdBy": createdBy
+        })
+        if record:
             return jsonify({"success": True, "node_type": {
-                "name": node_type["name"],
-                "shape": node_type["shape"],
-                "color": node_type["color"],
-                "size": node_type["size"],
-                "id_rc": node_type["id_rc"]
+                "name": record["name"],
+                "shape": record["shape"],
+                "color": record["color"],
+                "size": record["size"],
+                "id_rc": record["id_rc"],
+                "projectName": record.get("projectName"),
+                "createdBy": record.get("createdBy")
             }})
         else:
-            return jsonify({"success": False, "error": "Failed to create node type"}), 500
+            return jsonify({"success": False, "error": "No record returned"}), 500
     except Exception as e:
+        import traceback, sys
+        traceback.print_exc(file=sys.stderr)
         return jsonify({"success": False, "error": str(e)}), 500
-    
+
 @nodes_bp.route("/test", methods=["GET"])
 def test():
     return "ok"

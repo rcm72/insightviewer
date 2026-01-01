@@ -93,6 +93,7 @@ Copyright (c) 2025 Robert Čmrlec
     </div>
     <textarea name="content" id="editor-content" style="display: none;"></textarea>
     <button type="submit">Save</button>
+    <button type="button" onclick="generateGraph()">Generate graph</button>
 </form>
 
 <script src="{{ url_for('static', filename='ckeditor/build/ckeditor.js') }}"></script>
@@ -111,6 +112,22 @@ Copyright (c) 2025 Robert Čmrlec
                 .then(file => {
                     const data = new FormData();
                     data.append('upload', file, file.name);
+
+                    // add project/email/finalSubdirectory so uploader.py can use them
+                    const project =
+                        (window.IV_CURRENT_USER && window.IV_CURRENT_USER.project) ||
+                        localStorage.getItem('iv_project') ||
+                        'unknown_project';
+                    const email =
+                        (window.IV_CURRENT_USER && window.IV_CURRENT_USER.email) ||
+                        localStorage.getItem('iv_email') ||
+                        'unknown_user';
+                    const finalSub = 'ckeditor'; // subdirectory for CKEditor uploads
+
+                    data.append('project', project);
+                    data.append('email', email);
+                    data.append('finalSubdirectory', finalSub);
+
                     return fetch('/uploader/upload', { method: 'POST', body: data })
                         .then(res => {
                             if (!res.ok) throw new Error('Upload failed');
@@ -130,26 +147,50 @@ Copyright (c) 2025 Robert Čmrlec
                                 return { default: url };
                             }
 
-                            // Spreadsheet: insert viewer iframe + download link
+                            // Spreadsheet: insert viewer iframe + download + view links
                             console.log('processing xlsx/xls: 0', ext);
                             if (['xlsx','xls'].includes(ext)) {
                                 console.log('processing xlsx/xls: 10', ext);
+
                                 const savedName = json.filename || json.name || file.name;
-                                const viewUrl = '/uploader/view/' + encodeURIComponent(savedName);
+                                const project = json.project || 'unknown_project';
+                                const email = json.email || 'unknown_user';
+                                const finalSub = json.finalSubdirectory || 'ckeditor';
+
+                                const viewUrl = `/uploader/view/${encodeURIComponent(project)}/${encodeURIComponent(email)}/${encodeURIComponent(finalSub)}/${encodeURIComponent(savedName)}`;
+                                const downloadUrl = `/uploader/download/${encodeURIComponent(project)}/${encodeURIComponent(email)}/${encodeURIComponent(finalSub)}/${encodeURIComponent(savedName)}`;
+
                                 const iframeHtml = `<iframe src="${viewUrl}" width="100%" height="300" frameborder="0"></iframe>`;
+
+                                const editor = this.editor;
                                 editor.model.change(writer => {
                                     const insertPos = editor.model.document.selection.getFirstPosition();
                                     const viewFragment = editor.data.processor.toView(iframeHtml);
-                                    console.log('iframeHtml:', iframeHtml);
                                     const modelFragment = editor.data.toModel(viewFragment);
                                     editor.model.insertContent(modelFragment, insertPos);
 
-                                    // insert a paragraph and a download link after iframe
-                                    const dlParagraph = writer.createElement('paragraph');
-                                    editor.model.insertContent(dlParagraph, editor.model.document.selection.getLastPosition());
-                                    const dlText = writer.createText('[download]', { linkHref: url, linkTarget: '_blank', linkRel: 'noopener noreferrer' });
+                                    // paragraph with "view" and "download" links
+                                    const para = writer.createElement('paragraph');
+                                    editor.model.insertContent(para, editor.model.document.selection.getLastPosition());
+
+                                    const viewText = writer.createText('[view]', {
+                                        linkHref: viewUrl,
+                                        linkTarget: '_blank',               // option 3: view in new page
+                                        linkRel: 'noopener noreferrer'
+                                    });
+                                    editor.model.insertContent(viewText, editor.model.document.selection.getLastPosition());
+
+                                    const space = writer.createText(' ');
+                                    editor.model.insertContent(space, editor.model.document.selection.getLastPosition());
+
+                                    const dlText = writer.createText('[download]', {  // option 1: download
+                                        linkHref: downloadUrl,
+                                        linkTarget: '_blank',
+                                        linkRel: 'noopener noreferrer'
+                                    });
                                     editor.model.insertContent(dlText, editor.model.document.selection.getLastPosition());
                                 });
+
                                 return { default: url };
                             }
 
@@ -321,15 +362,21 @@ Copyright (c) 2025 Robert Čmrlec
                     // prefer returned saved filename, otherwise extract from URL
                     const savedName = json.filename || json.name || decodeURIComponent((url.split('/').pop() || file.name));
 
+                    // scope info from server
+                    const project = json.project || 'unknown_project';
+                    const email = json.email || 'unknown_user';
+                    const finalSub = json.finalSubdirectory || 'ckeditor';
+
+                    // build scoped viewer & download URLs
+                    const viewUrl = `/uploader/view/${encodeURIComponent(project)}/${encodeURIComponent(email)}/${encodeURIComponent(finalSub)}/${encodeURIComponent(savedName)}`;
+                    const downloadUrl = `/uploader/download/${encodeURIComponent(project)}/${encodeURIComponent(email)}/${encodeURIComponent(finalSub)}/${encodeURIComponent(savedName)}`;
+
                     // Insert into editor model
                     editor.model.change(writer => {
                         const pos = editor.model.document.selection.getFirstPosition();
 
-                        // (images already skipped above)
-
-                        // Spreadsheet: insert viewer link AND a download link
+                        // Spreadsheet: inline viewer + view+download links
                         if (['xlsx','xls'].includes(ext)) {
-                            const viewUrl = '/uploader/view/' + encodeURIComponent(savedName);
                             const iframeHtml = `<iframe src="${viewUrl}" width="100%" height="300" frameborder="0"></iframe>`;
 
                             editor.model.change(innerWriter => {
@@ -338,45 +385,32 @@ Copyright (c) 2025 Robert Čmrlec
                                 const modelFragment = editor.data.toModel(viewFragment);
                                 editor.model.insertContent(modelFragment, insertPos);
 
-                                // add a paragraph with a download link after iframe
-                                const dlPara = innerWriter.createElement('paragraph');
-                                editor.model.insertContent(dlPara, editor.model.document.selection.getLastPosition());
-                                const dlText = innerWriter.createText('[download]', {
-                                    linkHref: url,
+                                const para = innerWriter.createElement('paragraph');
+                                editor.model.insertContent(para, editor.model.document.selection.getLastPosition());
+
+                                const viewText = innerWriter.createText('[view]', {   // option 3
+                                    linkHref: viewUrl,
+                                    linkTarget: '_blank',
+                                    linkRel: 'noopener noreferrer'
+                                });
+                                editor.model.insertContent(viewText, editor.model.document.selection.getLastPosition());
+
+                                const space = innerWriter.createText(' ');
+                                editor.model.insertContent(space, editor.model.document.selection.getLastPosition());
+
+                                const dlText = innerWriter.createText('[download]', { // option 1
+                                    linkHref: downloadUrl,
                                     linkTarget: '_blank',
                                     linkRel: 'noopener noreferrer'
                                 });
                                 editor.model.insertContent(dlText, editor.model.document.selection.getLastPosition());
                             });
 
-                            if (editor.plugins.has('LinkEditing') || editor.plugins.has('Link')) {
-                                const viewerLink = writer.createText(file.name, {
-                                    linkHref: viewUrl,
-                                    linkTarget: '_blank',
-                                    linkRel: 'noopener noreferrer'
-                                });
-                                editor.model.insertContent(viewerLink, pos);
-
-                                const spacer = writer.createText(' ');
-                                editor.model.insertContent(spacer, editor.model.document.selection.getLastPosition());
-
-                                const dlLinkText = writer.createText('[download]', {
-                                    linkHref: downloadUrl,
-                                    linkTarget: '_blank',
-                                    linkRel: 'noopener noreferrer'
-                                });
-                                editor.model.insertContent(dlLinkText, editor.model.document.selection.getLastPosition());
-                            } else {
-                                // fallback: plain readable text with both URLs
-                                const plain = writer.createText(`${file.name} (viewer: ${viewUrl} download: ${downloadUrl})`);
-                                editor.model.insertContent(plain, pos);
-                            }                            
-
                             return;
                         }
 
-                        // other non-image files: insert a download link
-                        const textNode = writer.createText(file.name, { linkHref: url });
+                        // non-image, non-xlsx: simple download link
+                        const textNode = writer.createText(file.name, { linkHref: downloadUrl });
                         editor.model.insertContent(textNode, pos);
                     });
 
@@ -435,6 +469,13 @@ Copyright (c) 2025 Robert Čmrlec
         }
         // return true to allow the form to submit
         return true;
+    }
+
+    function generateGraph() {
+        // simulate long process, then show alert
+        setTimeout(() => {
+            alert("Graph generation complete.");
+        }, 3000);
     }
 </script>
 

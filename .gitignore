@@ -14,3 +14,25 @@ venv/
 # node
 node_modules/
 insightviewer.backup/
+
+# Python venv
+source/InsightViewer/.venv/
+
+# private images
+source/InsightViewer/app/static/images/
+source/InsightViewer/app/static/editor_files/
+
+# local vector DB / embeddings
+source/InsightViewer/app/chroma_db/
+
+# no audio files in repo
+*.mp3
+
+# local scratch / test files
+quiz_results.csv
+source/InsightViewer/clear
+source/InsightViewer/test.txt
+test.txt
+
+config.ini
+source/InsightViewer/config.ini
