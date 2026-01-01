@@ -1,0 +1,19 @@
+# Dockerfile.quiz
+FROM python:3.12-slim
+
+ENV PIP_DEFAULT_TIMEOUT=120
+
+WORKDIR /app
+
+# Uporabi root requirements.txt, ki ga imaš v /home/robert/insightViewer/requirements.txt
+COPY requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r /app/requirements.txt
+
+# Skopiraj kodo aplikacije
+COPY source/InsightViewer /app
+
+# Delaj v /app/app (tam je rag/quiz_api.py)
+WORKDIR /app/app
+
+# Zaženemo FastAPI app rag.quiz_api:quiz_api na portu 8001
+CMD ["uvicorn", "rag.quiz_api:quiz_api", "--host", "0.0.0.0", "--port", "8001"]

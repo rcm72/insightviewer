@@ -108,8 +108,8 @@ Copyright (c) 2025 Robert Čmrlec
 </head>
 <body>
   <div class="login-card">
-    <h1>Insight Viewer</h1>
-    <p>Vpišite svoj e-poštni naslov in izberite projekt (podgraf).</p>
+    <h1>Insight Viewer login</h1>
+    <p>Enter your email and chose your project from the list.</p>
 
     <form id="login-form">
       <div style="margin-bottom:12px;">
@@ -120,7 +120,7 @@ Copyright (c) 2025 Robert Čmrlec
       <div style="margin-bottom:8px;">
         <label for="project">Projekt</label>
         <select id="project" name="project" required>
-          <option value="">Nalaganje projektov…</option>
+          <option value="">Loading project…</option>
         </select>
       </div>
 
@@ -132,7 +132,7 @@ Copyright (c) 2025 Robert Čmrlec
       </div>
 
       <div class="small">
-        Prijava je namenjena samo izbiri uporabnika in projekta (ni gesla).
+        Login is just for evidence of email address so there is no password.
       </div>
     </form>
   </div>
@@ -179,7 +179,12 @@ Copyright (c) 2025 Robert Čmrlec
       const storedEmail = localStorage.getItem('iv_email');
       const storedProject = localStorage.getItem('iv_project');
       //const storedEmail = sessionStorage.getItem('iv_email');
-      //const storedProject = sessionStorage.getItem('iv_project');      
+      //const storedProject = sessionStorage.getItem('iv_project');
+      
+      // expose session values to other scripts on the page
+      window.currentProject = localStorage.getItem("iv_project");
+      window.currentEmail = localStorage.getItem("iv_email");          
+        
       if (storedEmail) document.getElementById('email').value = storedEmail;
 
       document.getElementById('login-form').addEventListener('submit', async (e) => {
@@ -211,7 +216,7 @@ Copyright (c) 2025 Robert Čmrlec
           console.warn('Login tracking failed, continuing anyway', e);
         }
         // redirect to main app
-        window.location.href = '/index.html';
+        window.location.href = '/home';
       });
     });
   </script>

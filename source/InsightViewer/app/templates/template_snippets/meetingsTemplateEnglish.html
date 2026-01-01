@@ -1,0 +1,144 @@
+<!-- name: Meetings template -->
+<!-- description: Template for meetings  -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Meeting Minutes — Meeting Notes</title>
+  <!-- Styles -->
+  <link rel="stylesheet" href="/static/defaultTemplate.css">
+  <!-- <link rel="stylesheet" href="/static/notesTemplate.css"> -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      document.querySelectorAll("h2").forEach(function(header) {
+        header.addEventListener("click", function() {
+          let content = header.nextElementSibling;
+          if (content && content.classList.contains("content")) {
+            content.classList.toggle("open");
+          }
+        });
+      });
+    });
+  </script>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Meeting Minutes: Meeting Topic</h1>
+    </div>
+    <nav>
+    </nav>
+  </header>
+
+  <main>
+    <section>
+      <h2>📅 Date &amp; Time</h2>
+      <div class="content">
+        <p>Enter the meeting date and time</p>
+      </div>
+    </section>
+
+    <hr />
+
+    <section>
+      <h2>👥 Attendees</h2>
+      <div class="content">
+        <p>List of attendees</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead style="background-color: #4CAF50; color: white;">
+            <tr>
+              <th style="padding: 10px; border: 1px solid #ddd;">Attendee</th>
+              <th style="padding: 10px; border: 1px solid #ddd;">Department</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding: 10px; border: 1px solid #ddd;">Janez Novak</td>
+              <td style="padding: 10px; border: 1px solid #ddd;">Reinsurance</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <hr />
+
+    <section>
+      <h2>📝 Agenda</h2>
+      <div class="content">
+        <p>Enter the agenda</p>
+        <ul>
+          <li>Introduction</li>
+          <li>Wrap-up</li>
+        </ul>
+      </div>
+    </section>
+
+    <hr />
+
+    <section>
+      <h2>🗣️ Notes</h2>
+      <div class="content">
+        <p>Enter meeting notes</p>
+      </div>
+    </section>
+
+    <hr />
+
+    <section>
+      <h2>📌 Action Items</h2>
+      <div class="content">
+        <p>List of action items and responsibilities</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead style="background-color: #4CAF50; color: white;">
+            <tr>
+              <th style="padding: 10px; border: 1px solid #ddd;">Task</th>
+              <th style="padding: 10px; border: 1px solid #ddd;">Owner</th>
+              <th style="padding: 10px; border: 1px solid #ddd;">Assigned Date</th>
+              <th style="padding: 10px; border: 1px solid #ddd;">Due Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding: 10px; border: 1px solid #ddd;">Prepare report</td>
+              <td style="padding: 10px; border: 1px solid #ddd;">Janez Novak</td>
+              <td style="padding: 10px; border: 1px solid #ddd;">01.10.2023</td>
+              <td style="padding: 10px; border: 1px solid #ddd;">15.10.2023</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px; border: 1px solid #ddd;">Client meeting</td>
+              <td style="padding: 10px; border: 1px solid #ddd;">Marija Kovač</td>
+              <td style="padding: 10px; border: 1px solid #ddd;">05.10.2023</td>
+              <td style="padding: 10px; border: 1px solid #ddd;">10.10.2023</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px; border: 1px solid #ddd;">Website update</td>
+              <td style="padding: 10px; border: 1px solid #ddd;">Tomaž Zupan</td>
+              <td style="padding: 10px; border: 1px solid #ddd;">02.10.2023</td>
+              <td style="padding: 10px; border: 1px solid #ddd;">20.10.2023</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div id="MeetingMinutesTasks">
+          <h3>Task Details</h3>
+
+          <p><b>Prepare report</b></p>
+          <p>Test</p>
+
+          <p><b>Client meeting</b></p>
+          <p>Key information that needs to be gathered</p>
+
+          <p><b>Website update</b></p>
+          <p>Last task</p>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <small>Created for internal use</small>
+    </footer>
+  </main>
+</body>
+</html>
