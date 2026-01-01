@@ -1,4 +1,6 @@
+import configparser
 import os
+from pathlib import Path
 import re
 from dataclasses import dataclass
 from datetime import datetime
@@ -14,7 +16,19 @@ ACT_TITLE = "Zakon o gospodarskih družbah"
 SOURCE = "PISRS"
 
 # BASE_DIR should be project root: .../source/InsightViewer
-BASE_DIR = os.path.dirname(__file__)
+# BASE_DIR = os.path.dirname(__file__)
+# read Neo4j connection details from config.ini
+
+# config = configparser.ConfigParser()
+# config.read(os.path.join(BASE_DIR, "..", "..", "..", "config.ini"))
+
+# BASE_DIR should point to project root: /home/robert/insightViewer/source/InsightViewer
+BASE_DIR = Path(__file__).resolve().parents[2]
+CONFIG_PATH = BASE_DIR / "config.ini"
+
+config = configparser.ConfigParser()
+config.read(CONFIG_PATH)
+
 HTML_PATH = os.path.join(
     BASE_DIR,
     "",
@@ -24,10 +38,11 @@ HTML_PATH = os.path.join(
     "ZAKO4291_NPB22.html",
 )
 
-# read Neo4j connection details from config.ini
-import configparser
-config = configparser.ConfigParser()
-config.read(os.path.join(BASE_DIR, "..", "..", "..", "config.ini"))
+
+
+
+
+
 NEO4J_URI = config['NEO4J']['URI']
 NEO4J_USER = config['NEO4J']['USERNAME']
 NEO4J_PASSWORD = config['NEO4J']['PASSWORD']
