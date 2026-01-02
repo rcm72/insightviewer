@@ -30,7 +30,8 @@ services:
       - ./source/InsightViewer/app/static/images:/app/app/static/images
       - ./source/InsightViewer:/app
       - ./source/InsightViewer/app/rag/chroma_db:/app/app/chroma_db   # ← POPRAVEK
-      - ./config.ini:/app/config.ini:ro
+#      - ./config.ini:/app/config.ini:ro
+      - ./source/InsightViewer/config.ini:/app/config.ini:ro
     depends_on:
       - neo4j
       - quiz-api
@@ -45,7 +46,8 @@ services:
     volumes:
       - ./source/InsightViewer:/app
       - ./source/InsightViewer/app/rag/chroma_db:/app/app/chroma_db   # ← POPRAVEK
-      - ./config.ini:/app/config.ini
+      #- ./config.ini:/app/config.ini
+      - ./source/InsightViewer/config.ini:/app/config.ini:ro
     ports:
       - "8001:8001"   # da lahko testiraš tudi izven Dockera
     networks:
@@ -58,7 +60,8 @@ services:
     container_name: rag-chat-api
     volumes:
       - ./source/InsightViewer:/app
-      - ./config.ini:/app/config.ini:ro
+      #- ./config.ini:/app/config.ini:ro
+      - ./source/InsightViewer/config.ini:/app/config.ini:ro
     working_dir: /app
     entrypoint: ["uvicorn", "app.scripts.rag.rag_chat_api:app", "--host", "0.0.0.0", "--port", "8000"]
     ports:
@@ -75,7 +78,8 @@ services:
     container_name: rag-chat-api-v2
     volumes:
       - ./source/InsightViewer:/app
-      - ./config.ini:/app/config.ini:ro
+      #- ./config.ini:/app/config.ini:ro                  
+      - ./source/InsightViewer/config.ini:/app/config.ini:ro
     working_dir: /app
     entrypoint: ["uvicorn", "app.scripts.rag.rag_chat_api_v2:app", "--host", "0.0.0.0", "--port", "8000"]
     ports:
@@ -92,7 +96,8 @@ services:
     container_name: rag-chat-api-v3
     volumes:
       - ./source/InsightViewer:/app
-      - ./config.ini:/app/config.ini:ro
+      #- ./config.ini:/app/config.ini:ro
+      - ./source/InsightViewer/config.ini:/app/config.ini:ro
     working_dir: /app
     entrypoint: ["uvicorn", "app.scripts.rag.rag_chat_api_v3:app", "--host", "0.0.0.0", "--port", "8000"]
     ports:

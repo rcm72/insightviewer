@@ -1688,17 +1688,22 @@ function formatProperties(properties) {
        return "No properties available.";
    }
 
-   // Render each property as an editable input or textarea field
    return Object.entries(properties)
        .map(([key, value]) => {
-           const isLongText = typeof value === "string" && value.length > 50; // Use textarea for long text
+           const safeValue = value == null ? "" : value;
+
+           // Always use textarea for "name", or for long text
+           const isLongText =
+               key === "name" ||
+               (typeof safeValue === "string" && safeValue.length > 50);
+
            return `
                <div>
                    <label><b>${key}:</b></label>
                    ${
                        isLongText
-                           ? `<textarea id="property-${key}" rows="4" style="width: 100%;">${value}</textarea>`
-                           : `<input type="text" id="property-${key}" value="${value}" />`
+                           ? `<textarea id="property-${key}" rows="4" style="width: 100%;">${safeValue}</textarea>`
+                           : `<input type="text" id="property-${key}" value="${safeValue}" />`
                    }
                </div>
            `;
@@ -1764,19 +1769,34 @@ function deleteSelected() {
 
 function saveNodeProperties() {
    const content = document.getElementById("node-properties-content");
+   if (!content) {
+       alert("Node properties content not found.");
+       return;
+   }
+
+   // Single-line fields
    const inputs = content.querySelectorAll("input[id^='property-']");
+   // Multiline fields (like name)
+   const textareas = content.querySelectorAll("textarea[id^='property-']");
+
    const newKeys = content.querySelectorAll(".new-property-key");
    const newValues = content.querySelectorAll(".new-property-value");
 
    const updatedProperties = {};
 
-   // Collect existing properties
+   // Existing properties from inputs
    inputs.forEach(input => {
        const key = input.id.replace("property-", "");
        updatedProperties[key] = input.value;
    });
 
-   // Collect new properties
+   // Existing properties from textareas (preserve \n)
+   textareas.forEach(textarea => {
+       const key = textarea.id.replace("property-", "");
+       updatedProperties[key] = textarea.value;
+   });
+
+   // New properties
    newKeys.forEach((keyInput, index) => {
        const key = keyInput.value.trim();
        const value = newValues[index].value.trim();
@@ -1793,7 +1813,8 @@ function saveNodeProperties() {
 
    const nodeId = selectedNodes[0];
 
-   // Send the updated properties to the backend
+   console.log("Saving properties:", JSON.stringify({ nodeId, properties: updatedProperties }, null, 2));
+
    fetch("/nodes/update-node-properties", {
        method: "POST",
        headers: { "Content-Type": "application/json" },
@@ -1812,12 +1833,10 @@ function saveNodeProperties() {
    })
    .then(data => {
        if (data.success) {
-           // Update the node in the Vis.js network
            nodes.update({
                id: nodeId,
-               properties: updatedProperties // Update the properties in the dataset
+               properties: updatedProperties
            });
-
            alert("Node properties updated successfully.");
            closeNodePropertiesDialog();
        } else {
@@ -1830,7 +1849,6 @@ function saveNodeProperties() {
    });
 }
 
-// Add a new property dynamically
 function addNewPropertyField() {
    const content = document.getElementById("node-properties-content");
    const newPropertyDiv = document.createElement("div");
@@ -2472,7 +2490,3 @@ window.closeAiSnippetDialog = window.closeAiSnippetDialog || function(){ console
 window.askAiForSnippet = window.askAiForSnippet || function(){ console.warn("askAiForSnippet: not initialized"); };
 window.insertAiSnippetIntoEditor = window.insertAiSnippetIntoEditor || function(){ console.warn("insertAiSnippetIntoEditor: not initialized"); };
 window.copyAiSnippet = window.copyAiSnippet || function(){ console.warn("copyAiSnippet: not initialized"); };
-
-
-
-
