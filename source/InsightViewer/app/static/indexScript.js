@@ -1768,6 +1768,7 @@ function deleteSelected() {
 }
 
 function saveNodeProperties() {
+   console.log("Saving properties:", "start");
    const content = document.getElementById("node-properties-content");
    if (!content) {
        alert("Node properties content not found.");
