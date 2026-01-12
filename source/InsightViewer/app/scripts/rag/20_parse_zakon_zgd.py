@@ -15,33 +15,25 @@ ACT_ID = "ZGD-1"
 ACT_TITLE = "Zakon o gospodarskih družbah"
 SOURCE = "PISRS"
 
-# BASE_DIR should be project root: .../source/InsightViewer
-# BASE_DIR = os.path.dirname(__file__)
-# read Neo4j connection details from config.ini
-
-# config = configparser.ConfigParser()
-# config.read(os.path.join(BASE_DIR, "..", "..", "..", "config.ini"))
-
 # BASE_DIR should point to project root: /home/robert/insightViewer/source/InsightViewer
-BASE_DIR = Path(__file__).resolve().parents[2]
+BASE_DIR = Path(__file__).resolve().parents[3]
 CONFIG_PATH = BASE_DIR / "config.ini"
 
 config = configparser.ConfigParser()
+print("Using config:", CONFIG_PATH)  # optional debug
+if not CONFIG_PATH.exists():
+    raise RuntimeError(f"Config file not found: {CONFIG_PATH}")
+
 config.read(CONFIG_PATH)
 
-HTML_PATH = os.path.join(
-    BASE_DIR,
-    "",
-    "",
-    "zakon",
-    "data",
-    "ZAKO4291_NPB22.html",
+HTML_PATH = (
+    Path(__file__)
+    .resolve()
+    .parent              # .../app/scripts/rag
+    / "zakon"
+    / "data"
+    / "ZAKO4291_NPB22.html"
 )
-
-
-
-
-
 
 NEO4J_URI = config['NEO4J']['URI']
 NEO4J_USER = config['NEO4J']['USERNAME']
@@ -115,6 +107,7 @@ class Context:
     last_par_id: Optional[str] = None
     point_idx: int = 0
     item_idx: int = 0
+    last_point_id: Optional[str] = None
 
 
 def merge_core(tx, act: Dict[str, Any], version: Dict[str, Any]):
@@ -228,14 +221,27 @@ def merge_item(tx, item: Dict[str, Any]):
         """
         MERGE (i:IndentItem {itemId:$itemId})
         ON CREATE SET i.id_rc = randomUUID()
-        SET i.order=$order, i.text=$text, i.projectName=$projectName
+        SET i.order = $order, i.text = $text, i.projectName = $projectName
 
-        WITH i, $parId AS parId
-        MATCH (par:Paragraph {parId:parId})
+        // Prefer attaching to Point if pointId is provided
+        WITH i, $pointId AS pointId, $parId AS parId
+        CALL (i, pointId) {
+            WITH i, pointId
+            MATCH (p:Point {pointId: pointId})
+            WHERE pointId IS NOT NULL
+            MERGE (p)-[:HAS_ITEM]->(i)
+            RETURN count(*) AS attachedToPoint
+        }
+        WITH i, parId, attachedToPoint
+        WHERE attachedToPoint = 0 AND parId IS NOT NULL
+        MATCH (par:Paragraph {parId: parId})
         MERGE (par)-[:HAS_ITEM]->(i)
         """,
         **item,
     )
+
+
+
 
 
 def parse_and_load(html_path: str):
@@ -266,6 +272,18 @@ def parse_and_load(html_path: str):
     )
 
     ctx = Context(version_id=version_id)
+
+    # Collect full text for each article as we parse (aid -> list of chunks)
+    article_texts: Dict[str, list[str]] = {}
+
+    def append_article_text(text_chunk: str):
+        """Append a text chunk to the current article's full text."""
+        if not ctx.article_aid:
+            return
+        t = text_chunk.strip()
+        if not t:
+            return
+        article_texts.setdefault(ctx.article_aid, []).append(t)
 
     driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
     try:
@@ -416,9 +434,10 @@ def parse_and_load(html_path: str):
                     prev = ctx.last_par_id
                     ctx.last_par_id = par_id
 
-                    # reset točke/alinee znotraj odstavka
+                    # reset points/alinee within this paragraph
                     ctx.point_idx = 0
                     ctx.item_idx = 0
+                    ctx.last_point_id = None
 
                     session.execute_write(
                         merge_paragraph,
@@ -431,6 +450,10 @@ def parse_and_load(html_path: str):
                             projectName=PROJECT_NAME,
                         ),
                     )
+
+                    # add paragraph text to article
+                    append_article_text(text)
+
                     continue
 
                 # ŠTEVILČNA TOČKA (1.,2.,3...)
@@ -439,6 +462,7 @@ def parse_and_load(html_path: str):
                     marker = str(ctx.point_idx) + "."
                     point_id = f"{ctx.last_par_id}.{ctx.point_idx}"
                     prev_point_id = f"{ctx.last_par_id}.{ctx.point_idx - 1}" if ctx.point_idx > 1 else None
+                    ctx.last_point_id = point_id
 
                     session.execute_write(
                         merge_point,
@@ -452,25 +476,56 @@ def parse_and_load(html_path: str):
                             projectName=PROJECT_NAME,
                         ),
                     )
+
+                    # add point text to article
+                    append_article_text(text)
+
                     continue
 
                 # ALINEJE (v HTML so razredi alinea/alinea_za_odstavkom ipd.)
                 if (("alinea" in " ".join(cls)) or ("alinea_za_odstavkom" in cls)) and ctx.last_par_id:
                     ctx.item_idx += 1
-                    item_id = f"{ctx.last_par_id}-alinea-{ctx.item_idx}"
+
+                    # Prefer to attach item to current Point if we have one
+                    if ctx.last_point_id:
+                        base_id = ctx.last_point_id
+                    else:
+                        base_id = ctx.last_par_id  # fallback: directly under paragraph
+
+                    item_id = f"{base_id}-alinea-{ctx.item_idx}"
+                    cleaned_item_text = text.lstrip("-").strip()
+
                     session.execute_write(
                         merge_item,
                         dict(
                             itemId=item_id,
                             order=ctx.item_idx,
-                            text=text.lstrip("-").strip(),
+                            text=cleaned_item_text,
                             parId=ctx.last_par_id,
+                            pointId=ctx.last_point_id,
                             projectName=PROJECT_NAME,
                         ),
                     )
+
+                    # add alineja text to article (optionally prefix with "- ")
+                    append_article_text(cleaned_item_text)
+
                     continue
 
+            # After parsing all <p>, write fullText to Article nodes
+            for aid, chunks in article_texts.items():
+                full_text = "\n\n".join(chunks)
+                session.run(
+                    """
+                    MATCH (a:Article {aid:$aid})
+                    SET a.text = $text
+                    """,
+                    aid=aid,
+                    text=full_text,
+                )
+
             print(f"OK: uvoženo v Neo4j. versionId={version_id}, npb={npb}, effectiveFrom={effective}")
+
 
     finally:
         driver.close()

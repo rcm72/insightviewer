@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Geography — Vector Ask</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body{font-family:system-ui, -apple-system, "Segoe UI", Roboto, Arial; padding:1rem; max-width:900px;margin:auto;}
+    textarea{width:100%;height:3.5rem;}
+    button{padding:.5rem 1rem;margin-top:.5rem;}
+    .result{border:1px solid #ddd;padding:.5rem;margin-top:.5rem;border-radius:4px;background:#fff;}
+    .score{color:#333;font-weight:600;margin-left:.5rem;}
+    .chunk{white-space:pre-wrap;}
+  </style>
+</head>
+<body>
+  <h1>Geography — Vector Ask</h1>
+  <p>Ask a question (e.g. "highest temperature measured in Slovenia") and inspect matching chunks from the knowledge graph.</p>
+  <label for="question">Question</label>
+  <textarea id="question" placeholder="Type your question..."></textarea>
+  <div>
+    <label for="top_k">Top K</label>
+    <input id="top_k" type="number" value="6" min="1" max="50" style="width:4rem" />
+    <button id="ask">Search</button>
+  </div>
+  <div id="status" style="margin-top:.75rem;color:#666"></div>
+  <div style="margin-top:.5rem;color:#555;font-size:.9rem">
+    Tip: If your source is bind-mounted into the container (volumes) and the app uses an auto-reloading dev server, you usually don't need to restart Docker — just save files and reload the app. If code is baked into the image, rebuild and restart the container (eg. <code>docker-compose up -d --build</code>).
+  </div>
+  <div id="results" style="margin-top:1rem"></div>
+  <script src="{{ url_for('static', filename='js/ask_vector.js') }}"></script>
+</body>
+</html>

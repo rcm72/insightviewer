@@ -1,0 +1,256 @@
+Stran 62
+
+2. PODNEBJE
+
+2.1 Uvod
+
+Kje so doslej izmerili najvišje in kje najnižje temperature?
+
+Začeli bomo v Sloveniji. V naši državni mreži meteoroloških postaj so najvišjo temperaturo, 40,6 °C, izmerili dvakrat, in sicer v Črnomlju 5. julija 1952 in v Cerkljah ob Krki 8. avgusta 2013.
+Najnižjo temperaturo – znašala je –34,5 °C – pa so izmerili v Babnem Polju, in sicer 15. in 16. februarja 1956 ter 13. januarja 1968. To so uradni podatki. Dejansko pa je najnižjo temperaturo, kar –49,1 °C, izmeril termometer na Komni v Julijskih Alpah, ker pa tam ni uradne postaje, je podatek neuraden.
+
+Pa pojdimo še po svetu. Kar 90 let je veljalo, da so najvišjo temperaturo na svetu izmerili v kraju El Azizia v Libiji dne 13. septembra 1922, in sicer 58,0 °C. Svetovna meteorološka organizacija pa je leta 2012 ta rekord razveljavila, in za najbolj vroč kraj sedaj velja Furnace Creek v Dolini smrti v ZDA, kjer so 10. julija 1913 izmerili 56,7 °C.
+Najnižjo temperaturo so izmerili 21. julija 1983 na polarni postaji Vostok na Antarktiki, in sicer –89,2 °C. Še nižja, to je –93,2 °C, naj bi bila po satelitskih meritvah 10. 8. 2010, in sicer v eni od dolin na Vzhodni Antarktiki. Leta 2018 pa so ameriški znanstveniki objavili rezultate satelitskih meritev iz obdobja 2004–2016, po katerih naj bi 23. julija 2004 v eni od kotlin na gorskem platoju na vzhodni Antarktiki temperatura padla celo na –98,6 °C.
+Najvišjo povprečno letno temperaturo ima kraj Dallol v Etiopiji, in sicer 34,4 °C, najnižjo pa Pol nedostopnosti na Antarktiki, in sicer –57,8 °C.
+
+Mimogrede, če bi morali tja eno leto živeti v enega od teh krajev zunaj Slovenije, katerega bi še najraje izbral?
+
+2.1.1 Vprašanja:
+
+Kdaj je bolj mrzlo – opolnoči ali ob sončnem vzhodu?
+
+Zakaj je na Triglavu več padavin kot v Ljubljani?
+
+Ali se zaradi globalnega segrevanja ozračja bolj segrevajo celinski ali morski deli sveta?
+
+Vročinski rekorder kraj Dallol (zgradbe v ozadju na desni) in slikovita pokrajina s postvulkanskimi pojavi pred njim.
+
+Stran 64
+2.2 OZRAČJE, VREME IN PODNEBJE
+2.2.1 ATMOSFERA IN NJENA SESTAVA
+
+Ozračje ali atmosfera je zračni ovoj okoli Zemljine oble, ki ga skoraj v celoti sestavljajo različni plini. Med njimi je največ dušika (78 %) in kisika (21 %). Zelo pomembni so tudi nekateri drugi plini, čeprav jih je precej manj. To sta predvsem ogljikov dioksid (CO₂) in ozon (O₃), katerih pomen bomo spoznali v nadaljevanju.
+
+Čeprav je ogljikovega dioksida v zraku le približno 0,03 %, je zelo pomemben. Rastline ga potrebujejo za fotosintezo, poleg tega pa absorbira (sprejema vase, vsrkava) toploto, ki jo Zemljino površje izžareva v vesolje. To toploto potem delno vrača nazaj na Zemljo in tako prispeva k segrevanju spodnjih plasti atmosfere.
+
+V zraku je vedno tudi nekaj vode. Njen delež je zelo majhen (običajno pod 1 %), vendar se neprestano spreminja, kar je odraz spreminjanja vremena. Tako kot ogljikov dioksid tudi voda v zraku vsrkava toploto, ki jo v vesolje izžareva Zemljino površje, in jo delno vrača nazaj na Zemljo.
+
+V zraku so vedno tudi različni trdni delci (prah, kristali morske soli, pelod ipd.), okoli katerih se zgosti ali kondenzira vlaga v zraku. Zato pravimo, da imajo ti delci vlogo kondenzacijskih jeder.
+
+(Shema: Sestava atmosfere – dušik 78,08 %, kisik 20,94 %, argon 0,93 %, CO₂ 0,04 %, drugi plini 0,01 %)
+
+2.2.2 Onesnaževanje zraka in njegovi onesnaževalci
+
+Z izrazom emisije označujemo oddajanje oz. izločanje različnih snovi (pa tudi energije) v ozračje (lahko pa tudi drugam v okolje). V ozračje se izločajo predvsem različni plini, prah, dim. Določena količina primesi v zraku je povsem običajen pojav. Kadar pa se njihova koncentracija tako poveča, da začnejo ogrožati človeka in druge organizme, govorimo o onesnaževanju zraka.
+
+Med najnevarnejše onesnaževalce sodijo žveplove (npr. SO₂) in dušikove spojine, iz katerih lahko s kemičnimi reakcijami nastanejo kisline (npr. žveplova). V zvezi z njimi je treba omeniti pojav kislega dežja, ki z deževnimi kapljami prinaša tudi raztopljene strupene snovi. Povzroča umiranje gozdov (predvsem iglastih) in druge negativne posledice v okolju, na primer razjedanje kamnitih spomenikov.
+
+Glavni vir onesnaževanja zraka je uporaba fosilnih goriv (nafte, premoga) v prometu in kurilnicah. Nad mesti se zlasti v hladni polovici leta pojavlja smog. Gre za mešanico dima, strupenih plinov in megle. Na to opozarja že sama beseda, skovanka iz angleških besed smoke (dim) in fog (megla).
+
+Posledice onesnaževanja zraka pa imajo lahko tudi svetovne razsežnosti. To se najlepše vidi pri ozonski luknji in pri učinku tople grede, okrepljenem zaradi človekovih dejavnosti.
+
+(Shema: Glavni viri onesnaževanja zraka – promet 43 %, kurilnice 30 %, industrija 15 %, drugo 12 %)
+
+(Fotografija: Smog nad Kairom)
+
+Stran 65
+2.2.3 Plasti atmosfere in ozonska luknja
+
+PLASTI ATMOSFERE IN OZONSKA LUKNJA
+
+Atmosfero sestavlja več plasti, med katerimi je najpomembnejša spodnja plast, troposfera. Sega od 10 km (nad poloma) do 16 km v višino (nad ekvatorjem). V njej se odvija tako rekoč vse vremensko dogajanje na našem planetu, ker se z oddaljevanjem od Zemljinega površja zrak hitro redči, je velika večina vsega zraka zgostena le v troposferi.
+
+Nad njo leži stratosfera. V njej (in delno tudi nad njo) je posebna plast, ozonosfera. Zaradi velikih koncentracij ozona jo označujemo tudi kot ozonsko plast. Ozon je plin (O₃), ki absorbira velik del ultravijoličnih žarkov, prihajajočih s Sonca na Zemljo. Ti žarki ubijajo bakterije, pri človeku pa povzročajo kožnega raka. Ozonska plast je tako izredno pomemben ščit za življenje na Zemlji. V zadnjih desetletjih se je začela koncentracija ozona v njej zmanjševati. Nad Antarktiko se v času pomladi na južni polobli začasno tako zmanjša, da govorimo o ozonski luknji. Manj izrazita ozonska luknja se občasno pojavi tudi nad Arktiko, določeno stanjšanje ozonske plasti pa se pojavlja tudi zunaj polarnih območij. Vzrok za to je povečana količina tistih snovi v ozračju, ki povzročajo razpad ozona. Gre predvsem za freone, različne snovi v razpršilcih in hladilnih napravah.
+
+Zaradi tanjšanja ozonske plasti se je poleg drugih negativnih posledic povečala tudi nevarnost pojavljanja kožnega raka pri človeku. Mednarodna skupnost je ukrepala dokaj hitro. Večina držav se je tako že leta 1989 sporazumela o opuščanju uporabe in proizvodnje ozonu nevarnih snovi, vendar se bo ozonska plast po predvidevanjih lahko obnovila šele do sredine 21. stoletja. V zadnjih letih opažajo, da pojava ozonske luknje ni več tako izrazit kot pred kakšnim desetletjem ali dvema. Na osnovi tega lahko sklepamo, da so bili ukrepi mednarodne skupnosti ustrezni.
+
+Največji obseg ozonske luknje nad Antarktiko (september 2006)
+
+2.2.4 Vreme ni isto kot podnebje
+
+Beseda vreme označuje stanje v ozračju v določenem času (običajno imamo v mislih trenutno stanje) in na določenem kraju. Vreme se lahko spreminja zelo hitro – iz ure v uro, pa tudi iz kraja v kraj. Če v kakem kraju opazujemo vremensko dogajanje več let zapored, opazimo, da se vreme sicer neprestano spreminja, vendar se vremensko dogajanje kot celota iz leta v leto večinoma ponavlja. V Sredozemlju je vreme tako poleti praviloma vroče in sušno, pozimi pa oblačno in deževno. Kakšno leto se vremensko dogajanje sicer nekoliko razlikuje od tega »povprečja«, vendar prek daljšega obdobja se skupaj poteka v ustaljenih okvirih. Tako smo prišli do pojma podnebje ali klima, s katerim označujemo povprečni letni potek vremena v določenem kraju v daljšem časovnem obdobju. Za primerjavo moramo vzeti podatke (o temperaturi, vlagi, vetrovih ipd.) za obdobje vsaj 30 let. Podnebje lahko tako na kratko označimo kot »povprečno vreme«.
+
+Narasla oblačnost nad Cerkljanskim hribovjem
+
+Podnebje | 65
+
+Stran 66
+2.2.5 Podnebni elementi in podnebni dejavniki
+
+Značilnosti vremena in podnebja opredeljujemo z nekaterimi osnovnimi podnebnimi elementi, kot so sončno sevanje, temperatura, zračni tlak, vetrovi, vlaga in padavine. Najpomembnejši med njimi je količina sončnega sevanja, ki jo sprejme določen kraj, saj so od nje odvisni tudi drugi elementi.
+
+Podnebje dveh sosednjih krajev je enako ali vsaj zelo podobno. Če pa potujemo v bolj oddaljene kraje, pridemo na območja z drugačnim podnebjem. Na spreminjanje podnebnih elementov vplivajo različni podnebni dejavniki, kot so geografska širina, relief, vrtenje Zemlje, razporeditev kopnega in morja, morski tokovi, rastlinstvo, človek in čas.
+
+Geografska širina je najpomembnejši podnebni dejavnik, saj je od nje odvisen kot, pod katerim padajo sončni žarki na Zemljino površje. Na ekvatorju je ta kot največji, proti poloma pa se zmanjšuje. V skladu s tem tudi temperatura od ekvatorja v smeri proti poloma pada. Vzroke za to si lahko ogledamo na grafičnem prikazu.
+
+Relief vpliva na podnebje na več načinov. Na prisojnih legah je kot, pod katerim sončni žarki padajo na površje, precej večji kot na osojnih. To še posebej velja za višje geografske širine. Zato so prisojna pobočja toplejša od osojnih. Na njih najdemo več naselij kot na osojnih, precej drugačna pa je tudi raba tal.
+
+Relief vpliva na podnebje tudi z nadmorsko višino, saj temperature z višino upadajo. Prav tako vpliva s svojo izoblikovanostjo. Gorske pregrade, ki ležijo prečno na smer vetra, so pomembne podnebne ločnice. Gorovja so na privetrni strani praviloma precej bolj namočena kot na zavetrni. Reliefne ovire namreč prisilijo vlažne zračne gmote (mase) k dvigu, kar posledično privede do nastanka padavin.
+
+Razporeditev kopnega in morja je zelo pomemben dejavnik, saj se morje segreva in ohlaja bistveno počasneje kot kopno. V krajih blizu morja so zato razlike med poletjem in zimo precej manjše kot v krajih v notranjosti.
+
+Morski tokovi v nekaterih delih sveta povzročajo povsem drugačno podnebje, kot bi ga pričakovali glede na geografsko širino, saj ponekod dovajajo toplo vodo v višje geografske širine, drugod pa hladno vodo v nižje. Izrazit primer je severni Atlantik, kjer topel Severnoatlantski tok obliva zahodne evropske obale, hladen Labradorski tok pa vzhodne severnoameriške obale. Povprečna januarska temperatura v Glasgowu na Škotskem je zato 4 °C, v Nainu na Labradorju, ki leži na isti geografski širini, pa −21,5 °C. Hladni morski tokovi, ki tečejo ob obali, lahko vplivajo tudi na nastanek puščav. To smo že videli na primeru puščave Namib ob afriški obali.
+
+Enaka količina sončnega sevanja pade v okolici ekvatorja na precej manjšo površino (A) kot v okolici 35. vzporednika (B). Površina v okolici ekvatorja (A) tako prejme več sončnega sevanja (energije) kot površina v okolici 35. vzporednika (B), in zato se bolj segreje.
+
+poselitev in raba tal na prisojnem in na osojnem pobočju
+
+Stran 67
+… rotacija ali vrtenje Zemlje vpliva na podnebje z odklonsko ali Coriolisovo silo. (Tako so jo poimenovali po njenem odkritelju.) Ta sila povzroča, da se vsi morski tokovi in vetrovi na severni polobli odklanjajo v desno, na južni pa v levo, gledano v smeri gibanja.
+
+Tudi človek s svojimi dejavnostmi marsikje vpliva na podnebje. To je opazno predvsem v mestih, zato tam govorimo o posebni mestni klimi. Človek vpliva na podnebje tudi z izsekavanjem gozdov, gradnjo akumulacijskih jezer in podobnimi posegi v okolje. Globalno, to je v svetovnem pogledu, pa v zadnjem času vpliva na podnebje tudi stopnjevanje učinka tople grede, o čemer bomo govorili v nadaljevanju.
+
+Kaj sestavlja atmosfero?
+
+Kdaj govorimo o onesnaževanju zraka in kislem dežju?
+
+Kateri podnebni dejavniki imajo po tvojem mnenju največji vpliv na podnebje tvojega kraja?
+
+Vpliv Coriolisove sile na severni in na južni polobli
+
+
+2.3 Segrevanje ozračja in temperatura zraka – sevanje
+2.3.1 RAZLIKUJEMO KRATKOVALOVNO IN DOLGOVALOVNO SEVANJE
+Preden si razjasnimo, kako se segreva naše ozračje, moramo spoznati pojem sevanje ali radiacija. Vsako sevanje je elektromagnetno valovanje, odvisno predvsem od temperature telesa, ki ga oddaja. Bolj ko je telo vroče, več energije bo oddajalo in krajša bo valovna dolžina tega sevanja. Ker je Sonce zelo vroče, oddaja kratkovalovno sevanje. Sevajo pa tudi bolj hladna telesa, kot je na primer planet Zemlja oziroma njeno površje. To oddaja dolgovalovno sevanje, ki ga s prostim očesom ne moremo videti.
+Ultravijolično in infrardeče sevanje
+Naše oko lahko zazna le t. i. vidno sevanje oz. vidno svetlobo, ne more pa zaznati zelo kratkih valov ultravijoličnega sevanja ali dolgih valov infrardečega sevanja. Čeprav ju naše oko ne zazna, ju poznamo tudi iz vsakdanjega življenja. Le kdo še ni izkusil pekočih posledic ultravijoličnih žarkov na svoji koži, če se je predolgo nastavljal soncu? Iz izkušenj dobro vemo, da se soncu ne gre izpostavljati, kadar je visoko nad obzorjem. Ultravijoličnih žarkov je tedaj največ.
+Infrardeče sevanje ne pušča takšnih »pekočih« posledic. Oddajajo ga bolj ohlajena telesa, kot so npr. človeška. Iz različnih vojaških in pustolovskih filmov dobro poznamo naprave (daljnoglede) za nočno opazovanje. Ljudje in živali, ki so toplejši od okolice, sevajo precej infrardečih žarkov, zato lahko s temi instrumenti sledimo njihovemu gibanju.
+Kratkovalovno sevanje Sonca in dolgovalovno sevanje Zemljinega površja
+
+Stran 68
+2.3.2 Posredno segrevanje ozračja
+Ljudje običajno mislijo, da se ozračje segreva neposredno od sončnih žarkov. V resnici je stvar bolj zapletena. Osnovni vir toplote na Zemljinem površju je sončna energija, ki jo Sonce oddaja na Zemljo v obliki kratkovalovnega sevanja. To sevanje mora najprej prodreti skozi atmosfero, pri čemer ima precejšnje izgube. Del sevanja se namreč odbije od oblakov nazaj v vesolje, del ga absorbira atmosfera, del pa se ob molekulah zraka razprši. Do Zemljinega površja pride tako le približno polovica sevanja, ki je prišlo do zgornjega roba atmosfere.
+Kratkovalovno sončno sevanje ne more segreti zraka, ker je ta preveč redek, segreje pa Zemljino površje. Šele segreto površje oddaja dolgovalovno sevanje, ki potem segreje zrak. Zdaj bomo tudi laže razumeli, zakaj prihaja do zamika med časom, ko je količina sončnega sevanja največja, in časom, ko so najvišje dnevne temperature. Količina sončnega sevanja je največja opoldne, ko je kot, pod katerim padajo sončni žarki na površje, največji. Temperature zraka pa so praviloma najvišje šele med 2. in 4. uro popoldne. Temperature niso najnižje ponoči, ampak zjutraj, okoli sončnega vzhoda. Površje se namreč še ni segrelo, zato je zrak tedaj najhladnejši. V nasprotju s tem je lahko zvečer po sončnem zahodu dokaj toplo, saj segreto površje z dolgovalovnim sevanjem še naprej segreva zrak.
+Če je površje svetle barve, se velik del sončnega sevanja od njega odbija. Sončni žarki se na Zemlji najbolj odbijajo od belih ledenih pokrovov Antarktike in Arktike, pa tudi od sveže zasneženega površja in belih oblakov. (Od zgoraj so vsi oblaki beli.) Če pa je površje temne barve, sončno sevanje večinoma absorbira in se pri tem močno segreje. To se še posebej izrazito dogaja v mestih, saj je tam veliko temnih asfaltiranih površin. Na mestnih ulicah je zato poleti bolj vroče kot v mestni okolici.
+V vročih krajih se ljudje pred vročino zavarujejo tako, da zunanje stene svojih hiš pobarvajo v belo in da nosijo čim bolj svetla oblačila (npr. Arabci).
+Tradicionalna oblačila Arabcev v beli barvi
+
+2.3.3 Učinek tople grede in globalno segrevanje ozračja
+Oglejmo si še učinke pretvarjanja kratkovalovnega sevanja v dolgovalovno v posebnih okoliščinah, na primer v zaprtih avtomobilih in rastlinjakih. Kratkovalovno sončno sevanje lahko skozi šipe nemoteno prodre v njihovo notranjost in segreje notranje površine. Te začnejo potem oddajati dolgovalovno sevanje, ki skozi steklo večinoma ne more več ven. Notranjost avtomobilov ali rastlinjakov se zato v primerjavi z okolico zelo segreje. To s pridom izkoriščajo vrtnarji, ki v rastlinjakih pridelujejo zelenjavo tudi v hladnih mesecih.
+Nekaj podobnega kot v rastlinjakih se dogaja tudi v zemeljski atmosferi. Videli smo že, da ogljikov dioksid in vlaga v zraku vpijata in nazaj na Zemljo sevata del dolgovalovnega sevanja, ki ga Zemljino površje oddaja v vesolje. Ker je sodobni človek s svojimi dejavnostmi (kurjenjem fosilnih goriv, izsekavanjem gozdov ipd.) povečal količino toplogrednih plinov v ozračju, se učinek tople grede krepi, posledica tega pa je globalno segrevanje ozračja.
+
+Stran 69
+Ob povečanje deleža ogljikovega dioksida in drugih primesi v ozračju, je s tem pospešil učinek tople grede. Zemeljsko ozračje zaradi povečane količine CO₂ in drugih primesi nazaj na Zemljo izseva več energije kot nekoč, in ozračje se je začelo počasi pregrevati. Svet se sooča s problemom globalnega segrevanja ozračja. Počasi ga je začel tudi ljudje reševati, vendar ostaja odprto vprašanje, ali na preprečevanju njegovega poslabšanja ukrepajo pravočasno in premalo odločno. Za preprečitev nadaljnjega segrevanja ozračja bi moral človek vse svoje dejavnosti in način življenja prilagoditi tako, da bi se zmanjšale čezmerne količine ogljikovega dioksida v ozračju. Družba, ki bi to dosegla, bi se lahko imenovala brezogljična družba.
+Kratkovalovno sevanje lahko povsem nemoteno svobodno prodre skozi steklo zaprtega avtomobila, dolgovalovno sevanje pa potem skozi večinoma ne more več ven. Notranjost avta se zato močno segreje.
+Naraščanje koncentracije CO₂ v ozračju v obdobju 1960–2020
+Spreminjanje povprečne temperature na Zemlji v obdobju 1880–2018
+
+2.3.4 Kjotski protokol in pariški podnebni sporazum
+Kjotski protokol in pariški podnebni sporazum
+Danes prevladuje mnenje, da je največji krivec za učinek tople grede povečanje količine toplogrednih plinov (ogljikovega dioksida, metana, amonijaka, ozona in drugih) v ozračju. Ta količina naj bi se povečala predvsem zaradi pospešenega razvoja industrije in drugih dejavnosti (prometa) v zadnjih desetletjih, pri čemer se največji del krivde pripisuje uporabi fosilnih goriv (premoga, nafte, bencina idr.) ter krčenju gozdov, ki so sicer glavni porabnik odvečnega ogljikovega dioksida.
+Svetovna skupnost se je reševanja tega problema lotila s precejšnjim obotavljanjem, vendar se v zvezi z ukrepi za zmanjševanje emisij toplogrednih plinov le mora pospešiti. Prvi pomembnejši korak je bil sprejetje kjotskega podnebnega sporazuma (2005). Z namenom zmanjšanja izpustov toplogrednih plinov in ustavitve segrevanja ozračja ga je sprejelo 141 držav. Sporazum ni bil učinkovit, saj se največje onesnaževalke zaradi svojih gospodarskih interesov k njegovemu spoštovanju niso zavezale.
+Več upanja na (vsaj delni) uspeh ima pariški podnebni sporazum (2016), ki ga je podpisalo 195 držav. K uresničevanju njegovih določil se je tokrat zavezala tudi največja onesnaževalka Kitajska. Pomembna novost je v tem, da naj bi revnejše države za prilagajanje podnebnim spremembam in prehod k obnovljivim virom energije od bogatejših dobile finančno pomoč. Tudi ta sporazum pa za glavne onesnaževalke (Kitajska, ZDA, Indija, Brazilija in Indonezija), odgovorne za več kot polovico izpustov toplogrednih plinov, ne predvideva sankcij.
+Glavni vzrok za izpuste toplogrednih plinov je uporaba fosilnih goriv (na sliki termoelektrarna).
+
+Stran 70
+2.3.5 Podatki o temperaturah in njihovo prikazovanje
+Da temperaturo zraka merimo s termometrom, ve vsak, ne vedo pa vsi, da jo moramo vedno meriti le v senci. Zakaj? Če termometer postavimo na sonce, se bo zaradi vplivanja sončnih žarkov močno segrel in pokazal vrednost, precej višjo od resnične temperature okoliškega zraka. Pokazal bo namreč svojo temperaturo. Zato meteorologi temperaturo zraka merijo v vremenski hišici, ki je za približno 2 metra dvignjena od tal (tako nad tlemi so temperature zaradi sevanja tal višje) in pobarvana z belo barvo, da odbije čim več sevanja Sonca in se s tem ne segreje.
+Na podlagi merjenj lahko potem računajo različne povprečne temperature: dnevne, mesečne in letne. Pri označevanju podnebja kakega kraja se po navadi navajata povprečna januarska in povprečna julijska temperatura. V krajih s celinskim podnebjem so temperature v teh dveh mesecih praviloma najnižje ali najvišje. V krajih z oceanskim podnebjem pa zaradi vpliva morja pride do zamika. Najtoplejši mesec (na severni polobli) ni julij, ampak avgust, najhladnejši pa ni januar, ampak februar. Razporeditev temperatur v prostoru prikazujemo z izotermami. To so črte, ki povezujejo kraje z enakimi temperaturami. V šolskih atlasih po navadi najdemo karte januarskih in julijskih izoterm.
+Vremenska hišica na Kredarici
+Zakaj morajo biti izoterme reducirane na morsko gladino?
+Karte izoterm v šolskih atlasih v resnici ne prikazujejo dejanskih temperatur. To bi bilo namreč preveč zapleteno, saj imamo kraje na isti geografski širini zaradi različne nadmorske višine precej različne temperature. Zato velja pravilo, da se izoterme rišejo reducirane na morsko gladino. To pomeni, da se za vsak kraj vzame (izračuna) takšna temperaturna vrednost, kot bi jo imel, če bi ležal na višini morske gladine. To izračunajo ob pomoči vrednosti vertikalnega temperaturnega gradienta, ki ga bomo spoznali v nadaljevanju.
+Marsikdaj pa nas bolj kot povprečne zanimajo skrajne temperature. To so najvišje in najnižje izmerjene temperature oz. absolutni maksimumi in absolutni minimumi. Razlike med najvišjimi in najnižjimi temperaturami so temperaturne amplitude. Razlikujemo dnevne, mesečne in letne amplitude. Največje amplitude so značilne za kraje, ki ležijo globoko v notranjosti celin, najmanjše amplitude pa so na oceanih, še posebej v bližini ekvatorja.
+Povprečne letne temperaturne amplitude v °C
+Povprečne letne temperaturne amplitude na Zemlji. Največje so v severovzhodni Aziji, na južni polobli so zaradi večje vloge oceanov precej manjše.
+
+2.3.6 Padanje temperature z višino in temperaturni obrat
+Temperatura zraka z višino pada, in sicer v prostem ozračju v povprečju za 0,65 °C na 100 m višinske razlike. Ob površju zaradi vpliva podlage pada za okoli 0,5 °C na 100 m. To vrednost imenujemo vertikalni temperaturni gradient. Če gremo v hribe, bo torej na vsakih 100 m višinske razlike za dobre pol stopinje hladneje. Ker pa je poleti temperaturni gradient nekoliko večji kot pozimi, so temperaturne razlike med dolinami in vrhovi gora tedaj večje.
+Včasih pa se dogaja ravno obratno. Temperatura zraka z višino ne upada, ampak nekaj časa celo narašča. Pojav imenujemo temperaturni obrat ali temperaturna inverzija. Nastane lahko v različnih okoliščinah. Pri nas se najpogosteje dogaja v kotlinah pa tudi v dolinah in kraških globelih ob jasnem in mirnem vremenu v hladni polovici leta, ko se Zemljino površje in prizemni sloj zraka zaradi sevanja Zemlje in šibkega proti-sevanja atmosfere zelo ohladita. Bistvo je v tem, da se hladen zrak, ki je težji, uleže na dno kotlin. Tam lahko ostane dalj časa, včasih tudi nekaj tednov. Temperature na dnu kotlin so tedaj nižje kot temperature v nekoliko višjih legah v okolici. Zaradi nizkih temperatur se vlaga v zraku na dnu kotlin kondenzira, zato pri tleh nastane gosta plast inverzijske megle, kraji v višjih legah pa imajo sončno in toplejše vreme. Pojav inverzije ni samo neprijeten, ampak je lahko tudi nevaren, saj se v plasti inverzijske megle več tednov zapored zgoščujejo različni onesnaževalci, ki jih je ravno zaradi kurjenja pozimi največ. Šele večja sprememba vremena z močnim prevetritvijo konča inverzijo in očisti zrak.
+
+Temperaturna inverzija
+Inverzijska megla v Ljubljanski kotlini
+
+Vprašanja:
+Kakšna je razlika med kratkovalovnim in dolgovalovnim sevanjem ter njunimi učinki?
+Zakaj temperature ne smemo meriti na soncu?
+Zakaj večina mestnega prebivalstva v Sloveniji pozimi doživlja pojav temperaturnega obrata?
+
+
+2.4 Vlaga v zraku in vrste padavin – kaj je vlaga v zraku
+
+
+
+2.4.1 KAJ JE VLAGA V ZRAKU
+
+V zraku je vedno nekaj vode, vendar se njen delež iz ure v uro in iz kraja v kraj spreminja. V hladnem in suhem arktičnem zraku vode skoraj ni, v toplem in vlažnem ekvatorialnem zraku pa lahko njen delež naraste celo do 5 %.
+
+Voda se v zraku pojavlja v vseh treh agregatnih stanjih. Večinoma je v plinastem (vodna para ali vodni hlapi), lahko pa tudi v tekočem (vodne kapljice) ali trdnem (ledeni kristali). Kadar voda prehaja iz plinastega v tekoče stanje, govorimo o zgoščevanju ali kondenzaciji, pri čemer se v okolico sprosti nekaj toplote (gre za t. i. latentno oz. skrito toploto). Kadar pa voda prehaja iz tekočega v plinasto stanje, govorimo o izparevanju ali evaporaciji. Pri tem se porabi nekaj energije (toplote) iz okolice. S prehajanjem zračnih mas iz ene pokrajine v drugo in s spreminjanjem agregatnega stanja vode se tako na edinstven način prenašajo tudi večje količine energije, in sicer predvsem z bolj vročih ekvatorialnih proti hladnejšim polarnim območjem.
+
+Stran 72
+Z izrazom vlaga v zraku mislimo na vodo, ki je v plinastem stanju. Zrak je lahko sprejme le določeno količino. Če je namreč vlage v zraku preveč, se začne kondenzirati. Sposobnost zraka, da sprejema vlago, je zelo odvisna od njegove temperature. Višja ko je temperatura, več vlage lahko sprejme. (Pri 20 °C je to lahko trikrat toliko kot pri 0 °C.)
+
+V zvezi z vlago razlikujemo več pojmov. Absolutna vlaga je količina vodne pare v zraku, izražena v g/m³. Maksimalna vlaga pa je največja količina vodne pare v zraku (največja možna absolutna vlaga), ki jo zrak lahko sprejme pri določeni temperaturi. Maksimalna vlaga se z naraščanjem temperature povečuje, kar je razvidno iz priloženega grafikona.
+
+Ko količina vlage doseže zgornjo mejo, postane zrak nasičen in vlaga se začne kondenzirati. Temperatura, pri kateri se to zgodi, je rosišče. Vlaga dobi za nas vidno obliko, saj jo vidimo kot meglo ali oblake, tudi kot roso in slano. V resnici so to zelo drobne (očem nevidne) vodne kapljice ali ledeni kristalčki, ki nastajajo ob kondenzacijskih jedrih v zraku (prašni delci, kristalčki morske soli ipd.) ali na objektih pri tleh.
+
+Razmerje med absolutno in maksimalno vlago je relativna vlaga, ki se izraža v odstotkih. Z drugimi besedami, gre za razmerje med dejansko količino vlage v zraku in tisto maksimalno možno količino, ki bi jo zrak pri določeni temperaturi še lahko sprejel. Če npr. relativna vlaga znaša 10 g/m³, zrak pa bi pri tej temperaturi lahko sprejel 20 g/m³, znaša relativna vlaga 50 %.
+
+Relativna vlaga se poveča v dveh primerih – če v zrak pride dodatna količina absolutne vlage ali če se zniža temperatura zraka. Ko relativna vlaga doseže 100 %, se začne kondenzacija. Večkrat pa lahko opazujemo nasproten proces. Ko se na primer zjutraj zbudimo, je okoli nas megla, kar pomeni, da je relativna vlaga 100-odstotna. Do poldneva se ozračje segreje. Absolutna vlaga ostane enaka, relativna pa zaradi višje temperature pade pod 100 %, zato se megla razblini. Relativna vlaga se torej prek dneva precej spreminja, in sicer v tesni povezavi s temperaturo zraka. Primer te povezanosti si lahko ogledamo na grafikonu.
+
+Napisi ob slikah in grafikonih:
+
+evaporacija
+
+kondenzacija
+
+Količina vodne pare (maksimalna vlaga), ki jo zrak lahko sprejme pri določeni temperaturi
+
+Relativna vlaga in temperatura zraka. Krivulji prikazujeta povprečne vrednosti za mesec maj v Washingtonu (39° s. g. š.).
+
+Stran 73
+2.4.2 Adiabatno ohljanje in segrevanje zraka ter nastanek padavin
+
+Videli smo, da je kondenzacija vlage zelo povezana z dovolj velikim znižanjem temperature zraka. Za nastanek megle in oblakov, v nadaljevanju procesa pa tudi padavin, se mora torej zrak dovolj ohladiti. To pa se običajno zgodi, če se zrak dvigne. Ena od njegovih pomembnih lastnosti je namreč to, da se pri dviganju širi in ohlaja, pri spuščanju pa stiska in segreva. To imenujemo adiabatno ohlajanje in segrevanje zraka. Kako si to razložimo?
+
+Višinski zračni tlak je nižji kot pri tleh. Predstavljajmo si zrak, ki se dvigne od tal, kjer je zračni tlak višji, v višjo lego, kjer je tlak nižji. Ko zrak pride na območje nižjega tlaka, se začne širiti. Za to porabi nekaj energije, in pri tem se ohladi. Prav nasprotno pa se dogaja pri spuščanju zraka. V tem primeru se namreč stiska in segreva. Da stiskanje zraka povzroča tudi njegovo segrevanje, vidimo na primer pri uporabi zračne tlačilke. Zrak v tlačilki se pri stiskanju segreje, zato se segreje tudi tlačilka.
+
+Do kondenzacije vlage pride tedaj, ko se zrak dvigne do določene višine, ki jo označujemo kot kondenzacijski nivo. Prej vlage v zraku ne vidimo, nad tem nivojem pa jo zagledamo v obliki oblakov. Zdaj bomo tudi razumeli, zakaj se lahko oblak pojavi kar naenkrat, sredi jasnega neba. Če se zrak še naprej močno dviguje, se lahko oblak v višino precej razpotegne.
+
+Kondenzacija pa ne pomeni nujno tudi padavin. Njihov nastanek je namreč zelo zapleten proces, pri katerem si bomo zapomnili le bistvo. Vodne kapljice ali ledeni kristalčki, ki sestavljajo oblake in meglo, se morajo tako okrepiti, da postanejo dovolj težki, da lahko padejo proti površju. Za to pa so potrebne posebne razmere.
+
+(shema)
+Dviganje – širjenje in ohlajanje zraka
+Spuščanje – stiskanje in segrevanje zraka
+Adiabatno ohlajanje in segrevanje zraka
+
+(slika)
+Dviganje vlažnega zraka in nastanek oblakov nad kondenzacijskim nivojem
+kondenzacijski nivo
+
+Stran 74
+Nastanek orografskih padavin
+
+Nastanek konvekcijskih padavin
+
+Nastanek ciklonskih (frontalnih) padavin
+
+Ciklonske padavine imenujemo tudi frontalne, saj nastajajo znotraj ciklonov ob prehodu tople ali hladne fronte. Tudi pri ciklonskih padavinah se zrak dviga in adiabatsko ohlaja, vendar to dviganje ne poteka ob kakšni gorski pregradi, ampak ob nagnjenih frontalnih površinah na stiku toplih in hladnih zračnih mas. Podrobnejše dogajanje v ciklonih bomo ogledali v nadaljevanju.
+
+Zelo močne padavine, ki jih spremlja veter, imenujemo neurje. Neurja so najpogostejša ob nevihtah. Med posebne vremenske pojave, povezane s padavinami, spada žled ali poledica. To je prozorna ledena obloga, včasih debela tudi več centimetrov, ki nastane na drevju ali drugih objektih med dežjem ali rosenjem, ko imajo kapljice temperaturo okoli 0 °C. Podhlajene dežne kaplje ali vodna para tam ob stiku z mrzlo podlago zamrznejo. Na gladkih tleh ta pojav imenujemo poledica.
+
+2.4.3 Količina ali višina padavin?
+
+
+Količino padavin, ki v določenem času pade v določenem kraju, lahko izrazimo v litrih na m², največkrat pa jo izrazimo v milimetrih. Podatek, da npr. v Mariboru v povprečju na leto pade 1046 mm padavin, pomeni, da bi bila višina vse vode, ki pade v enem letu, 1046 mm ali nekaj več kot 1 m, če voda seveda ne bi sproti odtekla ali izhlapela. Kadar merimo padavine v milimetrih in ne v litrih, je pravilneje, da govorimo o višini, ne o količini padavin.
+
+Razporeditev padavin v prostoru prikazujemo z izohetami. To so črte, ki povezujejo kraje z enako količino (višino) padavin.
+
+2.4.4 Padavinski rekordi doma in v svetu
+
+Padavinski rekordi doma in v svetu
+
+V Sloveniji največ padavin prejmejo spodnje Bohinjske gore (južna pobočja Bogatina), in sicer blizu 4000 mm, najmanj pa vzhodno Prekmurje, in sicer pod 800 mm.
+
+V svetu naj bi največjo povprečno letno višino padavin prejemala kraja Mawsynram v Indiji (12 701 mm v obdobju 1998–2010) in López de Micay v Kolumbiji (11 466 mm v obdobju 1980–2011). Največjo višino padavin v enem letu (26 470 mm v letih 1860–1861) so izmerili v kraju Cherrapunji v Indiji, ki velja za svetovnega padavinskega rekorderja. Največjo višino padavin v obdobju 24 ur (1870 mm v dneh 15. in 16. 3. 1952) pa so izmerili v kraju Cilaos na otoku La Réunion v Indijskem oceanu.
+
+Najmanjšo povprečno letno višino padavin na svetu ima oaza Quillagua v puščavi Atakama v Čilu, in sicer 0,2 mm. Po sušnosti naj bi tako presegla kraj Arica, ki ravno tako leži v Atakami in je dolgo veljal za sušnega rekorderja. Ne bodite presenečeni, če boste na spletu našli še kakšne druge »najpodatke«. Povsod po svetu bili radi vsi v vsem rekorderji, in poročila o izmerjenih padavinah se hitro priredijo kakšen odvečen milimeter.
+
+Instrument za merjenje količine padavin na težko dostopnih območjih, predvsem v gorah.
+
+Vprašanja
+
+Kaj je zgostevanje in kaj izparevanje?
+
+Zakaj se zrak pri dviganju ohlaja?
+
+Ali lahko tudi v tvoji spalnici nastane gosta megla? Pod kakšnimi pogoji?

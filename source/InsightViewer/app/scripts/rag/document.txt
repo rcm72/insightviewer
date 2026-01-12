@@ -1,0 +1,171 @@
+I have a structured knowledge graph in neo4j for a zgd1 law. The core node type is Article which has Paragraph (relation HAS_PARAGRAPH). Paragraph is divided in points (relation HAS_POINT) and points are divided in subpoints (relation HAS).
+
+Each of these nodes has property text. A would like to reconstuct complete text of Article
+
+
+1. Get graph structured
+:param articleNum => '57.'
+
+1.1 Labels
+MATCH (a:Article {num: '57.'})
+CALL {
+  WITH a
+  MATCH (a)-[r1]-(p)
+  RETURN collect(DISTINCT {
+    relType: type(r1),
+    relProps: keys(r1),
+    otherLabels: labels(p),
+    otherProps: keys(p)
+  }) AS hop1
+}
+RETURN labels(a) AS articleLabels, keys(a) AS articleProps, hop1;
+
+1.2 Hierarcyh pattersn
+MATCH (a:Article {num: $articleNum})
+OPTIONAL MATCH (a)-[rP]->(p)
+OPTIONAL MATCH (p)-[rPt]->(pt)
+OPTIONAL MATCH (pt)-[rSp]->(sp)
+RETURN
+  type(rP)  AS article_to_paragraph_rel,
+  labels(p) AS paragraph_labels,
+  type(rPt) AS paragraph_to_point_rel,
+  labels(pt) AS point_labels,
+  type(rSp) AS point_to_subpoint_rel,
+  labels(sp) AS subpoint_labels
+LIMIT 20;
+
+
+1.3 Ordering fields
+MATCH (a:Article {num: $articleNum})-[:HAS_PARAGRAPH]->(p)
+OPTIONAL MATCH (p)-[:HAS_POINT]->(pt)
+OPTIONAL MATCH (pt)-[:HAS]->(sp)
+RETURN
+  collect(DISTINCT keys(p))  AS paragraph_prop_keys,
+  collect(DISTINCT keys(pt)) AS point_prop_keys,
+  collect(DISTINCT keys(sp)) AS subpoint_prop_keys;
+
+
+1.4 Ordering fields on relations
+MATCH (a:Article {num: $articleNum})-[rp:HAS_PARAGRAPH]->(p)
+OPTIONAL MATCH (p)-[rpt:HAS_POINT]->(pt)
+OPTIONAL MATCH (pt)-[rsp:HAS]->(sp)
+RETURN
+  collect(DISTINCT keys(rp))  AS has_paragraph_rel_keys,
+  collect(DISTINCT keys(rpt)) AS has_point_rel_keys,
+  collect(DISTINCT keys(rsp)) AS has_subpoint_rel_keys;
+
+
+
+1.5 Quick sample of the numbering values
+MATCH (a:Article {num: $articleNum})-[:HAS_PARAGRAPH]->(p)
+OPTIONAL MATCH (p)-[:HAS_POINT]->(pt)
+OPTIONAL MATCH (pt)-[:HAS]->(sp)
+RETURN
+  p.num  AS paragraph_num,
+  pt.num AS point_num,
+  sp.num AS subpoint_num
+LIMIT 50;
+
+
+########################### cypher for reconstruct of Article / Člen
+:param articleNum => '57.';
+
+
+
+MATCH (a:Article {num: $articleNum})
+MATCH (a)-[:HAS_PARAGRAPH]->(p:Paragraph)
+WITH a, p
+ORDER BY toInteger(p.order)
+WITH a, collect(p) AS pars
+
+CALL {
+  WITH pars
+  UNWIND pars AS p
+
+  // Paragraph-level items (if any)
+  OPTIONAL MATCH (p)-[:HAS_ITEM]->(ip:IndentItem)
+  WITH p, collect(ip) AS parItems
+
+  // Points under this paragraph
+  OPTIONAL MATCH (p)-[:HAS_POINT]->(pt:Point)
+  WITH p, parItems, pt
+  ORDER BY toInteger(pt.order)
+  WITH p, parItems, collect(pt) AS pts
+
+  // For each point, collect its items
+  UNWIND CASE WHEN pts = [] THEN [NULL] ELSE pts END AS pt
+  OPTIONAL MATCH (pt)-[:HAS_ITEM]->(i:IndentItem)
+  WITH p, parItems, pt, collect(i) AS items
+  ORDER BY toInteger(p.order), toInteger(COALESCE(pt.order, 0))
+
+  WITH
+    p,
+    parItems,
+    collect(
+      CASE
+        WHEN pt IS NULL THEN NULL
+        ELSE {
+          ptOrder: toInteger(pt.order),
+          ptText:  replace(coalesce(pt.text, ''), '\\n', '\n'),
+          items:   [x IN items WHERE x IS NOT NULL
+                    | replace(coalesce(x.text, ''), '\\n', '\n')]
+        }
+      END
+    ) AS pointBlocks
+
+  // Filter out NULLs from pointBlocks
+  WITH
+    p,
+    parItems,
+    [pb IN pointBlocks WHERE pb IS NOT NULL] AS pointBlocksClean
+
+  RETURN collect({
+    pOrder: toInteger(p.order),
+    pText:  replace(coalesce(p.text, ''), '\\n', '\n'),
+    parItems: [x IN parItems WHERE x IS NOT NULL
+               | replace(coalesce(x.text, ''), '\\n', '\n')],
+    points:  pointBlocksClean
+  }) AS blocks
+}
+
+WITH a, blocks
+WITH a,
+  reduce(acc = '', b IN blocks |
+    acc +
+    CASE WHEN acc = '' THEN '' ELSE '\n\n' END +
+    // Paragraph main text
+    b.pText +
+    // Items directly under paragraph (if any)
+    CASE
+      WHEN size(b.parItems) = 0 THEN ''
+      ELSE
+        '\n' +
+        reduce(piAcc = '', it IN b.parItems |
+          piAcc +
+          CASE WHEN piAcc = '' THEN '' ELSE '\n' END +
+          it
+        )
+    END +
+    // Points under paragraph
+    CASE
+      WHEN size(b.points) = 0 THEN ''
+      ELSE
+        '\n' +
+        reduce(pAcc = '', pb IN b.points |
+          pAcc +
+          CASE WHEN pAcc = '' THEN '' ELSE '\n' END +
+          pb.ptText +
+          CASE
+            WHEN size(pb.items) = 0 THEN ''
+            ELSE
+              '\n' +
+              reduce(iAcc = '', it IN pb.items |
+                iAcc +
+                CASE WHEN iAcc = '' THEN '' ELSE '\n' END +
+                it
+              )
+          END
+        )
+    END
+  ) AS fullText
+RETURN a.num AS article, fullText;

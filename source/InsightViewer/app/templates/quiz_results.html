@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Rezultati kvizov</title>
+  <style>
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      margin: 0;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    h1 {
+      color: #333;
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 2em;
+    }
+    .filters {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 25px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .filters label {
+      font-weight: 600;
+      color: #555;
+    }
+    .filters input, .filters select {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 1em;
+    }
+    button {
+      padding: 10px 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 1em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .session-card {
+      background: #f8f9fa;
+      border-left: 4px solid #667eea;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      transition: all 0.3s ease;
+    }
+    .session-card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      transform: translateX(5px);
+    }
+    .session-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .session-info {
+      flex: 1;
+    }
+    .session-info h3 {
+      margin: 0 0 8px 0;
+      color: #667eea;
+      font-size: 1.3em;
+    }
+    .session-meta {
+      color: #666;
+      font-size: 0.9em;
+    }
+    .session-score {
+      text-align: right;
+      padding: 15px;
+      background: linear-gradient(135deg, #f6f9ff 0%, #f0f4ff 100%);
+      border-radius: 8px;
+      min-width: 150px;
+    }
+    .score-big {
+      font-size: 2em;
+      font-weight: bold;
+      color: #667eea;
+      display: block;
+    }
+    .score-label {
+      font-size: 0.9em;
+      color: #666;
+    }
+    .expand-btn {
+      background: #95a5a6;
+      padding: 6px 15px;
+      font-size: 0.9em;
+      margin-top: 10px;
+    }
+    .session-details {
+      display: none;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 2px solid #e0e0e0;
+    }
+    .session-details.visible {
+      display: block;
+    }
+    .question-item {
+      background: white;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-radius: 6px;
+      border-left: 3px solid #95a5a6;
+    }
+    .question-item.score-5 { border-left-color: #27ae60; }
+    .question-item.score-4 { border-left-color: #2ecc71; }
+    .question-item.score-3 { border-left-color: #f39c12; }
+    .question-item.score-2 { border-left-color: #e67e22; }
+    .question-item.score-1 { border-left-color: #e74c3c; }
+    .question-item.score-0 { border-left-color: #95a5a6; }
+    .ideal-answer-box {
+      margin-top: 10px;
+      padding: 10px;
+      background: #e8f5e9;
+      border-left: 3px solid #4caf50;
+      border-radius: 4px;
+      font-size: 0.95em;
+    }
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+      font-size: 1.2em;
+    }
+    .empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+    }
+    .back-link {
+      display: inline-block;
+      margin-bottom: 20px;
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .back-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="/quiz_ui" class="back-link">← Nazaj na kviz</a>
+    <h1>📊 Rezultati kvizov</h1>
+    
+    <div class="filters">
+      <label>
+        Študent:
+        <input type="text" id="studentFilter" placeholder="Ime študenta...">
+      </label>
+      <label>
+        Št. rezultatov:
+        <select id="limitSelect">
+          <option value="10">10</option>
+          <option value="25" selected>25</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+      </label>
+      <button id="btnFilter">Prikaži</button>
+      <button id="btnRefresh">🔄 Osveži</button>
+    </div>
+    
+    <div id="resultsContainer">
+      <div class="loading">Nalagam rezultate...</div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='quiz_results.js') }}"></script>
+</body>
+</html>

@@ -26,7 +26,7 @@ import sys
 import json 
 import configparser
 from datetime import datetime, date 
-from flask import Flask, abort, render_template, request, jsonify, render_template_string, url_for, send_from_directory, send_file
+from flask import Flask, abort, render_template, request, jsonify, render_template_string, url_for, send_from_directory, send_file, redirect
 from flask.json.provider import DefaultJSONProvider
 from neo4j import GraphDatabase
 import uuid  # For generating unique IDs
@@ -110,9 +110,61 @@ print("Loaded sections:", config.sections())
 if "NEO4J" in config:
     print("NEO4J URI from config:", config.get("NEO4J", "URI", fallback=None))
 
-# sanity check so error is clear if file/section is missing
-if "NEO4J" not in config:
-    raise RuntimeError(f"Config file {config_path} missing [NEO4J] section; create config_private.ini or config.ini from config.example.ini")
+# --- NEW: Ollama embedding config & helpers ---
+OLLAMA_URL = config.get("OLLAMA", "BASE", fallback=None)
+OLLAMA_EMB_MODEL = config.get("OLLAMA", "EMB_MODEL", fallback=None)
+
+def _ollama_post_embedding(text: str, timeout: int = 30):
+    """
+    Try common Ollama embedding endpoints and return a vector list on success.
+    Handles several response shapes returned by different Ollama clients.
+    """
+    if not OLLAMA_URL or not OLLAMA_EMB_MODEL:
+        raise RuntimeError("OLLAMA.BASE or OLLAMA.EMB.MODEL not configured in config.ini")
+
+    url_base = OLLAMA_URL.rstrip('/')
+    endpoints = [
+        "/api/embeddings",  # some clients
+        "/api/embed",       # other clients
+        "/api/embeds",
+    ]
+    payload_variants = [
+        {"model": OLLAMA_EMB_MODEL, "prompt": text},
+        {"model": OLLAMA_EMB_MODEL, "input": text},
+        {"model": OLLAMA_EMB_MODEL, "text": text},
+    ]
+    last_err = None
+    for ep in endpoints:
+        for payload in payload_variants:
+            try:
+                r = requests.post(f"{url_base}{ep}", json=payload, timeout=timeout)
+                if not r.ok:
+                    last_err = f"{r.status_code} {r.text}"
+                    continue
+                j = r.json()
+                # common shapes:
+                if isinstance(j, dict):
+                    if "embedding" in j and isinstance(j["embedding"], list):
+                        return j["embedding"]
+                    if "embeddings" in j:
+                        emb = j["embeddings"]
+                        if isinstance(emb, list) and emb:
+                            first = emb[0]
+                            if isinstance(first, dict) and "embedding" in first:
+                                return first["embedding"]
+                            if isinstance(first, list):
+                                return first
+                    if "data" in j and isinstance(j["data"], list):
+                        d0 = j["data"][0]
+                        if isinstance(d0, dict) and "embedding" in d0:
+                            return d0["embedding"]
+                # fallback: if top-level json is list and first element is list
+                if isinstance(j, list) and j and isinstance(j[0], list):
+                    return j[0]
+            except Exception as e:
+                last_err = str(e)
+                continue
+    raise RuntimeError(f"Failed to obtain embedding from Ollama. Last error: {last_err}")
 
 # --- Neo4j Setup ---
 URI = config["NEO4J"]["URI"]
@@ -158,7 +210,53 @@ def about_app():
 def quiz_rag():
     return render_template("quiz_rag.html")
 
+# --- NEW: quiz page route ---
+@app.route("/ask_vector")
+def ask_vector_page():
+    return render_template("ask_vector.html")
 
+# --- NEW: quiz_ui page route ---
+@app.route("/quiz_ui")
+def quiz_ui_page():
+    return render_template("quiz_ui.html")
+
+# --- NEW: quiz results viewer route ---
+@app.route("/quiz_results")
+def quiz_results_page():
+    return render_template("quiz_results.html")
+
+# --- NEW: vector search API used by quiz front-end ---
+@app.post("/api/quiz/search")
+def api_quiz_search():
+    """
+    POST JSON: { "question": "...", "top_k": 6 }
+    Returns top matching Chunk nodes (id, text, score).
+    """
+    data = request.get_json() or {}
+    question = (data.get("question") or "").strip()
+    if not question:
+        return jsonify({"success": False, "error": "Missing 'question'"}), 400
+    try:
+        emb = _ollama_post_embedding(question)
+    except Exception as e:
+        app.logger.exception("Failed to get embedding")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+    top_k = int(data.get("top_k", 6))
+    try:
+        with driver.session() as session:
+            # use the vector index; pass dimension = len(emb)
+            rows = session.run("""
+                CALL db.index.vector.queryNodes('chunk_embedding_index', $dim, $vec)
+                YIELD node, score
+                RETURN node.id_rc AS id, node.text AS text, score
+                ORDER BY score DESC
+                LIMIT $k
+            """, dim=len(emb), vec=emb, k=top_k).data()
+        return jsonify({"success": True, "rows": rows})
+    except Exception as e:
+        app.logger.exception("Neo4j vector query failed")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 def render_page(page):
     if request.path.startswith('/api/') or request.path.startswith('/static/'):
@@ -488,7 +586,7 @@ def expand_node():
                         continue
 
                     rel_props  = dict(r_rel)
-                    edge_id_rc = rel_props.get("id_rc") or str(r_rel.id)
+                    rel_id = rel_props.get("id_rc") or str(r_rel.id)
 
                     # Deduplicate by relationship id_rc / id
                     #if edge_id_rc in edges_dict:
@@ -496,13 +594,13 @@ def expand_node():
                         #continue
 
                     edge = {
-                        "id": edge_id_rc,
-                        "id_rc": edge_id_rc,
+                        "id": rel_id,
+                        "id_rc": rel_id,
                         "from": from_id,
                         "to": to_id,
                         "label": r_rel.type or rel_props.get("name", ""),
                     }
-                    edges_dict[edge_id_rc] = edge
+                    edges_dict[rel_id] = edge
                     print("  added edge:", edge)
                 else:
                     print("  Warning: missing relationship or nodes in record")
@@ -1392,7 +1490,9 @@ def openai_generate():
     except requests.RequestException as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
-
+@app.route("/assessment")
+def assessment_page():
+    return render_template("assessment.html")
 
 
 @app.route('/favicon.ico')

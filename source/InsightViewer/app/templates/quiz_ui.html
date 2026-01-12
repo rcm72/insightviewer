@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Quiz (LLM ocenjevanje - Neo4j)</title>
+  <style>
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      margin: 0;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    h1 {
+      color: #333;
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 2em;
+    }
+    .hidden { display: none; }
+    .section { 
+      margin-bottom: 25px; 
+      padding: 20px; 
+      border: 1px solid #e0e0e0; 
+      border-radius: 8px; 
+      background: #fafafa;
+    }
+    .section h3 {
+      margin-top: 0;
+      color: #555;
+      border-bottom: 2px solid #667eea;
+      padding-bottom: 10px;
+    }
+    select, input[type="number"] { 
+      padding: 10px; 
+      margin: 8px 0;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 1em;
+    }
+    select {
+      min-width: 200px;
+    }
+    button { 
+      padding: 10px 20px; 
+      margin: 8px 5px 8px 0; 
+      cursor: pointer;
+      border: none;
+      border-radius: 6px;
+      font-size: 1em;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    button:active {
+      transform: translateY(0);
+    }
+    #btnLoadNodes, #btnStartQuiz, #btnSubmit {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    #btnSkip, #btnNext {
+      background: #95a5a6;
+      color: white;
+    }
+    #btnRestart {
+      background: #27ae60;
+      color: white;
+    }
+    .question-box { 
+      border: 2px solid #667eea; 
+      padding: 20px; 
+      margin-bottom: 20px; 
+      border-radius: 8px; 
+      background: white;
+    }
+    .question-box h3 {
+      margin-top: 0;
+      color: #667eea;
+    }
+    #questionText {
+      font-size: 1.2em;
+      line-height: 1.6;
+      margin: 15px 0;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 6px;
+      border-left: 4px solid #667eea;
+      max-height: 200px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+    }
+    textarea { 
+      width: calc(100% - 20px);
+      min-height: 120px; 
+      padding: 12px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      font-size: 1em;
+      font-family: inherit;
+      resize: vertical;
+      transition: border-color 0.3s ease;
+    }
+    textarea:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    label {
+      display: block;
+      margin: 15px 0 8px 0;
+      font-weight: 600;
+      color: #555;
+    }
+    .feedback { 
+      background: linear-gradient(135deg, #f6f9ff 0%, #f0f4ff 100%);
+      border-left: 4px solid #667eea; 
+      padding: 15px; 
+      margin-top: 20px;
+      border-radius: 6px;
+    }
+    .score { 
+      font-weight: bold; 
+      font-size: 1.5em;
+      color: #667eea;
+    }
+    pre.context { 
+      background: #f8f8f8; 
+      padding: 15px; 
+      border-radius: 6px; 
+      overflow-y: auto; 
+      overflow-x: hidden;
+      font-size: 0.9em;
+      border: 1px solid #ddd;
+      max-height: 200px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .progress { 
+      font-weight: 600;
+      color: #667eea;
+      font-size: 1.1em;
+      margin-bottom: 15px;
+    }
+    details {
+      margin: 15px 0;
+      cursor: pointer;
+    }
+    summary {
+      padding: 10px;
+      background: #f0f0f0;
+      border-radius: 6px;
+      font-weight: 600;
+      color: #555;
+      user-select: none;
+    }
+    summary:hover {
+      background: #e8e8e8;
+    }
+    #nodeSelect {
+      width: 100%;
+      padding: 8px;
+    }
+    #finalResults ul {
+      list-style: none;
+      padding: 0;
+    }
+    #finalResults li {
+      background: #f8f9fa;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-radius: 6px;
+      border-left: 4px solid #667eea;
+    }
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    .ideal-answer {
+      margin-top: 15px;
+      padding: 12px;
+      background: #e8f5e9;
+      border-left: 4px solid #4caf50;
+      border-radius: 6px;
+      font-size: 0.95em;
+    }
+    .ideal-answer strong {
+      color: #2e7d32;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📝 Quiz — LLM ocenjevanje</h1>
+    
+    <!-- Step 1: Izberi tip vozlišča -->
+    <div id="step1" class="section">
+      <h3>Korak 1: Izberi tip vozlišča</h3>
+      <label>Tip vozlišča:
+        <select id="labelSelect">
+          <option value="Course">Course</option>
+          <option value="Chapter">Chapter</option>
+          <option value="Section">Section</option>
+          <option value="SubSection">SubSection</option>
+        </select>
+      </label>
+      <button id="btnLoadNodes">Naloži vozlišča</button>
+    </div>
+
+    <!-- Step 2: Izberi vozlišče -->
+    <div id="step2" class="section hidden">
+      <h3>Korak 2: Izberi vozlišče</h3>
+      <select id="nodeSelect" size="8"></select>
+      <br>
+      <label>Število vprašanj: <input type="number" id="numQuestions" value="5" min="1" max="20" /></label>
+      <button id="btnStartQuiz">Začni kviz</button>
+    </div>
+
+    <!-- Step 3: Reši vprašanja -->
+    <div id="step3" class="section hidden">
+      <div class="progress" id="progressText"></div>
+      <div class="question-box">
+        <h3>Vprašanje <span id="questionNum"></span></h3>
+        <div id="questionText"></div>
+        <details>
+          <summary>📖 Prikaži kontekst (odstavek)</summary>
+          <pre id="contextText" class="context"></pre>
+        </details>
+      </div>
+      <label for="answer">Tvoj odgovor:</label>
+      <textarea id="answer" placeholder="Vnesi svoj odgovor tukaj..."></textarea>
+      <div class="button-group">
+        <button id="btnSubmit">Pošlji in oceni</button>
+        <button id="btnSkip">Preskoči</button>
+      </div>
+      <div id="resultArea" class="hidden">
+        <div class="feedback">
+          <div>Ocena: <span id="score" class="score"></span> / 5</div>
+          <div id="feedbackText" style="margin-top: 10px; line-height: 1.5;"></div>
+          <div id="idealAnswerArea" class="ideal-answer hidden">
+            <strong>💡 Idealen odgovor:</strong>
+            <div id="idealAnswerText" style="margin-top: 8px;"></div>
+          </div>
+          <div style="margin-top: 15px;">
+            <button id="btnNext">➡️ Naslednje vprašanje</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4: Rezultati -->
+    <div id="step4" class="section hidden">
+      <h3>🎉 Kviz končan!</h3>
+      <div id="finalResults"></div>
+      <button id="btnRestart">🔄 Nov kviz</button>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='quiz_ui.js') }}"></script>
+</body>
+</html>

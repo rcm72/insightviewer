@@ -1,5 +1,6 @@
 import configparser
 import os
+from pathlib import Path
 from queue import Full
 import uuid
 import requests
@@ -20,7 +21,7 @@ PROJECT = "ZGD1"
 # config.read(os.path.join(BASE_DIR, "..", "..", "..", "config.ini"))
 
 # BASE_DIR should point to project root: /home/robert/insightViewer/source/InsightViewer
-BASE_DIR = Path(__file__).resolve().parents[2]
+BASE_DIR = Path(__file__).resolve().parents[3]
 CONFIG_PATH = BASE_DIR / "config.ini"
 
 config = configparser.ConfigParser()

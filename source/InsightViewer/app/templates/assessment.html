@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="UTF-8" />
+  <title>Preverjanje znanja ZGD-1</title>
+  <style>
+    body { font-family: sans-serif; max-width: 800px; margin: 2rem auto; }
+    textarea { width: 100%; min-height: 150px; }
+    .question-block { margin-bottom: 2rem; padding: 1rem; border: 1px solid #ccc; border-radius: 4px; }
+    .result { margin-top: 1rem; padding: 0.75rem; border-radius: 4px; background: #f5f5f5; white-space: pre-wrap; }
+    .hidden { display: none; }
+    button { padding: 0.5rem 1rem; }
+  </style>
+</head>
+<body>
+  <h1>Preverjanje znanja ZGD-1</h1>
+
+  <div class="question-block">
+    <p id="question-text"></p>
+    <textarea id="answer"></textarea>
+    <button id="check-btn">Preveri odgovor</button>
+    <button id="next-btn" class="hidden">Naslednje vprašanje</button>
+    <div id="loading" class="hidden">Preverjam odgovor, prosim počakajte...</div>
+    <div id="result" class="result hidden"></div>
+  </div>
+
+  <script>
+    const API_BASE = "http://192.168.1.16:8004";
+
+    const questionTextEl = document.getElementById("question-text");
+    const answerEl = document.getElementById("answer");
+    const resultEl = document.getElementById("result");
+    const loadingEl = document.getElementById("loading");
+    const checkBtn = document.getElementById("check-btn");
+    const nextBtn = document.getElementById("next-btn"); // če ga imaš
+
+    const questions = [
+      { id: "q1", text: "Katere sestavine letnega poročila revidira in katere pregleda revizor?", article_num: "57." },
+      { id: "q2", text: "Katere sestavine vsebuje revizorjevo poročilo o dajanju zagotovil o trajnosti?", article_num: "57." },
+      { id: "q3", text: "V katerih primerih je revizor neomejeno odgovoren za škodo, ki jo povzroči s kršitvijo pravil o revidiranju?", article_num: "57." },
+      { id: "q4", text: "Do kdaj najkasneje mora biti opravljena revizija računovodskih izkazov v skladu z določilom ZGD-1?", article_num: "57." },
+      { id: "q5", text: "V katerih primerih je za majhne kapitalske družbe zahtevana preiskava računovodskih izkazov?", article_num: "57." }
+    ];
+
+    let currentIndex = 0;
+
+    function showQuestion(index) {
+      if (index >= questions.length) {
+        questionTextEl.textContent = "Ni več vprašanj.";
+        answerEl.disabled = true;
+        checkBtn.disabled = true;
+        if (nextBtn) nextBtn.classList.add("hidden");
+        return;
+      }
+      const q = questions[index];
+      questionTextEl.textContent = `${index + 1}. ${q.text}`;
+      answerEl.value = "";
+      resultEl.classList.add("hidden");
+      resultEl.innerHTML = "";
+      if (nextBtn) nextBtn.classList.add("hidden");
+    }
+
+    async function checkAnswer() {
+      const q = questions[currentIndex];
+      const question = q.text;
+      const articleNum = q.article_num;
+      const userAnswer = answerEl.value.trim();
+
+      if (!userAnswer) {
+        alert("Prosimo, vpišite odgovor.");
+        return;
+      }
+
+      loadingEl.classList.remove("hidden");
+      resultEl.classList.add("hidden");
+      resultEl.innerHTML = "Pošiljam zahtevo ...";
+
+      try {
+        const resp = await fetch(`${API_BASE}/grade-answer`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            question,
+            user_answer: userAnswer,
+            article_num: articleNum
+          }),
+        });
+
+        // 1) preberi JSON, ne .text()
+        const data = await resp.json();
+
+        // 2) vzemi evaluation string
+        const evaluation = data.evaluation || "";
+
+        // 3) pobegni HTML in zamenjaj \n z <br>
+        const escaped = evaluation
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+        const htmlText = escaped.replace(/\n/g, "<br>");
+
+        resultEl.innerHTML = htmlText;
+        resultEl.classList.remove("hidden");
+
+        if (nextBtn) nextBtn.classList.remove("hidden");
+      } catch (err) {
+        resultEl.textContent = "Napaka pri klicu API: " + err;
+        resultEl.classList.remove("hidden");
+      } finally {
+        loadingEl.classList.add("hidden");
+      }
+    }
+
+    function goToNextQuestion() {
+      currentIndex += 1;
+      showQuestion(currentIndex);
+    }
+
+    checkBtn.addEventListener("click", checkAnswer);
+    if (nextBtn) nextBtn.addEventListener("click", goToNextQuestion);
+
+    showQuestion(currentIndex);
+  </script>
+</body>
+</html>

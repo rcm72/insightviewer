@@ -21,19 +21,20 @@ ACT_ID = "ZGD-1"
 #config.read(os.path.join(BASE_DIR, "..", "..", "..", "config.ini"))
 
 # BASE_DIR should point to project root: /home/robert/insightViewer/source/InsightViewer
-BASE_DIR = Path(__file__).resolve().parents[2]
+BASE_DIR = Path(__file__).resolve().parents[3]
 CONFIG_PATH = BASE_DIR / "config.ini"
+
 
 config = configparser.ConfigParser()
 config.read(CONFIG_PATH)
 
-HTML_PATH = os.path.join(
-    BASE_DIR,
-    "",
-    "",
-    "zakon",
-    "data",
-    "ZAKO4291_NPB22.html",
+HTML_PATH = (
+    Path(__file__)
+    .resolve()
+    .parent              # .../app/scripts/rag
+    / "zakon"
+    / "data"
+    / "ZAKO4291_NPB22.html"
 )
 
 

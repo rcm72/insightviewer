@@ -2,11 +2,13 @@
 
 import configparser
 import os
+from pathlib import Path
 import requests
 import re
 from typing import List, Dict, Any, Optional, Tuple
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from neo4j import GraphDatabase
 
@@ -19,7 +21,7 @@ PROJECT = "ZGD1"
 # config.read(os.path.join(BASE_DIR, "..", "..", "..", "config.ini"))
 
 # BASE_DIR should point to project root: /home/robert/insightViewer/source/InsightViewer
-BASE_DIR = Path(__file__).resolve().parents[2]
+BASE_DIR = Path(__file__).resolve().parents[3]
 CONFIG_PATH = BASE_DIR / "config.ini"
 
 config = configparser.ConfigParser()
@@ -33,6 +35,20 @@ OLLAMA_BASE = config["OLLAMA"]["BASE"]
 EMB_MODEL = config["OLLAMA"]["EMB_MODEL"]          # e.g. mxbai-embed-large:latest
 MODEL = config["OLLAMA"]["MODEL"]                  # e.g. qwen2.5:14b
 TOP_K = int(config["OLLAMA"].get("TOP_K", "8"))
+
+ASSESSABLE_CYPHER = """
+MATCH (a:Article {projectName:$projectName})
+WHERE $articleNum IS NULL OR a.num = $articleNum
+MATCH (a)-[:HAS_PARAGRAPH]->(p:Paragraph {projectName:$projectName})
+OPTIONAL MATCH (p)-[:HAS_POINT]->(pt:Point {projectName:$projectName})
+OPTIONAL MATCH (p)-[:HAS_ITEM]->(ip:IndentItem {projectName:$projectName})
+OPTIONAL MATCH (pt)-[:HAS_ITEM]->(it:IndentItem {projectName:$projectName})
+WITH collect(p) + collect(pt) + collect(ip) + collect(it) AS ns
+UNWIND ns AS n
+WITH DISTINCT n
+WHERE n.isAssessable = "true" AND n.text is not null
+RETURN n.text AS txt
+"""
 
 
 # ===== FastAPI models =====
@@ -54,6 +70,16 @@ class ChatResponse(BaseModel):
     answer: str
     citations: List[Citation]
     route: str  # "direct_article" | "vector"
+
+class GradeRequest(BaseModel):
+    question: str
+    user_answer: str
+    # optional: če želiš hint na člen, lahko dodaš:
+    article_num: Optional[str] = None  # npr. '57.'
+
+
+class GradeResponse(BaseModel):
+    evaluation: str  # modelova razlaga, ali je odgovor pravilen / kaj manjka    
 
 
 # ===== Ollama helpers =====
@@ -82,6 +108,68 @@ def ollama_generate(prompt: str) -> str:
     if r.status_code != 200:
         raise HTTPException(status_code=502, detail=f"Ollama generate error: {r.text}")
     return (r.json().get("response") or "").strip()
+
+def build_grading_prompt(
+    question: str,
+    user_answer: str,
+    context_chunks: List[str],
+    article_num: Optional[str] = None,
+) -> str:
+    ctx = "\n\n".join(context_chunks[:20])  # omejiš število blokov, če jih je veliko
+    lines: List[str] = []
+    lines.append("Si natančen pravni asistent za ZGD-1 (Slovenija).")
+    lines.append("Tvoja naloga je OVREDNOTITI odgovor študenta glede na podan kontekst.")
+    lines.append(
+        "STROGO prepovedano je podajati popoln modelni odgovor ali navajati konkretne pravilne sestavine, alineje, pojme ali primere. "
+        "NE SMEŠ navajati ali omenjati nobenih konkretnih pravnih izrazov iz konteksta (npr. imen posameznih poročil, mnenj, obveznosti)."
+    )
+    lines.append(
+        "Tvoj cilj je SAMO ocenjevanje, ne poučevanje. "
+        "Odgovor naj študentu nakaže, ali je odgovor (pravilen|delno pravilen|napačen) in ZGOLJ NA SPLOŠNO, "
+        "ali mu manjka več sestavin, več podrobnosti, dodatna pojasnila ipd., brez konkretnih primerov."
+    )
+    lines.append("Če je odgovor napačen dobi študent 0 točk.")
+    lines.append(
+        "Struktura odgovora:\n"
+        "1) Prva vrstica: 'Ocena: X/10, odgovor (pravilen|delno pravilen|napačen)'.\n"
+        "2) Nato NAJVEČ tri kratke stavke, ki SPLOŠNO opišejo:\n"
+        "   - ali se odgovor dotakne glavne teme ali samo manjšega dela vprašanja,\n"
+        "   - ali mu manjka več pomembnih elementov ali podrobnosti, brez naštevanja teh elementov,\n"
+        "   - na katere člene/odstavke naj se obrne (brez povzema vsebine teh členov)."
+    )
+    lines.append(
+        "NE naštevaj konkretnih sestavin ali primerov, kot so npr. posamezna poročila, mnenja, postavke ali alineje. "
+        "Takih konkretnih izrazov NE SME BITI v tvojem odgovoru."
+    )
+
+    if article_num:
+        lines.append(
+            f"Kontekst se nanaša na {article_num} člen ZGD-1 in njegove odstavke. "
+            "Ne izmišljuj novih številk členov. "
+            "Če omenjaš člen ali odstavek, uporabi podani člen in tisto oznako odstavka, ki je eksplicitno razvidna iz konteksta "
+            "(npr. '57. člen, prvi odstavek'). "
+            "Pri tem NE opisuj natančne vsebine tega odstavka, samo usmeri študenta nanj."
+        )
+    else:
+        lines.append(
+            "Če kontekst ne vsebuje eksplicitnih številk členov, ne izmišljuj novih številk členov; "
+            "raje samo povej, da naj študent preveri ustrezne odstavke v podanem kontekstu."
+        )
+
+    lines.append("Odgovarjaj v slovenščini.")
+    lines.append("")
+    lines.append("KONTEKST (iz zakona, vozlišča isAssessable=true):")
+    lines.append(ctx if ctx else "(Ni konteksta.)")
+    lines.append("")
+    lines.append(f"VPRAŠANJE: {question}")
+    lines.append("")
+    lines.append(f"ODGOVOR ŠTUDENTA: {user_answer}")
+    lines.append("")
+    lines.append(
+        "Zdaj podaj oceno in zelo splošno razlago v skladu z zgornjimi navodili. "
+        "Še enkrat: NE NAVAJAJ konkretnih pravnih pojmov, imen poročil, mnenj, obveznosti ali drugih podrobnosti iz konteksta."
+    )
+    return "\n".join(lines)
 
 
 # ===== Router: detect explicit "X člen" =====
@@ -185,8 +273,24 @@ def rows_to_context_and_citations(rows: List[dict], limit: int) -> Tuple[List[Di
     return contexts, citations
 
 
+
+
 # ===== App =====
 app = FastAPI(title="ZGD1 RAG Chat API (router)")
+
+# Dovoli klice iz Flask UI na 5001
+origins = [
+    "http://192.168.1.16:5001",
+    "http://localhost:5001",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,      # lahko začasno tudi ["*"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
 
@@ -264,3 +368,41 @@ def chat(req: ChatRequest):
     prompt = build_prompt(question, contexts)
     answer = ollama_generate(prompt)
     return ChatResponse(answer=answer, citations=citations, route="vector")
+
+@app.post("/grade-answer", response_model=GradeResponse)
+def grade_answer(req: GradeRequest):
+    question = (req.question or "").strip()
+    user_answer = (req.user_answer or "").strip()
+    if not question or not user_answer:
+        raise HTTPException(status_code=400, detail="question and user_answer are required")
+
+    # če pride article_num iz frontenda, ga uporabi; sicer pusti None
+    article_num = (req.article_num or "").strip() or None
+
+    # 1) poberi kontekst iz Neo4j (samo isAssessable=true)
+    try:
+        with driver.session() as session:
+            rows = list(session.run(
+                ASSESSABLE_CYPHER,
+                projectName=PROJECT,
+                articleNum=article_num,
+            ))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Neo4j error in ASSESSABLE_CYPHER: {e}")
+
+    context_chunks: List[str] = []
+    for r in rows:
+        txt = r.get("txt")
+        if txt:
+            context_chunks.append(txt)
+
+    prompt = build_grading_prompt(question, user_answer, context_chunks, article_num)
+
+    try:
+        evaluation = ollama_generate(prompt)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Ollama call failed: {e}")
+
+    return GradeResponse(evaluation=evaluation)

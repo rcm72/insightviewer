@@ -36,3 +36,29 @@ test.txt
 
 config.ini
 source/InsightViewer/config.ini
+
+# Python envs
+.venv/
+venv/
+
+# Nested git directories (never commit these)
+*.git/
+**/*.git/
+
+# Typical Python cache
+__pycache__/
+*.pyc
+
+# If uploads are runtime/user-generated
+source/InsightViewer/app/routes/uploads/
+
+# Optional: if you don't need sourcemaps in git
+*.map
+
+# Never commit nested repos
+*.git/
+**/*.git/
+
+# RAG/Chroma local DB (usually should not be committed)
+**/chroma_db/
+**/*.sqlite3
