@@ -35,14 +35,10 @@ HTML_PATH = (
     / "ZAKO4291_NPB22.html"
 )
 
-NEO4J_URI = config['NEO4J']['URI']
-NEO4J_USER = config['NEO4J']['USERNAME']
-NEO4J_PASSWORD = config['NEO4J']['PASSWORD']
-
-
-        #config.read('config.ini')
-
-
+NEO4J_URI = os.getenv("NEO4J_URI")
+NEO4J_USERNAME = os.getenv("NEO4J_USER")  # Changed from NEO4J_USERNAME
+NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD")
+NEO4J_DATABASE = os.getenv("NEO4J_DATABASE")
 
 
 def clean_text(text: str) -> str:
@@ -239,9 +235,6 @@ def merge_item(tx, item: Dict[str, Any]):
         """,
         **item,
     )
-
-
-
 
 
 def parse_and_load(html_path: str):

@@ -1,0 +1,689 @@
+{
+  "projectName": "Biologija",
+  "nodes": [
+    {
+      "key": "Biologija|2 Vsak organizem je zgrajen vsaj iz ene celice",
+      "name": "2 Vsak organizem je zgrajen vsaj iz ene celice",
+      "sid": "2",
+      "title": "Vsak organizem je zgrajen vsaj iz ene celice",
+      "pageStart": null,
+      "order": 1,
+      "text": null,
+      "label": "Chapter",
+      "uuid": "43b33b47-7f23-424f-b328-853a633e4f22",
+      "projectName": "Biologija"
+    },
+    {
+      "key": "Biologija|2.0 Uvod",
+      "name": "2.0 Uvod",
+      "sid": "2.0",
+      "title": "Uvod",
+      "pageStart": null,
+      "order": 1,
+      "text": null,
+      "label": "Section",
+      "uuid": "2bfd89a7-6988-4e83-a306-61b11e76b6ee",
+      "projectName": "Biologija"
+    },
+    {
+      "key": "Biologija|2.1 Prokariontska celica",
+      "name": "2.1 Prokariontska celica",
+      "sid": "2.1",
+      "title": "Prokariontska celica",
+      "pageStart": null,
+      "order": 2,
+      "text": null,
+      "label": "Section",
+      "uuid": "e616b76e-55f9-4e7e-8707-a5d98d912587",
+      "projectName": "Biologija"
+    },
+    {
+      "key": "Biologija|2.2 Evkariontska celica",
+      "name": "2.2 Evkariontska celica",
+      "sid": "2.2",
+      "title": "Evkariontska celica",
+      "pageStart": null,
+      "order": 3,
+      "text": null,
+      "label": "Section",
+      "uuid": "482e0e58-0f32-49b5-9dbd-77277b769ca2",
+      "projectName": "Biologija"
+    },
+    {
+      "key": "Biologija|2.2.1 Jedro je nadzorno in informacijsko središče celice",
+      "name": "2.2.1 Jedro je nadzorno in informacijsko središče celice",
+      "sid": "2.2.1",
+      "title": "Jedro je nadzorno in informacijsko središče celice",
+      "pageStart": null,
+      "order": 1,
+      "text": null,
+      "label": "SubSection",
+      "uuid": "8a0ef28a-5dd8-4375-9f02-682da934e37c",
+      "projectName": "Biologija"
+    },
+    {
+      "key": "Biologija|2.2.3 Lizosom omogoča celično prebavo",
+      "name": "2.2.3 Lizosom omogoča celično prebavo",
+      "sid": "2.2.3",
+      "title": "Lizosom omogoča celično prebavo",
+      "pageStart": null,
+      "order": 2,
+      "text": null,
+      "label": "SubSection",
+      "uuid": "a880ff66-3b6c-4ffc-85eb-97a8bbc588bc",
+      "projectName": "Biologija"
+    },
+    {
+      "key": "Biologija|2.2.4 Celično ogrodje (citoskelet)",
+      "name": "2.2.4 Celično ogrodje (citoskelet)",
+      "sid": "2.2.4",
+      "title": "Celično ogrodje (citoskelet)",
+      "pageStart": null,
+      "order": 3,
+      "text": null,
+      "label": "SubSection",
+      "uuid": "3d696356-d21d-43c9-bcfe-777e914771b6",
+      "projectName": "Biologija"
+    },
+    {
+      "key": "Biologija|2.2.5 Vakuola je značilen rastlinski organel",
+      "name": "2.2.5 Vakuola je značilen rastlinski organel",
+      "sid": "2.2.5",
+      "title": "Vakuola je značilen rastlinski organel",
+      "pageStart": null,
+      "order": 4,
+      "text": null,
+      "label": "SubSection",
+      "uuid": "27980a74-95c5-425d-98df-e34c1730b1da",
+      "projectName": "Biologija"
+    },
+    {
+      "key": "Biologija|2.2.7 Kloroplast pretvarja sončno energijo v kemično vezano energijo sladkorjev",
+      "name": "2.2.7 Kloroplast pretvarja sončno energijo v kemično vezano energijo sladkorjev",
+      "sid": "2.2.7",
+      "title": "Kloroplast pretvarja sončno energijo v kemično vezano energijo sladkorjev",
+      "pageStart": null,
+      "order": 5,
+      "text": null,
+      "label": "SubSection",
+      "uuid": "c57a0296-17a3-40bc-ba71-551c8f22f466",
+      "projectName": "Biologija"
+    },
+    {
+      "key": "Biologija|2.2.8 Celice in organele omejujejo biotske membrane",
+      "name": "2.2.8 Celice in organele omejujejo biotske membrane",
+      "sid": "2.2.8",
+      "title": "Celice in organele omejujejo biotske membrane",
+      "pageStart": null,
+      "order": 6,
+      "text": null,
+      "label": "SubSection",
+      "uuid": "384aa248-7184-404d-ac02-c1ccd0176fb2",
+      "projectName": "Biologija"
+    },
+    {
+      "key": "Biologija|2.2.9 Celična stena",
+      "name": "2.2.9 Celična stena",
+      "sid": "2.2.9",
+      "title": "Celična stena",
+      "pageStart": null,
+      "order": 7,
+      "text": null,
+      "label": "SubSection",
+      "uuid": "bfea2c00-a84d-41da-87d5-3d75e87b2643",
+      "projectName": "Biologija"
+    },
+    {
+      "key": "Biologija|2.0-0001 | Uvod",
+      "name": "2.0-0001 | Uvod",
+      "sid": "2.0-0001",
+      "title": "Uvod",
+      "pageStart": null,
+      "order": 1,
+      "text": "V prejšnjem poglavju ste spoznali lastnosti živega. Ena izmed njih je tudi dejstvo,\nda je vsak organizem oz. vsako živo bitje zgrajeno iz celic. Obstajajo organizmi,\nki so enoceličarji, in nekatere od njih ste spoznali v osnovni šoli\n(npr. evglene, paramecije, glive kvasovke, bakterije).\nOrganizmi, ki jih gradi več kot ena celica, pa so mnogoceličarji.\nCelice teh so si lahko podobne po zgradbi in nalogah, ki jih opravljajo,\npraviloma pa sestavljajo tkiva. Različna tkiva sestavljajo organe,\nti pa organski sistem organizma.\n\nPri tem je potrebno poudariti, da je zgradba živih sistemov in z njo\npovezanih biotskih procesov rezultat nenehne biološke evolucije.\n\nSlika 2.1: Evglena (Euglena mutabilis)\nSlika 2.2: Zvončica (Vorticella sp.)\nSlika 2.3: Paramecij (Paramecium caudatum)\nSlika 2.4: Glive kvasovke (Saccharomyces cerevisiae)\nSlika 2.5: Bakterija (Escherichia coli)\n\nkorenska celica\nkorensko tkivo\nkorenina\nrastlina\nkorenski transportni sistem\n\nSlika 2.6: Ravni organizacije:\na) korenska celica,\nb) korensko tkivo,\nc) korenina – organ,\nd) koreninski sistem – organski sistem,\ne) rastlina – organizem.\nV evolucijski zgodovini sta se izoblikovala dva glavna tipa celic:\nprokariontska celica, ki je izvorni tip celice, in evkariontska celica,\nki se je razvila kasneje.",
+      "label": "Chunk",
+      "uuid": "6ab6a9b9-cd1d-4df8-9adf-18e709a73886",
+      "projectName": "DefaultProject"
+    },
+    {
+      "key": "Biologija|2.0-0002 | Uvod",
+      "name": "2.0-0002 | Uvod",
+      "sid": "2.0-0002",
+      "title": "Uvod",
+      "pageStart": null,
+      "order": 2,
+      "text": "Razvojno drevo (čas v milijardah let):\n– nastanek Zemlje\n– Zemlja dovolj hladna za nastanek trdne skorje\n– najstarejši fosili prokariontov\n– kopičenje kisika v ozračju, ki se sprošča zaradi fotosinteznih cianobakterij\n– najstarejši fosili evkariontov\n– nastanek mnogoceličnih organizmov\n– najstarejši fosili živali\n– kambrijska eksplozija\n– rastline in simbiozne glive naselijo kopno\n– izumrtje dinozavrov\n– prvi človek\n\nProkarionti:\n– bakterije\n– arheje\n\nEvkarionti:\n– protisti\n– rastline\n– glive\n– živali\n\nZadnji skupni prednik vseh danes živečih organizmov\nSkupni prednik\n\nCelice obeh tipov so od svoje okolice razmejene s celično membrano,\nnapolnjene so s citoplazmo in vsebujejo dedni material.\nMed njimi pa so tudi pomembne razlike.\n\nProkarionti – bakterijska celica:\n– celična membrana\n– celična stena\n– citoplazma\n– ribosomi\n– dednina brez membrane\n– plazmid\n\nEvkarionti:\nRastlinska celica:\n– celična membrana\n– celična stena\n– kloroplast\n– mitohondrij\n– ribosomi\n– vakuola\n– jedro\n– endoplazemski retikulum (ER)\n– Golgijev aparat (GA)\n\nGlivna celica:\n– celična membrana\n– celična stena\n– mitohondrij\n– ribosomi\n– vakuola\n– jedro\n– ER\n– GA\n\nŽivalska celica:\n– celična membrana\n– mitohondrij\n– ribosomi\n– jedro\n– ER\n– GA\n– centriol\n\nSlika 2.7: Razvojno drevo\nSlika 2.8: Zgradba različnih tipov celic",
+      "label": "Chunk",
+      "uuid": "1868d45a-9d45-4bc9-b06a-4dd2202004ff",
+      "projectName": "DefaultProject"
+    },
+    {
+      "key": "Biologija|2.1-0001 | Prokariontska celica",
+      "name": "2.1-0001 | Prokariontska celica",
+      "sid": "2.1-0001",
+      "title": "Prokariontska celica",
+      "pageStart": null,
+      "order": 1,
+      "text": "Poimenovanje tega tipa celic izhaja iz dejstva, da nimajo pravega jedra\n(iz grščine: pro – pred; karyon – jedro). To pomeni, da njihova dedna snov\n(dednina) ni obdana z ovojem, pač pa je v obliki ene same krožne molekule\nDNA, ki leži v citosolu – v tekočem delu citoplazme.\n\nV citosolu imajo tudi zrnate strukture, imenovane ribosomi, ki jim\nomogočajo sintezo beljakovin, ter nitaste strukture, ki tvorijo celično\nogrodje ali citoskelet, ki omogoča vzdrževanje oblike celice in njeno delitev.\n\nCelico omejuje celična membrana ali plazmalema, katere uvihki imajo\npodobno vlogo kot organeli v evkariontskih celicah. Na zunanji strani\ncelične membrane je celična stena, ki se po sestavi razlikuje od celične\nstene evkariontske celice.\n\nNekatere prokariontske celice imajo zunaj stene še želatinasti ovoj\n(kapsula). Ta v vodi zasluži in celicam omogoča zaščito ter pritrjanje\nna podlago, druge celice pa se lahko pritrdijo s kratkimi površinskimi\nizrastki.\n\nProkariontske celice so majhne, manjše od evkariontskih. V povprečju\nmerijo od 1 do 10 µm. Mednje sodijo bakterije in arheje.\n\nSlika 2.9: Prokariontska celica",
+      "label": "Chunk",
+      "uuid": "732e3c43-6142-4698-876a-138b9699073f",
+      "projectName": "DefaultProject"
+    },
+    {
+      "key": "Biologija|2.2-0001 | Evkariontska celica",
+      "name": "2.2-0001 | Evkariontska celica",
+      "sid": "2.2-0001",
+      "title": "Evkariontska celica",
+      "pageStart": null,
+      "order": 1,
+      "text": "Med evkariontske celice sodijo celice protistov, gliv, rastlin in živali,\nmed katere lahko uvrstimo tudi človeške celice.\n\nCelice vseh naštetih organizmov imajo pravo jedro. To je celični organel,\nki z dvojno membrano obdaja dedno snov (iz grščine: eu – pravi; karyon –\njedro). Z dvojno membrano sta obdana tudi kloroplast in mitohondrij.\nNa sliki 2.11 poiščite organele, ki so obdani z enojno membrano.\n\nZ membrano obdani razdelki – membranski organeli – omogočajo potek\nrazličnih kemičnih reakcij, ki so prostorsko ločene. Takšna organizacija\nomogoča, da so evkariontske celice večje od prokariontskih.\n\nMerijo od 10 do 100 µm. Poznamo pa tudi celice, ki odstopajo od tega,\nnpr. živčne celice. V živcu, ki izhaja iz hrbtenjače in oživčuje spodnji\ndel noge pri človeku, so izrastki živčnih celic dolgi tudi več kot en\nmeter. Še daljše živčne celice so našli pri slonih, žirafah in orjaških\nlignjih.\n\nSlika 2.10: Najdaljša celica v človeškem telesu je živčna celica,\nki se razteza od hrbtenjače do prstov na nogi.\nV citoplazmi celic najdemo tudi strukture, ki od citosola niso ločene z membrano.\nImenujemo jih nemembranski organeli. Takšni so ribosomi in elementi\ncitoskeleta oz. celičnega ogrodja. Preverite, ali so prikazani na sliki 2.11.",
+      "label": "Chunk",
+      "uuid": "a4ec912a-a03b-45f8-ae73-982e273a2437",
+      "projectName": "DefaultProject"
+    },
+    {
+      "key": "Biologija|2.2-0002 | Evkariontska celica",
+      "name": "2.2-0002 | Evkariontska celica",
+      "sid": "2.2-0002",
+      "title": "Evkariontska celica",
+      "pageStart": null,
+      "order": 2,
+      "text": "a) Rastlinska celica:\n– celična stena\n– celična membrana\n– citoplazma\n– kloroplast\n– mitohondrij\n– Golgijev aparat\n– gladki endoplazemski retikel\n– ribosomi\n– vakuole\n– z membrano obdane luknjice v steni med sosednjimi celicami\n\nb) Živalska celica:\n– celična membrana\n– citoplazma\n– mitohondrij\n– Golgijev aparat\n– gladki endoplazemski retikel\n– zrnati endoplazemski retikel\n– ribosomi\n– lizosomi\n– centriol\n\nSlika 2.11: Zgradba rastlinske (a) in živalske (b) celice\nV nadaljevanju si bomo ogledali ultrastrukturo celice, kakršno je mogoče\nvideti z elektronskim mikroskopom. Pri pouku boste uporabljali zlasti\nsvetlobni mikroskop, s katerim boste lahko opazovali nekatere organele,\nki jih predstavljamo v nadaljevanju.",
+      "label": "Chunk",
+      "uuid": "c20242e5-7d8e-4e34-a850-96bf53eece39",
+      "projectName": "DefaultProject"
+    },
+    {
+      "key": "Biologija|2.2.1-0001 | Jedro je nadzorno in informacijsko središče celice",
+      "name": "2.2.1-0001 | Jedro je nadzorno in informacijsko središče celice",
+      "sid": "2.2.1-0001",
+      "title": "Jedro je nadzorno in informacijsko središče celice",
+      "pageStart": null,
+      "order": 1,
+      "text": "Če bi bila celica podjetje, bi imelo jedro v njem vlogo direktorja.\nJedro namreč vsebuje informacije o zgradbi in delovanju celice, zato\nlahko uravnava delovanje drugih organelov. Ko govorimo o informacijah\nv celici, mislimo na informacijsko vlogo molekule. To vlogo v jedru\npredstavlja molekula DNA (deoksiribonukleinska kislina), ki je s\nproteini povezana v strukturo, imenovano kromatin.\n\nJedro je obdano z jedrnim ovojem, ki ga sestavljata dve membrani.\nV jedrnem ovoju so jedrne pore, skozi katere poteka izmenjava snovi\nmed jedrom in citoplazmo. Na zunanjo membrano jedrnega ovoja je\npripet zrnati endoplazemski retikel z ribosomi.\n\nKromatin se med delitvijo jedra vse bolj navije oz. zgosti v obliko,\nki ji pravimo kromosom. Kromosomi, obarvani s posebnimi barvili, so\nv celici vidni tudi s svetlobnim mikroskopom.\n\nSlika 2.12: Jedro\n\nSlika 2.13: Koreninski vršiček čebule in obarvani kromosomi\n\nTemnejša gmota znotraj jedra je jedrce, v katerem nastajajo sestavni\ndeli ribosomov. Jedro zapuščajo skozi jedrne pore. To so prekinitve\njedrnega ovoja, obdane s kompleksi beljakovin. Jedrne pore omogočajo\npovezavo notranjosti jedra s citoplazmo.\n2.2.2 Endoplazemski retikel sodeluje pri izgradnji in transportu različnih snovi",
+      "label": "Chunk",
+      "uuid": "e07c7047-61f0-4bbe-9e82-118db4dbb112",
+      "projectName": "DefaultProject"
+    },
+    {
+      "key": "Biologija|2.2.1-0002 | Jedro je nadzorno in informacijsko središče celice",
+      "name": "2.2.1-0002 | Jedro je nadzorno in informacijsko središče celice",
+      "sid": "2.2.1-0002",
+      "title": "Jedro je nadzorno in informacijsko središče celice",
+      "pageStart": null,
+      "order": 2,
+      "text": "Zunanja jedrna membrana je izrazito izvihana in tvori sploščene\nmembranske strukture, imenovane cisterne. Njeno neposredno nadaljevanje\npredstavlja nekakšno transportno cestno omrežje celice. To je\nendoplazemski retikel.\n\nSlika 2.14: Endoplazemski retikel\n\nV endoplazemskem retiklu se sintetizirajo in predelujejo snovi, ki jih\ncelica potrebuje zase ali pa jih s posredovanjem Golgijevega aparata\nizloča iz celice.\n\nDel endoplazemskega retikla ima na površini sploščenih membranskih\ncistern nameščene ribosome. Ker so ribosomi zrnate strukture (granule),\nga imenujemo zrnati (granularni) endoplazemski retikel (GER).\nRibosomi sintetizirajo beljakovine, ki gredo v notranjost retikla.\nPo dodajanju določenih skupin, npr. ogljikovih hidratov, so kot\nglikoproteini primerni za vgradnjo v biotske membrane.\nGER zapustijo v obliki membranskega mehurčka, ki se odcepi, kot prikazuje\nslika 2.15.\n\nDrugi del endoplazemskega retikla sestavljajo cevaste in podolgovatim\nvrečam podobne membrane brez ribosomov. Imenujemo ga gladki\n(agranularni) endoplazemski retikel (AER).\n\nNjegova vloga v celici je izgradnja maščob, fosfolipidov, ki gradijo\nbiotske membrane, in steroidov ter tudi razgradnja različnih strupov,\nnpr. zaužitega alkohola.\n\nV AER se kopičijo tudi kalcijevi ioni (Ca2+), ki jih celice potrebujejo\npri prenosu signalov. V mišičnih celicah je ta ion pomemben pri krčenju.",
+      "label": "Chunk",
+      "uuid": "87ad7917-0cc6-4afc-a9d5-405460bf00f0",
+      "projectName": "DefaultProject"
+    },
+    {
+      "key": "Biologija|2.2.1-0003 | Jedro je nadzorno in informacijsko središče celice",
+      "name": "2.2.1-0003 | Jedro je nadzorno in informacijsko središče celice",
+      "sid": "2.2.1-0003",
+      "title": "Jedro je nadzorno in informacijsko središče celice",
+      "pageStart": null,
+      "order": 3,
+      "text": "Slika 2.15: Izgradnja beljakovine na zrnatem endoplazemskem retiklu\n\nPremalokrat poudarjamo, da je alkohol za celice strup. Ob zaužitju\nzmernih količin alkohola lahko jetrne celice z encimi, ki so v AER,\netanol razgradijo in preprečijo, da bi ostajal v krvnem obtoku in nas\nše naprej omamljal.\n2.2.3 Ribosom omogoča sintezo beljakovin\n\nRibosom je majhen nemembranski celični organel, sestavljen iz dveh\npodenot: večje in manjše. Obe sta zgrajeni iz ribosomske RNA (rRNA)\nin beljakovin.\n\nSlika 2.16: Ribosom (a) in shematski prikaz ribosoma (b)\n\nRibosomi nastajajo v jedru. Lahko so nameščeni na membrani GER,\nlahko pa so tudi prosto v citoplazmi. Slednji sintetizirajo\nbeljakovine, ki ostanejo in delujejo v citoplazmi, beljakovine,\nsintetizirane na GER, pa se vgradijo v membrane ali izločijo iz celice.\n\nRibosomi prokariontov se od evkariontskih razlikujejo po velikosti.\nEvkariontski so večji in težji. Najmanjše ribosome imata kloroplast\nin mitohondrij.\n\n<<2.2.4 Golgijev aparat sprejema snovi, ki so nastale v drugih delih celice,\njih kemično preoblikuje in izloča>>\n\nGolgijev aparat (GA) je podoben skladovnici membranskih cistern,\nki so med seboj povezane s cevmi (slika 2.17). V posamezni celici\njih je navadno več, kot jih lahko vidimo na shemah v učbeniku.",
+      "label": "Chunk",
+      "uuid": "b47c8054-be52-45e4-b590-950be918fe69",
+      "projectName": "DefaultProject"
+    },
+    {
+      "key": "Biologija|2.2.1-0004 | Jedro je nadzorno in informacijsko središče celice",
+      "name": "2.2.1-0004 | Jedro je nadzorno in informacijsko središče celice",
+      "sid": "2.2.1-0004",
+      "title": "Jedro je nadzorno in informacijsko središče celice",
+      "pageStart": null,
+      "order": 4,
+      "text": "Beljakovine, ki so nastale na GER, se v membranskih transportnih\nmešičkih prenesejo do membran GA. Membrani obeh organelov se\nzlijeta in vsebina mešička se znajde v cisterni GA. Tu posebni\nencimi pripeljejo beljakovine po potrebi do predelave, lahko jim\nnpr. dodajo ogljikove hidrate.\n\nSlika 2.17: Golgijev aparat\nDokončane beljakovine in drugi produkti zapustijo GA\nsortirani in zapakirani v mehurčkih, ki se odcepijo od GA.\nKo se membrana mehurčka in celična membrana stikata, se zlijeta\nin vsebina mehurčka se izloči, njegova membrana pa postane del\ncelične membrane.\n\nGolgijev aparat je torej organel, ki sprejema snovi, nastale v\nendoplazemskem retiklu, jih sortira in zapakira ter pošlje na\nmesto, kjer jih celica potrebuje oz. kjer bodo opravljale svoje\nnaloge. Pri tem gre za neheno odcepljanje in medsebojno zlivanje\nmembran.\n\nSlika 2.18: Endomembranski sistem (sistem membran, ki obdajajo\ncelične organele) omogoča nastajanje, spreminjanje in izločanje\norganskih molekul.",
+      "label": "Chunk",
+      "uuid": "fb4ec7d8-a42b-4cf5-9dad-ebff2935dd1f",
+      "projectName": "DefaultProject"
+    },
+    {
+      "key": "Biologija|2.2.3-0001 | Lizosom omogoča celično prebavo",
+      "name": "2.2.3-0001 | Lizosom omogoča celično prebavo",
+      "sid": "2.2.3-0001",
+      "title": "Lizosom omogoča celično prebavo",
+      "pageStart": null,
+      "order": 1,
+      "text": "Lizosomi so posebni mehurčki, ki se odcepijo od Golgijevega aparata.\nV njih so zapakirane beljakovine, ki imajo vlogo encimov za razgradnjo\ndelcev hrane in ostankov celičnih sestavin ter tudi tujkov, kot so\nbakterije in virusi. Značilni so za živalske celice. Pri rastlinskih\ncelicah odpadne snovi reciklirajo vakuole.\n\nEnocelični organizmi, kot je npr. ameba, sprejemajo iz okolja delce\nhrane tako, da jih zajamejo z uvihanjem celične membrane. Nastali\nmehurček se zlije z membrano lizosoma in tako nastane prebavna\nvakuola (sekundarni lizosom).\n\nV njem se velike organske molekule, npr. polisaharidi in beljakovine,\nrazgradijo do monomerov, kot so enostavni sladkorji in aminokisline.\nTe prehajajo v citosol, kjer se dokončno presnovijo.\n\nSlika 2.19: V lizosomu poteka celična prebava.\n\nSlika 2.20: Primer celične prebave pri amebi (a).\nLizosom se združi z membranskim mehurčkom, ki vsebuje delce hrane ali\nbakterije (b).\nMembrana lizosomov preprečuje, da bi encimi razgradili ne samo ali vsebino\ncelice. To se zgodi samo takrat, ko celica odmre.",
+      "label": "Chunk",
+      "uuid": "778947bb-d16c-4c63-84bb-89fe6796e066",
+      "projectName": "DefaultProject"
+    },
+    {
+      "key": "Biologija|2.2.4-0001 | Celično ogrodje (citoskelet)",
+      "name": "2.2.4-0001 | Celično ogrodje (citoskelet)",
+      "sid": "2.2.4-0001",
+      "title": "Celično ogrodje (citoskelet)",
+      "pageStart": null,
+      "order": 1,
+      "text": "V citosolu evkariontskih celic so znanstveniki odkrili miniaturno ogrodje –\ncelično ogrodje ali citoskelet. Ta posebej pri živalski celici vzdržuje\nobliko celice, kar pri rastlinski in glivni celici v večji meri opravlja\ncelična stena.\n\nElementi (gradniki) citoskeleta so nitaste strukture različnih premerov\n(slika 2.21). Njihova dolžina se lahko spreminja, zato omogočajo gibanje\nceličnih struktur ter krčenje in premikanje celic.\n\nSlika 2.21: Elementi citoskeleta\n– mikrotubuli\n– intermediarni filamenti\n– mikrofilamenti\n\nNajtanjši med njimi so mikrofilamenti. Sestavljeni so iz dveh niti\nnanizanih beljakovinskih molekul aktina, ki sta zaviti ena okrog druge,\nkot prikazuje slika 2.21.\n\nCelicam brez celične stene elementi citoskeleta omogočajo krčenje in s tem\nnjihovo premikanje. Tako lahko svojo obliko spreminjajo amebe, ki so\nenocelični organizmi (slika 2.20), in tudi nekateri levkociti, ki so\nčloveške krvne celice.\n\nSposobnost spreminjanja oblike (ameboidnost) tem levkocitom omogoča, da se\n»prerinjejo« med celicami v steni krvnih kapilar in izstopijo iz krvnega\nobtoka v tkivo. Tam »požirajo« tujke, tako da jih zajamejo z uvihkom\ncelične membrane. Potem se lahko vrnejo nazaj v krvni obtok.",
+      "label": "Chunk",
+      "uuid": "596ce2c9-13a7-4b5e-b008-a65757b1970d",
+      "projectName": "DefaultProject"
+    },
+    {
+      "key": "Biologija|2.2.4-0002 | Celično ogrodje (citoskelet)",
+      "name": "2.2.4-0002 | Celično ogrodje (citoskelet)",
+      "sid": "2.2.4-0002",
+      "title": "Celično ogrodje (citoskelet)",
+      "pageStart": null,
+      "order": 2,
+      "text": "Slika 2.22: Ameboidno gibanje je podobno\npretakanju, pri katerem telo ustvarja\nnastanek podaljškov ali izrastkov\nime, imenovanih psevdopodiji (pralžki).\nNačinu požiranja z uvihanjem celične membrane pravimo fagocitoza.\nLevkocitom, ki so tega sposobni, pravimo fagociti.\n\nSlika 2.23: Levkociti (na sliki belo)\n\nV mišičnih celicah živali (tudi človeka) so aktinski in miozinski\nfilamenti urejeni tako, da omogočajo krčenje posamezne celice\nin končno cele mišice.\n\nSlika 2.24: Aktinski in miozinski filamenti v mišični celici\n\nNajdebelejši elementi citoskeleta so mikrotubuli. Sestavljeni so iz\nbeljakovinskih molekul tubulina, ki so sprijeti v cevasto strukturo.\nZ dodajanjem ali odcepljanjem molekul tubulina se mikrotubuli lahko\nkrajšajo ali podaljšujejo. Ta lastnost omogoča prerazporejanje\nkromosomov pri delitvi celice.\n\nNiti delitvenega vretena, ki se pritrdijo na kromosome, so pravzaprav\nmikrotubuli, ki se žarkasto širijo iz centrosoma. Živalske celice\nimajo v centrosomih po dva centriola iz mikrotubulov, ki so urejeni\ntako, da tvorijo obod devetih trojčkov (9 × 3).\n\nMikrotubuli gradijo bičke in migetalke. Pri obojih so urejeni tako,\nda tvorijo obod devetih parov, dva mikrotubula pa sta v sredini\n(9 × 2 + 2). Pod vsakim bičkom oz. migetalko je za oporo še bazalno\ntelo, zgrajeno podobno kot centriol (9 × 3 mikrotubuli).",
+      "label": "Chunk",
+      "uuid": "71e753c9-96f0-4183-b323-0a59577ea72c",
+      "projectName": "DefaultProject"
+    },
+    {
+      "key": "Biologija|2.2.4-0003 | Celično ogrodje (citoskelet)",
+      "name": "2.2.4-0003 | Celično ogrodje (citoskelet)",
+      "sid": "2.2.4-0003",
+      "title": "Celično ogrodje (citoskelet)",
+      "pageStart": null,
+      "order": 3,
+      "text": "Slika 2.25: Centriol (9 × 3 mikrotubuli)\nSlika 2.26: Razlika v zgradbi centriola in bička\n– Centriol: devet trojčkov mikrotubulov je razporejenih v krog (9 × 3).\n– Biček: devet parov mikrotubulov je razporejenih v krog, v sredini pa\nsta še dva mikrotubula (9 × 2 + 2).\n\nRahlo vzdolžno drsenje mikrotubulov v bičkih in migetalkah omogoča\nupogibanje teh struktur in s tem aktivno plavanje oz. izpodrivanje\nmedija, ki je običajno voda.\n\nMikrotubuli kot elementi celičnega ogrodja sodelujejo tudi pri\ntransportu snovi in premikanju organelov znotraj celice. Membranski\nmehurčki, ki se odcepljajo od ER in GA, ne lebdijo v citosolu, pač pa\npotujejo vzdolž mikrotubulov do cilja.\n\nPotovanje, ki je podobno dvohojni hoji, omogočajo posebne gibalne\nbeljakovine. Med njimi in mikrotubuli izmenično potekajo reakcije\nvezave in sprostitve, za kar mora celica zagotavljati energijo.\n\nSlika 2.27: Transport snovi in premikanje organelov znotraj celice",
+      "label": "Chunk",
+      "uuid": "057478bd-fceb-460e-a489-72a21a693200",
+      "projectName": "DefaultProject"
+    },
+    {
+      "key": "Biologija|2.2.5-0001 | Vakuola je značilen rastlinski organel",
+      "name": "2.2.5-0001 | Vakuola je značilen rastlinski organel",
+      "sid": "2.2.5-0001",
+      "title": "Vakuola je značilen rastlinski organel",
+      "pageStart": null,
+      "order": 1,
+      "text": "Vakuola je mehurček, ki je večinoma napolnjen z vodo in v njej\nraztopljenimi snovmi, kot so beljakovine, barvila in ioni. Vsebuje tudi\nencime za razgradnjo založnih snovi in odpadne produkte presnove, zato\nna neki način nadomešča lizosome v živalskih celicah.\n\nObdana je z membrano, ki jo imenujemo tonoplast. Njena vsebina je\nredkejša oz. manj viskozna kot citosol, ki je raztopina soli in različno\nvelikih molekul.\n\nVakuola v življenju rastlinske celice uravnava ustrezne koncentracije\nrazličnih snovi v celici, zato voda skozi njeno membrano stalno vstopa\nin izstopa. Vakuola, ki je napolnjena z vodo, skupaj s celično steno daje\nrastlinski celici oporo in čvrstost, posebej pri neolesenelih rastlinskih\ntkivih.\n\nVakuole namreč lahko zapolnjujejo kar 90 % prostornine celice. Če\nrastlinam primanjkuje vode, tlak v vakuolah upade in začnejo veneti.\nSlika 2.28: Barvila v vakuolah mesnatih listov mačehe dajejo cvetovom barvo (a),\npri travi pa lahko vakuole vsebujejo snovi (strupe, kristale), ki odganjajo\nmorebitne objedovalce (b).\n\nNekatere živalske celice imajo mehurčke, v katerih poteka encimska\nrazgradnja, zato jih imenujemo prebavne vakuole. Imajo jih tudi nekateri\nživalski protisti, kot so parameciji in amebe, ki se prehranjujejo z\nvključevanjem delcev hrane v citoplazmo.",
+      "label": "Chunk",
+      "uuid": "fd851015-f581-41b2-8149-3340064a8341",
+      "projectName": "DefaultProject"
+    },
+    {
+      "key": "Biologija|2.2.5-0002 | Vakuola je značilen rastlinski organel",
+      "name": "2.2.5-0002 | Vakuola je značilen rastlinski organel",
+      "sid": "2.2.5-0002",
+      "title": "Vakuola je značilen rastlinski organel",
+      "pageStart": null,
+      "order": 2,
+      "text": "Tako paramecij kot ameba imata tudi krčljive ali kontraktilne vakuole,\ns katerimi aktivno črpata vodo iz celice. To je za preživetje nujno,\nsaj vanju neprestano vdira voda.\n\nSlika 2.29: Prebavne vakuole pri amebi\n\nSlika 2.30: Prebavne in krčljive vakuole pri parameciju\n<<2.2.6 Mitohondrij pretvarja kemično vezano energijo hranilnih molekul v obliko,\nki celicam omogoča biotsko delo>>\n\nSlika 2.31: Mitohondrij\n\nMitohondrij je celični organel, zgrajen iz dveh membran. Zunanja\nmembrana ovija mitohondrij in ga ločuje od citoplazme celice. Notranja\nmembrana je nagubana. Uvihke membrane, ki jih imenujemo kristae, so\nlahko v vzdolžnem prerezu videti kot valovite strukture, kot je vidno\nna mikrografiji (slika 2.32).\n\nMembrani tvorita dva ločena prostora: matriks in medmembranski\nprostor (slika 2.31).\n\nV želatinoznem matriksu so poleg encimov za potek reakcij celičnega\ndihanja tudi mitohondrijska DNA in mitohondrijski ribosomi. Ti so\nmanjši od evkariontskih ribosomov in so zelo podobni prokariontskim,\niz katerih so se razvili.\n\nNotranja mitohondrijska membrana ima zaradi nagubanosti močno\npovečano površino. V njej so vsajeni encimi in prenašalci elektronov,\nki sodelujejo v procesu celičnega dihanja.\n\nTa prostorska ločenost omogoča potek reakcij, ki so opisane v\n8. poglavju.",
+      "label": "Chunk",
+      "uuid": "29c802b0-e359-4e77-a865-b4fd058cd351",
+      "projectName": "DefaultProject"
+    },
+    {
+      "key": "Biologija|2.2.5-0003 | Vakuola je značilen rastlinski organel",
+      "name": "2.2.5-0003 | Vakuola je značilen rastlinski organel",
+      "sid": "2.2.5-0003",
+      "title": "Vakuola je značilen rastlinski organel",
+      "pageStart": null,
+      "order": 3,
+      "text": "Zagotovo poznate splošno enačbo celičnega dihanja, v kateri sta kot\nreaktanta glukoza in kisik, kot produkta pa voda in ogljikov dioksid.\nPri celičnem dihanju se kemično vezana energija organskih molekul\n(npr. glukoze) pretvori v kemično vezano energijo v vezeh molekul\nATP (adenozin trifosfat).\n\nTe molekule predstavljajo obliko energije, ki jo celice lahko\nuporabijo za svoje aktivnosti. Pravimo, da omogočajo biotsko delo\ncelice.\n\nSlika 2.32: Mitohondrij pod elektronskim mikroskopom\nSlika 2.33: Celično dihanje poteka v mitohondriju\n\nRazmisli, katere celice vsebujejo več mitohondrijev:\nkostne ali možganske?",
+      "label": "Chunk",
+      "uuid": "f493e110-a455-4ac9-af66-3169c87bfc29",
+      "projectName": "DefaultProject"
+    },
+    {
+      "key": "Biologija|2.2.7-0001 | Kloroplast pretvarja sončno energijo v kemično vezano energijo sladkorjev",
+      "name": "2.2.7-0001 | Kloroplast pretvarja sončno energijo v kemično vezano energijo sladkorjev",
+      "sid": "2.2.7-0001",
+      "title": "Kloroplast pretvarja sončno energijo v kemično vezano energijo sladkorjev",
+      "pageStart": null,
+      "order": 1,
+      "text": "Kloroplast je eden izmed organelov, imenovanih plastidi. Podobno kot za\nmitohondrije je tudi za plastide značilno, da so iz dveh membran, ki pa\nso nekoliko drugače organizirane.\n\nMed membranama, ki omejujeta kloroplast, je ozek medmembranski prostor.\nV notranjosti je tekoča stroma, v kateri je poleg kloroplastne DNA in\nribosomov še membranski sistem: skladovnice membranskih vrečk, tilakoidi,\nki so nastale z uvihanjem notranje membrane. Posamezna tilakoida je kot\nnekakšen žepek, v katerem je prostorček, napolnjen s tekočino.\n\nSlika 2.34: Kloroplast\n\nV kloroplastih poteka fotosinteza. To je proces, pri katerem se svetlobna\nenergija pretvori v energijo, vezano v nastalih organskih molekulah.\n\n6 CO2 + 6 H2O → C6H12O6 + 6 O2\n\nSlika 2.35: Fotosinteza\n\nKloroplast je značilen organel rastlinske celice. Pri mikroskopiranju s\nšolskim svetlobnim mikroskopom njegovo prisotnost lahko opazimo, saj je\nzelene barve. Barvo mu dajejo klorofili in pomožna fotosintetska barvila\n(pigmenti), ki so vsajeni v tilakoidno membrano.\n\nNa tilakoidah potekajo od svetlobe odvisne reakcije, v stromi pa od\nsvetlobe neodvisne reakcije, ki jih boste natančneje spoznali v\n8. poglavju.\n\nFotosinteza lahko poteka tudi v nekaterih prokariontih, čeprav nimajo\nkloroplastov. Vlogo tilakoidnih membran prevzamejo uvihki celične\nmembrane (plazmaleme).",
+      "label": "Chunk",
+      "uuid": "1aeb7f8e-50e0-4e65-9d92-8a58e1801fd2",
+      "projectName": "DefaultProject"
+    },
+    {
+      "key": "Biologija|2.2.7-0002 | Kloroplast pretvarja sončno energijo v kemično vezano energijo sladkorjev",
+      "name": "2.2.7-0002 | Kloroplast pretvarja sončno energijo v kemično vezano energijo sladkorjev",
+      "sid": "2.2.7-0002",
+      "title": "Kloroplast pretvarja sončno energijo v kemično vezano energijo sladkorjev",
+      "pageStart": null,
+      "order": 2,
+      "text": "Slika 2.36: Cianobakterije – prokarionti, ki izvajajo fotosintezo\nMed plastide poleg kloroplastov prištevamo še kromoplaste in levkoplaste.\nKromoplasti vsebujejo rdeča, oranžna in rumena barvila, ki obarvajo\ncvetove, plodove in cele podzemne dele rastlin, kot je korenček.\nLevkoplasti so brezbarvni. Tiste levkoplaste, ki skladiščijo zrna škroba,\nrezervno snov rastlin, imenujemo amiloplasti.\n\nDomnevamo, da so se plastidi, tako kot mitohondriji, razvili iz\nsimbiontskih prokariontov.\n\nSimbiontski prokarionti so npr. bakterije, ki živijo v sožitju z drugim\norganizmov. Primer so rizobiji, ki živijo v koreninskih vozličkih\nstročnic, omogočajo stročnicam fiksiranje dušika, nasprotno pa rastlina\nbakterijam nudi zatočišče. Številne bakterije živijo v prebavni cevi\nnekaterih rastlinojedih živali, npr. goveda in termitov, kjer prebavljajo\ncelulozo, ki je gostitelji s svojimi prebavnimi encimi ne morejo\nrazgraditi. Tudi v naših prebavilih je 500 do 1000 vrst bakterij in\nštevilne med njimi so simbiontske in sodelujejo pri prebavi snovi.",
+      "label": "Chunk",
+      "uuid": "86779f7c-d402-4b2b-9d6d-e5e919d8f0a6",
+      "projectName": "DefaultProject"
+    },
+    {
+      "key": "Biologija|2.2.8-0001 | Celice in organele omejujejo biotske membrane",
+      "name": "2.2.8-0001 | Celice in organele omejujejo biotske membrane",
+      "sid": "2.2.8-0001",
+      "title": "Celice in organele omejujejo biotske membrane",
+      "pageStart": null,
+      "order": 1,
+      "text": "Membrana, ki omejuje posamezno celico od okolja, in membrane, ki\nomejujejo celične organele, so zelo podobno zgrajene. Imenujemo jih s\nskupnim pojmom biotske membrane.\n\nOsnovni gradniki membrane so fosfolipidi. Razporejeni so v dveh plasteh,\nzato pravimo, da je membrana fosfolipidni dvosloj.\n\nFosfolipidne molekule se zaradi hidrofilnih glav, ki so polarne, uredijo\ntako, da so glave v stiku z vodo (na zunanji strani iz okolice celice, na\nnotranji strani pa voda, ki je v citosolu). Hidrofobni nepolarni repki\npa so obrnjeni drug proti drugemu.\n\nMolekulo fosfolipida boste bolje spoznali v 3. poglavju o kemični sestavi\ncelice.\n\nNa sliki 2.37 lahko opazimo, da so med molekule fosfolipidov vključene\nrazlične beljakovine. Nekatere segajo skozi celoten dvosloj, druge so na\npovršini. Lahko imajo vezane kratke verige ogljikovih hidratov, v tem\nprimeru jih imenujemo glikoproteini. Prisotnost glikoproteinov, npr. v\nmembrani rdečih krvničk (eritrocitov), določa krvno skupino posameznika.\n\nSlika 2.37: Celična membrana (debelina 8 nm)\nHolesterol, ki ga poleg glikolipidov vidimo na sliki 2.37, je pomembna\nsestavina membrane živalskih celic. Vgrajen je v notranjost\nfosfolipidnega dvosloja in uravnava fluidnost (gibljivost) fosfolipidov\nin drugih vključenih molekul ter povečuje stabilnost celične membrane.",
+      "label": "Chunk",
+      "uuid": "3741170e-4664-4110-9915-265201606ab3",
+      "projectName": "DefaultProject"
+    },
+    {
+      "key": "Biologija|2.2.8-0002 | Celice in organele omejujejo biotske membrane",
+      "name": "2.2.8-0002 | Celice in organele omejujejo biotske membrane",
+      "sid": "2.2.8-0002",
+      "title": "Celice in organele omejujejo biotske membrane",
+      "pageStart": null,
+      "order": 2,
+      "text": "Opisano zgradbo membrane najbolje ponazori model tekočega mozaika.\nMembrana je oljnat (torej tekoč) dvosloj fosfolipidov, med katerimi so\ntu in tam vključene beljakovinske molekule, kot so posamezni izstopajoči\nkamenčki v mozaiku.\n\nCelična membrana (plazmalema) ločuje celico od okolja in drugih celic,\nposamezna celica ni zaprt sistem. Skozi membrano celica izmenjuje snovi\nz drugimi celicami in okoljem. Na ta način vzdržuje bolj ali manj\nstabilno notranje okolje, membranski organeli pa večjo učinkovitost\ncelice.\n\nSlika 2.38: Mozaik",
+      "label": "Chunk",
+      "uuid": "ce91a3cb-dbea-4dd0-b593-b484258e618d",
+      "projectName": "DefaultProject"
+    },
+    {
+      "key": "Biologija|2.2.9-0001 | Celična stena",
+      "name": "2.2.9-0001 | Celična stena",
+      "sid": "2.2.9-0001",
+      "title": "Celična stena",
+      "pageStart": null,
+      "order": 1,
+      "text": "Rastlinsko in glivno celico na zunanji strani membrane obdaja še\ncelična stena, ki je v primerjavi s celično membrano precej debela.\nPri glivah je zgrajena iz hitina, pri rastlinah pa iz celuloze.\n\nCelulozne molekule so urejene v snope, ki jih povezujejo polisaharidi\nin beljakovine.\n\nCelična stena je lahko gibka ali toga, odvisno od vrste celice, v\nvsakem primeru pa celico ščiti in ji daje oporo ter obliko.\n\nSlika 2.39: Celična stena\n2.3 Kako so nastale evkariontske celice\n\nŽivljenje na Zemlji se je razvilo pred 3,5 milijarde let. Dobro milijardo\nlet je obstajalo v obliki prokariontskih celic. Na podlagi fosilnih\nostankov vemo, da so se na Zemlji pred 2,1 milijarde let pojavile tudi\nevkariontske celice.\n\nV nasprotju s prokariontskimi imajo jedrni ovoj okrog dednega materiala\nin sistem notranjih membran. Znanstveniki menijo, da so nastale z\nuvihanjem celične membrane, torej imajo skupen izvor (slika 2.40).\n\nKasneje naj bi se prostoživeč prokariont (bakterija), ki je lahko\nopravljal celično dihanje, evolucijsko uspešno vključil v večjo\nprokariontsko celico, ki ga je zajela, a ga ni prebavila. Z njo se je\npomnoževal in v njej živel. Podobno naj bi se kasneje zgodilo s\nprokariontom, ki je opravljal fotosintezo.",
+      "label": "Chunk",
+      "uuid": "7fdc96ed-79c7-499a-a89f-b4f1ecb7f331",
+      "projectName": "DefaultProject"
+    },
+    {
+      "key": "Biologija|2.2.9-0002 | Celična stena",
+      "name": "2.2.9-0002 | Celična stena",
+      "sid": "2.2.9-0002",
+      "title": "Celična stena",
+      "pageStart": null,
+      "order": 2,
+      "text": "Teorija, ki pojasnjuje izvor mitohondrijev in kloroplastov, se imenuje\nendosimbiontska teorija. Vključena prokarionta sta se v celicah obdržala,\nker živita z njimi v sožitju – odnosu, v katerem imata oba udeleženca,\ngost in gostitelj, korist.\n\nTeorijo podpirajo dejstva, da imata oba organela dvojno membrano, pri\nčemer notranja izvira iz endomembranskega sistema. Poleg tega imata oba\ntudi lastno DNA, ki omogoča njuno delitev, in lastne ribosome za sintezo\nbeljakovin.\n\nNotranja membrana obeh organelov, krožna molekula DNA in ribosomi so zelo\npodobni tistim, ki jih imajo danes žive bakterije.\n\nSlika 2.40: Evolucijski nastanek evkariontske celice\n2.4 Celična teorija\n\nPred nekaj stoletji znanstveniki še niso vedeli, kar danes že vsak\nsrednješolec, in sicer da so vsi organizmi zgrajeni iz celic. Kot\nznanstveno pojavo so življenje sprva razlagali spontano, s prostim\nnastajanjem živih organizmov. Verjeli so celo, da organizmi lahko\nspontano nastanejo tako rekoč iz nežive snovi, ter so zagovarjali\ndoktrino vitalizma, ki vključuje oživljajočo silo.\n\nPostopno razvoj in uporabljanje tehničnih pripomočkov je omogočilo\nvpogled v ekvivalentno svet zgradbe organizmov – v svet celic.",
+      "label": "Chunk",
+      "uuid": "9474649c-761f-4ef8-b6e4-bb1587e23c06",
+      "projectName": "DefaultProject"
+    },
+    {
+      "key": "Biologija|2.2.9-0003 | Celična stena",
+      "name": "2.2.9-0003 | Celična stena",
+      "sid": "2.2.9-0003",
+      "title": "Celična stena",
+      "pageStart": null,
+      "order": 3,
+      "text": "Obstajajo tudi organizmi, ki so iz ene same celice – enocelični. Celica\ntakšnega organizma opravlja vse funkcije, potrebne za življenje in\nrazmnoževanje. Pri mnogoceličnih organizmih pa so celice specializirane\nin sodelujejo. Takšna delitev dela omogoča nastanek tkiv, organov in\norganskih sistemov. Celice so torej temeljne gradbene in dejavne enote\nživih bitij.\n\nTo teorijo sta s proučevanjem zgradbe rastlin in živali leta 1837\nutemeljila nemška znanstvenika Matthias Schleiden in Theodor Schwann.\nNista pa vedela, da celice nastajajo le z delitvijo iz obstoječih celic.\nTo spoznanje je s proučevanjem delitve celic v vipijskih celicah rastlin\nprvič izrekel Robert Remak leta 1852.\n\nPri delitvi celic se dedna informacija prenese na celice potomke. Kljub\nenaki dedni informaciji pa se posamezne celice istega organizma lahko\nrazlikujejo, saj opravljajo različne naloge. Tako je to npr. v\nvečceličnem telesu rastlin in živali.\n\nV celicah potekajo presnovni (metabolni) procesi. Pri procesih razgradnje\nsnovi, ki jih celica sprejme iz okolja, razpadajo kemične vezi,\nsproščena energija pa se lahko porabi za izgradnjo celičnih lastnih\nsnovi, ki jih potrebuje za življenje.\n\nCelice so odprti in dinamični sistemi, kar pomeni, da si z okoljem\nizmenjujejo snovi in energijo ter jo pretvarjajo iz ene oblike v drugo.\nVse celice imajo po določeno kemično sestavo.",
+      "label": "Chunk",
+      "uuid": "e4ffee9a-bcdc-4e2a-bef4-e09cb1ca164e",
+      "projectName": "DefaultProject"
+    },
+    {
+      "key": "Biologija|2.2.9-0004 | Celična stena",
+      "name": "2.2.9-0004 | Celična stena",
+      "sid": "2.2.9-0004",
+      "title": "Celična stena",
+      "pageStart": null,
+      "order": 4,
+      "text": "Slika 2.41: Živi organizmi – svet prisoten na površju\n2.4.1 Virusi nimajo celične zgradbe\n\nTudi virusi vsebujejo kemične elemente, a pri njih ne najdemo organelov,\nki smo jih spoznali pri celicah. Vsebujejo le dedno snov, ki je lahko DNA\nali pa RNA, beljakovinski plašč, imenovan kapsida, nekateri pa imajo še\novojnico iz dveh slojev lipidov in beljakovin (slika spodaj). Največja\nstruktura virusov ni omejena s celično membrano. Virusi nimajo ne\nribosomov ne lastnih presnovnih procesov. Vse, kar potrebujejo, zanje\nopravlja celica gostiteljica.\n\nSlika 2.42: Virus HIV (povzroča AIDS)\n\nSlika 2.43: Virus SARS-CoV-2 (povzroča Covid-19)\n\nSlika 2.44: Virusi bakteriofagi napadajo bakterije\n\nSlika 2.45: Zgradba plašča bakteriofaga: je iz beljakovin, ki tvorijo\nikosaedrični plašč.\nZunaj gostitelja je virus nedejaven delec iz makromolekul, ko pa prodre\nv ustrezno celico, prevzame nadzor nad njeno presnovo in jo izkoristi za\nsvoje namnoževanje. Po sprostitvi novih virusov iz celice celica\npropade. V nekaterih primerih se virusna dedna snov vgradi v gostiteljsko\nin se z njo prenaša na potomke celice gostiteljice. Šele ko pride pa se\ntudi v takšnih primerih okužba konča s propadom celice.\n\nVirusi so tako majhni, da bi jih lahko več kot 12.000 zložili med oba\nprsta, s katerima obrnemo list v učbeniku.\n\nSamoevalvacija",
+      "label": "Chunk",
+      "uuid": "681b09e0-2dd1-4173-ac27-a4161658c109",
+      "projectName": "DefaultProject"
+    },
+    {
+      "key": "Biologija|2.2.9-0005 | Celična stena",
+      "name": "2.2.9-0005 | Celična stena",
+      "sid": "2.2.9-0005",
+      "title": "Celična stena",
+      "pageStart": null,
+      "order": 5,
+      "text": "Uspešen sem, ko:\n- na sliki prepoznam posamezen tip celice (prokariontsko, bakterijsko,\n  evkariontsko rastlinsko, glivno, živalsko),\n- poznam razlike in podobnosti med različnimi tipi celic,\n- navedem vlogo posameznih organelov,\n- opišem medsebojno povezanost in sodelovanje jedrnega ovoja,\n  endoplazemskega retikla, Golgijevega aparata, lizosomov in drugih\n  membranskih mehurčkov,\n- navedem dejstva, ki so v prid endosimbiontski teoriji,\n- pojasnim, zakaj znanstveniki virusov ne uvrščajo med žive organizme oz.\n  zakaj virusi niso celice.",
+      "label": "Chunk",
+      "uuid": "bb2fb01e-210e-48c0-8f38-91a86589fd9f",
+      "projectName": "DefaultProject"
+    }
+  ],
+  "rels": [
+    {
+      "fromKey": "Biologija|2 Vsak organizem je zgrajen vsaj iz ene celice",
+      "type": "HAS_SECTION",
+      "toKey": "Biologija|2.0 Uvod"
+    },
+    {
+      "fromKey": "Biologija|2 Vsak organizem je zgrajen vsaj iz ene celice",
+      "type": "HAS_SECTION",
+      "toKey": "Biologija|2.1 Prokariontska celica"
+    },
+    {
+      "fromKey": "Biologija|2 Vsak organizem je zgrajen vsaj iz ene celice",
+      "type": "HAS_SECTION",
+      "toKey": "Biologija|2.2 Evkariontska celica"
+    },
+    {
+      "fromKey": "Biologija|2.2 Evkariontska celica",
+      "type": "HAS_SECTION",
+      "toKey": "Biologija|2.2.1 Jedro je nadzorno in informacijsko središče celice"
+    },
+    {
+      "fromKey": "Biologija|2.2 Evkariontska celica",
+      "type": "HAS_SECTION",
+      "toKey": "Biologija|2.2.3 Lizosom omogoča celično prebavo"
+    },
+    {
+      "fromKey": "Biologija|2.2 Evkariontska celica",
+      "type": "HAS_SECTION",
+      "toKey": "Biologija|2.2.4 Celično ogrodje (citoskelet)"
+    },
+    {
+      "fromKey": "Biologija|2.2 Evkariontska celica",
+      "type": "HAS_SECTION",
+      "toKey": "Biologija|2.2.5 Vakuola je značilen rastlinski organel"
+    },
+    {
+      "fromKey": "Biologija|2.2 Evkariontska celica",
+      "type": "HAS_SECTION",
+      "toKey": "Biologija|2.2.7 Kloroplast pretvarja sončno energijo v kemično vezano energijo sladkorjev"
+    },
+    {
+      "fromKey": "Biologija|2.2 Evkariontska celica",
+      "type": "HAS_SECTION",
+      "toKey": "Biologija|2.2.8 Celice in organele omejujejo biotske membrane"
+    },
+    {
+      "fromKey": "Biologija|2.2 Evkariontska celica",
+      "type": "HAS_SECTION",
+      "toKey": "Biologija|2.2.9 Celična stena"
+    },
+    {
+      "fromKey": "Biologija|2.0 Uvod",
+      "type": "HAS_CHUNK",
+      "toKey": "Biologija|2.0-0001 | Uvod"
+    },
+    {
+      "fromKey": "Biologija|2.0 Uvod",
+      "type": "HAS_CHUNK",
+      "toKey": "Biologija|2.0-0002 | Uvod"
+    },
+    {
+      "fromKey": "Biologija|2.0-0001 | Uvod",
+      "type": "NEXT",
+      "toKey": "Biologija|2.0-0002 | Uvod"
+    },
+    {
+      "fromKey": "Biologija|2.1 Prokariontska celica",
+      "type": "HAS_CHUNK",
+      "toKey": "Biologija|2.1-0001 | Prokariontska celica"
+    },
+    {
+      "fromKey": "Biologija|2.2 Evkariontska celica",
+      "type": "HAS_CHUNK",
+      "toKey": "Biologija|2.2-0001 | Evkariontska celica"
+    },
+    {
+      "fromKey": "Biologija|2.2 Evkariontska celica",
+      "type": "HAS_CHUNK",
+      "toKey": "Biologija|2.2-0002 | Evkariontska celica"
+    },
+    {
+      "fromKey": "Biologija|2.2-0001 | Evkariontska celica",
+      "type": "NEXT",
+      "toKey": "Biologija|2.2-0002 | Evkariontska celica"
+    },
+    {
+      "fromKey": "Biologija|2.2.1 Jedro je nadzorno in informacijsko središče celice",
+      "type": "HAS_CHUNK",
+      "toKey": "Biologija|2.2.1-0001 | Jedro je nadzorno in informacijsko središče celice"
+    },
+    {
+      "fromKey": "Biologija|2.2.1 Jedro je nadzorno in informacijsko središče celice",
+      "type": "HAS_CHUNK",
+      "toKey": "Biologija|2.2.1-0002 | Jedro je nadzorno in informacijsko središče celice"
+    },
+    {
+      "fromKey": "Biologija|2.2.1-0001 | Jedro je nadzorno in informacijsko središče celice",
+      "type": "NEXT",
+      "toKey": "Biologija|2.2.1-0002 | Jedro je nadzorno in informacijsko središče celice"
+    },
+    {
+      "fromKey": "Biologija|2.2.1 Jedro je nadzorno in informacijsko središče celice",
+      "type": "HAS_CHUNK",
+      "toKey": "Biologija|2.2.1-0003 | Jedro je nadzorno in informacijsko središče celice"
+    },
+    {
+      "fromKey": "Biologija|2.2.1-0002 | Jedro je nadzorno in informacijsko središče celice",
+      "type": "NEXT",
+      "toKey": "Biologija|2.2.1-0003 | Jedro je nadzorno in informacijsko središče celice"
+    },
+    {
+      "fromKey": "Biologija|2.2.1 Jedro je nadzorno in informacijsko središče celice",
+      "type": "HAS_CHUNK",
+      "toKey": "Biologija|2.2.1-0004 | Jedro je nadzorno in informacijsko središče celice"
+    },
+    {
+      "fromKey": "Biologija|2.2.1-0003 | Jedro je nadzorno in informacijsko središče celice",
+      "type": "NEXT",
+      "toKey": "Biologija|2.2.1-0004 | Jedro je nadzorno in informacijsko središče celice"
+    },
+    {
+      "fromKey": "Biologija|2.2.3 Lizosom omogoča celično prebavo",
+      "type": "HAS_CHUNK",
+      "toKey": "Biologija|2.2.3-0001 | Lizosom omogoča celično prebavo"
+    },
+    {
+      "fromKey": "Biologija|2.2.4 Celično ogrodje (citoskelet)",
+      "type": "HAS_CHUNK",
+      "toKey": "Biologija|2.2.4-0001 | Celično ogrodje (citoskelet)"
+    },
+    {
+      "fromKey": "Biologija|2.2.4 Celično ogrodje (citoskelet)",
+      "type": "HAS_CHUNK",
+      "toKey": "Biologija|2.2.4-0002 | Celično ogrodje (citoskelet)"
+    },
+    {
+      "fromKey": "Biologija|2.2.4-0001 | Celično ogrodje (citoskelet)",
+      "type": "NEXT",
+      "toKey": "Biologija|2.2.4-0002 | Celično ogrodje (citoskelet)"
+    },
+    {
+      "fromKey": "Biologija|2.2.4 Celično ogrodje (citoskelet)",
+      "type": "HAS_CHUNK",
+      "toKey": "Biologija|2.2.4-0003 | Celično ogrodje (citoskelet)"
+    },
+    {
+      "fromKey": "Biologija|2.2.4-0002 | Celično ogrodje (citoskelet)",
+      "type": "NEXT",
+      "toKey": "Biologija|2.2.4-0003 | Celično ogrodje (citoskelet)"
+    },
+    {
+      "fromKey": "Biologija|2.2.5 Vakuola je značilen rastlinski organel",
+      "type": "HAS_CHUNK",
+      "toKey": "Biologija|2.2.5-0001 | Vakuola je značilen rastlinski organel"
+    },
+    {
+      "fromKey": "Biologija|2.2.5 Vakuola je značilen rastlinski organel",
+      "type": "HAS_CHUNK",
+      "toKey": "Biologija|2.2.5-0002 | Vakuola je značilen rastlinski organel"
+    },
+    {
+      "fromKey": "Biologija|2.2.5-0001 | Vakuola je značilen rastlinski organel",
+      "type": "NEXT",
+      "toKey": "Biologija|2.2.5-0002 | Vakuola je značilen rastlinski organel"
+    },
+    {
+      "fromKey": "Biologija|2.2.5 Vakuola je značilen rastlinski organel",
+      "type": "HAS_CHUNK",
+      "toKey": "Biologija|2.2.5-0003 | Vakuola je značilen rastlinski organel"
+    },
+    {
+      "fromKey": "Biologija|2.2.5-0002 | Vakuola je značilen rastlinski organel",
+      "type": "NEXT",
+      "toKey": "Biologija|2.2.5-0003 | Vakuola je značilen rastlinski organel"
+    },
+    {
+      "fromKey": "Biologija|2.2.7 Kloroplast pretvarja sončno energijo v kemično vezano energijo sladkorjev",
+      "type": "HAS_CHUNK",
+      "toKey": "Biologija|2.2.7-0001 | Kloroplast pretvarja sončno energijo v kemično vezano energijo sladkorjev"
+    },
+    {
+      "fromKey": "Biologija|2.2.7 Kloroplast pretvarja sončno energijo v kemično vezano energijo sladkorjev",
+      "type": "HAS_CHUNK",
+      "toKey": "Biologija|2.2.7-0002 | Kloroplast pretvarja sončno energijo v kemično vezano energijo sladkorjev"
+    },
+    {
+      "fromKey": "Biologija|2.2.7-0001 | Kloroplast pretvarja sončno energijo v kemično vezano energijo sladkorjev",
+      "type": "NEXT",
+      "toKey": "Biologija|2.2.7-0002 | Kloroplast pretvarja sončno energijo v kemično vezano energijo sladkorjev"
+    },
+    {
+      "fromKey": "Biologija|2.2.8 Celice in organele omejujejo biotske membrane",
+      "type": "HAS_CHUNK",
+      "toKey": "Biologija|2.2.8-0001 | Celice in organele omejujejo biotske membrane"
+    },
+    {
+      "fromKey": "Biologija|2.2.8 Celice in organele omejujejo biotske membrane",
+      "type": "HAS_CHUNK",
+      "toKey": "Biologija|2.2.8-0002 | Celice in organele omejujejo biotske membrane"
+    },
+    {
+      "fromKey": "Biologija|2.2.8-0001 | Celice in organele omejujejo biotske membrane",
+      "type": "NEXT",
+      "toKey": "Biologija|2.2.8-0002 | Celice in organele omejujejo biotske membrane"
+    },
+    {
+      "fromKey": "Biologija|2.2.9 Celična stena",
+      "type": "HAS_CHUNK",
+      "toKey": "Biologija|2.2.9-0001 | Celična stena"
+    },
+    {
+      "fromKey": "Biologija|2.2.9 Celična stena",
+      "type": "HAS_CHUNK",
+      "toKey": "Biologija|2.2.9-0002 | Celična stena"
+    },
+    {
+      "fromKey": "Biologija|2.2.9-0001 | Celična stena",
+      "type": "NEXT",
+      "toKey": "Biologija|2.2.9-0002 | Celična stena"
+    },
+    {
+      "fromKey": "Biologija|2.2.9 Celična stena",
+      "type": "HAS_CHUNK",
+      "toKey": "Biologija|2.2.9-0003 | Celična stena"
+    },
+    {
+      "fromKey": "Biologija|2.2.9-0002 | Celična stena",
+      "type": "NEXT",
+      "toKey": "Biologija|2.2.9-0003 | Celična stena"
+    },
+    {
+      "fromKey": "Biologija|2.2.9 Celična stena",
+      "type": "HAS_CHUNK",
+      "toKey": "Biologija|2.2.9-0004 | Celična stena"
+    },
+    {
+      "fromKey": "Biologija|2.2.9-0003 | Celična stena",
+      "type": "NEXT",
+      "toKey": "Biologija|2.2.9-0004 | Celična stena"
+    },
+    {
+      "fromKey": "Biologija|2.2.9 Celična stena",
+      "type": "HAS_CHUNK",
+      "toKey": "Biologija|2.2.9-0005 | Celična stena"
+    },
+    {
+      "fromKey": "Biologija|2.2.9-0004 | Celična stena",
+      "type": "NEXT",
+      "toKey": "Biologija|2.2.9-0005 | Celična stena"
+    }
+  ]
+}

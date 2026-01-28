@@ -10,6 +10,7 @@ from datetime import datetime
 import chromadb
 from chromadb.config import Settings
 from openai import OpenAI
+from dotenv import load_dotenv
 
 # ---------- KONFIG ----------
 
@@ -30,13 +31,12 @@ print("config_path:", config_path)
 
 config.read(config_path)
 
-OPENAI_API_KEY = (
-    os.environ.get("OPENAI_API_KEY")
-    or config.get("OPENAI", "OPENAI_API_KEY", fallback=None)
-)
+load_dotenv()
+
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
 if not OPENAI_API_KEY:
-    raise RuntimeError("OPENAI_API_KEY not set in environment or config.ini")
+    raise RuntimeError("OPENAI_API_KEY not set in environment")
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 

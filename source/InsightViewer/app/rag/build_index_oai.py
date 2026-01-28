@@ -9,6 +9,7 @@ import textwrap
 import configparser
 from pathlib import Path
 import argparse
+from dotenv import load_dotenv
 
 import chromadb
 from chromadb.config import Settings
@@ -22,24 +23,13 @@ DEFAULT_COLLECTION_NAME = "egipt"
 
 EMBED_MODEL = "text-embedding-3-small"
 
-# Preberi OPENAI_API_KEY iz okolja ali config.ini v projektni mapi
-config = configparser.ConfigParser()
+# Preberi OPENAI_API_KEY iz okolja
+load_dotenv()
 
-# base_dir = insightViewer root = 4 nivoje nad tem fajlom
-# /home/robert/insightViewer/source/InsightViewer/app/rag/build_index_oai.py
-BASE_DIR = Path(__file__).resolve().parents[4]
-config_path = BASE_DIR / "config.ini"
-print("config_path:", config_path)
-
-config.read(config_path)
-
-OPENAI_API_KEY = (
-    os.environ.get("OPENAI_API_KEY")
-    or config.get("OPENAI", "OPENAI_API_KEY", fallback=None)
-)
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
 if not OPENAI_API_KEY:
-    raise RuntimeError("OPENAI_API_KEY not set in environment or config.ini")
+    raise RuntimeError("OPENAI_API_KEY not set in environment")
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 

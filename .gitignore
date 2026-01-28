@@ -5,6 +5,7 @@ config_*.py
 # local secrets
 config_private.ini
 .env
+config.env
 
 # python
 __pycache__/
@@ -62,3 +63,7 @@ source/InsightViewer/app/routes/uploads/
 # RAG/Chroma local DB (usually should not be committed)
 **/chroma_db/
 **/*.sqlite3
+source/InsightViewer/app/rag/chroma_db/
+
+# Logs
+*.log

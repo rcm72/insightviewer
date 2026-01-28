@@ -39,11 +39,10 @@ HTML_PATH = (
     / "ZAKO4291_NPB22.html"
 )
 
-
-
-NEO4J_URI = config['NEO4J']['URI']
-NEO4J_USER = config['NEO4J']['USERNAME']
-NEO4J_PASSWORD = config['NEO4J']['PASSWORD']
+NEO4J_URI = os.getenv("NEO4J_URI")
+NEO4J_USERNAME = os.getenv("NEO4J_USERNAME")
+NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD")
+NEO4J_DATABASE = os.getenv("NEO4J_DATABASE")
 
 
 def rc_id() -> str:
@@ -191,7 +190,7 @@ def iterate_sources(session, label: str, key: str, text_prop: str, batch: int = 
 
 
 def main():
-    driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
+    driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USERNAME, NEO4J_PASSWORD))
     total = 0
 
     try:

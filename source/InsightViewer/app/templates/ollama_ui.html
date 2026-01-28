@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Ollama Q&A</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    h1 {
+      color: #333;
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 2em;
+    }
+    textarea, button {
+      font-family: inherit;
+      font-size: 1em;
+    }
+    textarea {
+      width: calc(100% - 20px);
+      min-height: 120px;
+      padding: 12px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      resize: vertical;
+      transition: border-color 0.3s ease;
+    }
+    textarea:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 8px 5px 8px 0;
+      cursor: pointer;
+      border: none;
+      border-radius: 6px;
+      font-size: 1em;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    button:active {
+      transform: translateY(0);
+    }
+    #btnAsk {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .response {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 6px;
+      border-left: 4px solid #667eea;
+    }
+    .response h3 {
+      margin-top: 0;
+      color: #667eea;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧠 Ollama Q&A</h1>
+    <label for="question">Vprašaj Ollama model:</label>
+    <textarea id="question" placeholder="Vnesi svoje vprašanje tukaj..."></textarea>
+    <button id="btnAsk">Pošlji vprašanje</button>
+    <div id="modelInfo" style="margin-top: 10px; font-weight: bold; color: #555;">Nalagam model...</div>
+    <div id="responseArea" class="response hidden">
+      <h3>Odgovor:</h3>
+      <div id="responseText"></div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='ollama_ui.js') }}"></script>
+</body>
+</html>

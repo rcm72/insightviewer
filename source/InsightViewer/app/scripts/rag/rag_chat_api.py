@@ -14,7 +14,7 @@ import re
 PROJECT = "ZGD1"
 
 """ NEO4J_URI = os.getenv("NEO4J_URI", "bolt://192.168.1.38:7687")
-NEO4J_USER = os.getenv("NEO4J_USER", "neo4j")
+NEO4J_USERNAME = os.getenv("NEO4J_USERNAME", "neo4j")
 NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD", "password")
 
 OLLAMA_BASE = os.getenv("OLLAMA_BASE", "http://192.168.1.38:11434")
@@ -34,9 +34,10 @@ HTML_PATH = os.path.join(
 
 config = configparser.ConfigParser()
 config.read(os.path.join(BASE_DIR, "..", "..", "..", "config.ini"))
-NEO4J_URI = config['NEO4J']['URI']
-NEO4J_USER = config['NEO4J']['USERNAME']
-NEO4J_PASSWORD = config['NEO4J']['PASSWORD']
+NEO4J_URI = os.getenv("NEO4J_URI")
+NEO4J_USERNAME = os.getenv("NEO4J_USERNAME")
+NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD")
+NEO4J_DATABASE = os.getenv("NEO4J_DATABASE")
 
 OLLAMA_BASE = config['OLLAMA']['BASE']
 EMB_MODEL = config['OLLAMA']['EMB_MODEL']
@@ -155,7 +156,7 @@ def build_prompt(question: str, contexts: List[Dict[str, Any]]) -> str:
 # ===== App =====
 app = FastAPI(title="ZGD1 RAG Chat API")
 
-driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
+driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USERNAME, NEO4J_PASSWORD))
 
 
 @app.on_event("shutdown")

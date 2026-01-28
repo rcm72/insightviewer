@@ -8,7 +8,7 @@ services:
       - "7687:7687"
     environment:
       # You can export NEO4J_PASSWORD in your shell or define it in a .env file
-      NEO4J_AUTH: "neo4j/${NEO4J_PASSWORD:-changeme}"
+      NEO4J_AUTH: "neo4j/${NEO4J_PASSWORD}"
       NEO4J_PLUGINS: '["apoc"]'
       NEO4J_dbms_security_procedures_unrestricted: "apoc.*"
       NEO4J_dbms_security_procedures_allowlist: "apoc.*"
@@ -31,21 +31,24 @@ services:
       - appnet
 
   insightviewer:
-    build:
-      context: ./source/InsightViewer
-      dockerfile: Dockerfile
     container_name: insightviewer
     restart: unless-stopped
+    build:
+      context: ./source/InsightViewer  # Specify the build context
+      dockerfile: Dockerfile           # Ensure this Dockerfile exists
     ports:
       - "5001:5000"   # host:container
-      #- "8001:8001"   # fastapi za quiz
     volumes:
       - ./source/InsightViewer/app/static/editor_files:/app/app/static/editor_files
       - ./source/InsightViewer/app/static/images:/app/app/static/images
       - ./source/InsightViewer:/app
-      - ./source/InsightViewer/app/rag/chroma_db:/app/app/chroma_db   # ← POPRAVEK
-#      - ./config.ini:/app/config.ini:ro
-      - ./source/InsightViewer/config.ini:/app/config.ini:ro
+      - ./source/InsightViewer/app/rag/chroma_db:/app/app/chroma_db
+    environment:
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD}  # Ensure this is defined in your .env file
+      - APP_SECRET_KEY=${APP_SECRET_KEY}  # Ensure this is defined in your .env file
+      - DEBUG_MODE=${DEBUG_MODE}          # Ensure this is defined in your .env file
+    env_file:
+      - ./config.env                      # Ensure this file exists and is correctly formatted
     depends_on:
       - neo4j
       - quiz-api
@@ -59,15 +62,18 @@ services:
     container_name: quiz-api
     volumes:
       - ./source/InsightViewer:/app
-      - ./source/InsightViewer/app/rag/chroma_db:/app/app/chroma_db   # ← POPRAVEK
-      #- ./config.ini:/app/config.ini
-      - ./source/InsightViewer/config.ini:/app/config.ini:ro
+      - ./source/InsightViewer/app/rag/chroma_db:/app/app/chroma_db
+    environment:
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD}
+      - APP_SECRET_KEY=${APP_SECRET_KEY}
     ports:
       - "8001:8001"   # da lahko testiraš tudi izven Dockera
     networks:
       - appnet
 
   rag-chat-api:
+    env_file:
+      - config.env
     build:
       context: .
       dockerfile: Dockerfile.quiz
@@ -86,6 +92,8 @@ services:
       - appnet
 
   rag-chat-api-v2:
+    env_file:
+      - config.env  
     build:
       context: .
       dockerfile: Dockerfile.quiz
@@ -104,6 +112,8 @@ services:
       - appnet  
 
   rag-chat-api-v3:
+    env_file:
+      - config.env
     build:
       context: .
       dockerfile: Dockerfile.quiz
@@ -116,17 +126,38 @@ services:
     entrypoint: ["uvicorn", "app.scripts.rag.rag_chat_api_v3:app", "--host", "0.0.0.0", "--port", "8000"]
     ports:
       - "8004:8000"          # nov host port
+    environment:
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD}
+      - APP_SECRET_KEY=${APP_SECRET_KEY}
+      - NEO4J_URI=${NEO4J_URI}
     depends_on:
       - neo4j
     networks:
       - appnet          
 
+  open-webui:
+    env_file:
+      - config.env
+    image: ghcr.io/open-webui/open-webui:latest
+    container_name: open-webui
+    restart: unless-stopped
+    ports:
+      - "3000:8080"
+    environment:
+      - OLLAMA_BASE_URL=http://192.168.1.26:11434
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - openwebui_data:/app/backend/data
+    networks:
+      - appnet
+
 volumes:
-  volumes:
   neo4j_data:
   neo4j_logs:
   neo4j_plugins:
   neo4j_import:
+  openwebui_data:
 
 networks:
   appnet:

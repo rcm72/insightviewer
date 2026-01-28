@@ -1,0 +1,31 @@
+{
+    "rules": [
+      {
+        "id": "golgi_path",
+        "match": {
+          "field": "title",
+          "contains_any": ["golgijev"]
+        },
+        "qa": [
+          {
+            "q": "Opiši pot beljakovine od sinteze do izločanja: vključi ER, transportne mešičke in Golgijev aparat.",
+            "a": "Beljakovine nastanejo na ribosomih GER, potujejo v mešičkih do GA, kjer se predelajo in sortirajo, nato se v mehurčkih izločijo ali vgradijo v membrane."
+          }
+        ]
+      },
+      {
+        "id": "nucleus_role",
+        "match": {
+          "field": "title",
+          "contains_any": ["jedro"]
+        },
+        "qa": [
+          {
+            "q": "Kakšna je vloga jedra v celici? Opiši jedrni ovoj, jedrne pore in povezavo z zrnatim ER.",
+            "a": "Jedro vsebuje dedno informacijo (DNA) in uravnava delovanje celice. Obdano je z dvojnim jedrnim ovojem; v njem so jedrne pore za izmenjavo snovi med jedrom in citoplazmo; na zunanjo membrano jedrnega ovoja je pripet zrnati endoplazemski retikel z ribosomi."
+          }
+        ]
+      }
+    ]
+  }
+  

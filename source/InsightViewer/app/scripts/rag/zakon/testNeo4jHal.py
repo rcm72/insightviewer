@@ -1,14 +1,16 @@
 from neo4j import GraphDatabase
 import configparser
+import os
 
 class TestNeo4jHalPlugin:
     def __init__(self):
         # Load configuration
         config = configparser.ConfigParser()
         config.read('config.ini')
-        self.uri = config['NEO4J']['URI']
-        self.user = config['NEO4J']['USERNAME']
-        self.password = config['NEO4J']['PASSWORD']
+        self.uri = os.getenv("NEO4J_URI")
+        self.user = os.getenv("NEO4J_USERNAME")
+        self.password = os.getenv("NEO4J_PASSWORD")
+        self.database = os.getenv("NEO4J_DATABASE")
 
         # Create a driver instance
         self.driver = GraphDatabase.driver(self.uri, auth=(self.user, self.password))
@@ -46,6 +48,6 @@ if __name__ == "__main__":
         tester.create_sample_node("Test Node")
         #tester.delete_sample_nodes()
     finally:
-        tester.close()        
+        tester.close()
 
 

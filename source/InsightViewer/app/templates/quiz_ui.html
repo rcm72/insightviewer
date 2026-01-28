@@ -203,7 +203,7 @@
     }
   </style>
 </head>
-<body>
+<body data-source="quiz_ui">
   <div class="container">
     <h1>📝 Quiz — LLM ocenjevanje</h1>
     
@@ -219,6 +219,7 @@
         </select>
       </label>
       <button id="btnLoadNodes">Naloži vozlišča</button>
+      <div id="modelInfo" style="margin-top: 10px; font-weight: bold; color: #555;">Nalagam model...</div>
     </div>
 
     <!-- Step 2: Izberi vozlišče -->
@@ -227,6 +228,11 @@
       <select id="nodeSelect" size="8"></select>
       <br>
       <label>Število vprašanj: <input type="number" id="numQuestions" value="5" min="1" max="20" /></label>
+      <fieldset>
+        <legend>Izberi vir vprašanj:</legend>
+        <label><input type="radio" name="questionSource" value="prepared" checked> Vnaprej pripravljena vprašanja</label>
+        <label><input type="radio" name="questionSource" value="ollama"> Ollama vprašanja</label>
+      </fieldset>
       <button id="btnStartQuiz">Začni kviz</button>
     </div>
 

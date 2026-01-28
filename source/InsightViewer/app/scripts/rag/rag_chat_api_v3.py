@@ -27,9 +27,10 @@ CONFIG_PATH = BASE_DIR / "config.ini"
 config = configparser.ConfigParser()
 config.read(CONFIG_PATH)
 
-NEO4J_URI = config["NEO4J"]["URI"]
-NEO4J_USER = config["NEO4J"]["USERNAME"]
-NEO4J_PASSWORD = config["NEO4J"]["PASSWORD"]
+NEO4J_URI = os.getenv("NEO4J_URI")
+NEO4J_USERNAME = os.getenv("NEO4J_USERNAME")
+NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD")
+NEO4J_DATABASE = os.getenv("NEO4J_DATABASE")
 
 OLLAMA_BASE = config["OLLAMA"]["BASE"]
 EMB_MODEL = config["OLLAMA"]["EMB_MODEL"]          # e.g. mxbai-embed-large:latest
@@ -292,7 +293,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
+driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USERNAME, NEO4J_PASSWORD))
 
 
 @app.on_event("shutdown")

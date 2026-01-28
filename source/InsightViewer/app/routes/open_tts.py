@@ -6,6 +6,9 @@ from openai import OpenAI
 import os, configparser
 import re
 from pydub import AudioSegment  # pip install pydub ; system: sudo apt install ffmpeg 
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # --- load config (same logic as app.py) ---
 
@@ -21,12 +24,10 @@ config.read(config_path)
 print("config_path:", config_path)
 
 # prefer env var OPENAI_API_KEY, fallback to config.ini [OPENAI].OPENAI_API_KEY
-OPENAI_API_KEY = (
-    os.environ.get('OPENAI_API_KEY')
-    or config.get('OPENAI', 'OPENAI_API_KEY', fallback=None)
-)
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+
 if not OPENAI_API_KEY:
-    raise RuntimeError("OPENAI_API_KEY not set in environment or config.ini")
+    raise RuntimeError("OPENAI_API_KEY not set in environment")
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 # speech_file_path = Path(__file__).parent / "InsightViewer_Test.mp3"

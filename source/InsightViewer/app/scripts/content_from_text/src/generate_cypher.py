@@ -1,15 +1,21 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# cd /home/robert/insightViewer/source/InsightViewer/app/scripts/cypher_from_text
+# cd /home/robert/insightViewer/source/InsightViewer/app/scripts/content_from_text/
 
 # docker exec -it neo4j cypher-shell
 
 
-#  python build_cypher_from_text.py geo1_2_Podnebje.txt \
-#   --project Geografija \
-#   --out out.cypher \
-#   --out-json payload.json
+#  python generate_cypher.py bio1_poglavje2.txt \
+#   --project Biologija \
+#   --out outBiologija1_ch2.cypher \
+#   --out-json payloadBiologija1_ch2.json
+
+# python /home/robert/insightViewer/source/InsightViewer/app/scripts/content_from_text/src/generate_cypher.py \
+#  /home/robert/insightViewer/source/InsightViewer/app/scripts/content_from_text/ocr/bio1_poglavje2.txt \
+#  --project Biologija \
+#  --out /home/robert/insightViewer/source/InsightViewer/app/scripts/content_from_text/output/utBiologija1_ch2.cypher \
+#  --out-json /home/robert/insightViewer/source/InsightViewer/app/scripts/content_from_text/output/payloadBiologija1_ch2.json
 
 """
 Build Neo4j Cypher import script from a textbook-like .txt file.
@@ -39,6 +45,7 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
+import uuid
 
 
 PAGE_RE = re.compile(r"^\s*Stran\s+(\d+)\s*$", re.IGNORECASE)
@@ -47,8 +54,17 @@ PAGE_RE = re.compile(r"^\s*Stran\s+(\d+)\s*$", re.IGNORECASE)
 #  "2. PODNEBJE"  -> id="2" title="PODNEBJE"
 #  "2.1 Uvod"     -> id="2.1" title="Uvod"
 #  "2.2.1 ATMOSFERA IN NJENA SESTAVA" -> id="2.2.1" title="ATMOSFERA IN NJENA SESTAVA"
-HEADING_RE = re.compile(r"^\s*(\d+(?:\.\d+)*)(?:\.)?\s+(.+?)\s*$")
+# HEADING_RE = re.compile(r"^\s*(\d+(?:\.\d+)*)(?:\.)?\s+(.+?)\s*$")
 
+# Explain next regex:
+# Matches:
+#  "<< 2 PODNEBJE >>"  -> id="2" title="PODNEBJE"
+#  "<< 2.1 Uvod >>"     -> id="2.1" title="Uvod"
+#  "<< 2.2.1 ATMOSFERA IN NJENA SESTAVA >>" -> id="2.2.1" title="ATMOSFERA IN NJENA SESTAVA"    
+
+HEADING_RE = re.compile(r"^\s*<<\s*(\d+(?:\.\d+)*)(?:\s+(.+?))?\s*>>\s*$")
+
+#HEADING_RE = re.compile(r"^\s*<<\s*(.+?)\s*>>\s*$")
 
 def cypher_escape(s: str) -> str:
     """Escape text for Cypher single-quoted string."""
@@ -69,7 +85,8 @@ class Node:
     text: Optional[str] = None
     parent_sid: Optional[str] = None  # for sections: parent section id or chapter id
     chunk_index: Optional[int] = None
-
+    uuid: str = field(default_factory=lambda: str(uuid.uuid4()))  # Generate a UUID by default
+    projectName: str = "DefaultProject"
 
 @dataclass
 class ParseState:
@@ -183,7 +200,7 @@ def parse_text(content: str) -> Tuple[Dict[str, Dict], Dict[str, str]]:
         mh = HEADING_RE.match(line)
         if mh:
             sid = mh.group(1).strip()
-            title = mh.group(2).strip()
+            title = mh.group(2).strip() if mh.group(2) else f"Chapter {sid}"
 
             # Commit previous section buffer
             flush_section(state, sections_text)
@@ -263,16 +280,17 @@ def build_nodes(project: str, headings: Dict[str, Dict], sections_text: Dict[str
             name=name,
             page_start=page,
             order=headings[ch_id]["order"],
-            title=title
+            title=title,
+            projectName=project,  # Set the project name here
         ))
 
-    # --- Section nodes (level 2) ---
+    # --- Section nodes ---
     for sid in section_ids:
         meta = headings[sid]
         title = meta["title"]
         page = meta["pageStart"]
         order = meta["order"]
-        parent = meta["parent"]        # to je ID Chapterja
+        parent = meta["parent"]
         name = f"{sid} {title}"
         nodes.append(Node(
             kind="Section",
@@ -281,16 +299,17 @@ def build_nodes(project: str, headings: Dict[str, Dict], sections_text: Dict[str
             page_start=page,
             order=order,
             title=title,
-            parent_sid=parent
+            parent_sid=parent,
+            projectName=project,  # Set the project name here
         ))
 
-    # --- SubSection nodes (level >= 3) ---
+    # --- SubSection nodes ---
     for sid in subsection_ids:
         meta = headings[sid]
         title = meta["title"]
         page = meta["pageStart"]
         order = meta["order"]
-        parent = meta["parent"]        # to je ID Section ali SubSection
+        parent = meta["parent"]
         name = f"{sid} {title}"
         nodes.append(Node(
             kind="SubSection",
@@ -299,7 +318,8 @@ def build_nodes(project: str, headings: Dict[str, Dict], sections_text: Dict[str
             page_start=page,
             order=order,
             title=title,
-            parent_sid=parent
+            parent_sid=parent,
+            projectName=project,  # Set the project name here
         ))
 
     # --- Structural relationships ---
@@ -427,6 +447,7 @@ def generate_cypher(project: str, nodes: List[Node], rels: List[Tuple[str, str, 
     lines.append("  FOREACH (_ IN CASE WHEN row.pageStart IS NULL THEN [] ELSE [1] END | SET node.pageStart = row.pageStart)")
     lines.append("  FOREACH (_ IN CASE WHEN row.order IS NULL THEN [] ELSE [1] END | SET node.order = row.order)")
     lines.append("  FOREACH (_ IN CASE WHEN row.text IS NULL THEN [] ELSE [1] END | SET node.text = row.text)")
+    lines.append("  FOREACH (_ IN CASE WHEN row.uuid IS NULL THEN [] ELSE [1] END | SET node.uuid = row.uuid)")
     lines.append("  RETURN 1 AS ok")
     lines.append("}")
     lines.append("RETURN count(*) AS nodes_processed;")
@@ -490,6 +511,8 @@ def main():
             "order": n.order,
             "text": n.text,
             "label": n.kind,  # "Chapter" | "Section" | "Chunk"
+            "uuid": n.uuid,  # Add the UUID here
+            "projectName": n.projectName,  
         }
         payload_nodes.append(row)
 

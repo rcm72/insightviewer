@@ -677,7 +677,8 @@ document.addEventListener("DOMContentLoaded", function () {
            const content = document.getElementById("node-properties-content");
 
            // Retrieve labels from the node object
-           const labels = node.labels || ["Unknown"]; // Use stored labels or fallback to "Unknown"
+           //const labels = node.labels || ["Unknown"]; // Use stored labels or fallback to "Unknown"
+           const labels = node.labels ; // Use stored labels or fallback to "Unknown"
 
            // Format the properties and include labels
            const formattedProperties = `
@@ -1692,10 +1693,13 @@ function formatProperties(properties) {
        .map(([key, value]) => {
            const safeValue = value == null ? "" : value;
 
-           // Always use textarea for "name", or for long text
-           const isLongText =
-               key === "name" ||
-               (typeof safeValue === "string" && safeValue.length > 50);
+           // Always use textarea for "name", or "Opis" or "Description" or for long text
+              const isLongText = key.toLowerCase() === "name" ||
+                key.toLowerCase() === "opis" ||
+                key.toLowerCase() === "description" ||
+                (typeof safeValue === "string" && safeValue.length > 50) ||
+                safeValue.toString().includes("\n");
+
 
            return `
                <div>

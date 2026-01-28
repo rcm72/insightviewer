@@ -12,11 +12,7 @@ import configparser
 #config = configparser.ConfigParser()
 #config.read(os.path.join(BASE_DIR, "..", "..", "..", "config.ini"))
 
-# BASE_DIR should point to project root: /home/robert/insightViewer/source/InsightViewer
-BASE_DIR = Path(__file__).resolve().parents[3]
-CONFIG_PATH = BASE_DIR / "config.ini"
 
-config = configparser.ConfigParser()
 config.read(CONFIG_PATH)
 
 HTML_PATH = (
@@ -31,9 +27,10 @@ HTML_PATH = (
 
 
 
-NEO4J_URI = config['NEO4J']['URI']
-NEO4J_USER = config['NEO4J']['USERNAME']
-NEO4J_PASSWORD = config['NEO4J']['PASSWORD']
+NEO4J_URI = os.getenv("NEO4J_URI")
+NEO4J_USERNAME = os.getenv("NEO4J_USERNAME")
+NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD")
+NEO4J_DATABASE = os.getenv("NEO4J_DATABASE")
 
 OLLAMA_BASE = config['OLLAMA']['BASE']
 EMB_MODEL = config['OLLAMA']['EMB_MODEL']
@@ -104,7 +101,7 @@ def fetch_paragraphs_without_chunk(session):
 
 
 def main():
-    driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
+    driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USERNAME, NEO4J_PASSWORD))
     try:
         # 1) dimenzija + index
         dim = len(ollama_embed("test"))

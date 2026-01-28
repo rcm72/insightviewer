@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="sl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Poglavje: 2. Vsak organizem je zgrajen vsaj iz ene celice</title>
+
+  <style>
+    :root{
+      --bg: #0b1020;
+      --card: #111a33;
+      --card2: #0f1730;
+      --text: #e9eefc;
+      --muted: #b9c5e6;
+      --border: rgba(255,255,255,.12);
+      --accent: #7aa2ff;
+      --accent2: #7dffca;
+      --warn: #ffd27a;
+    }
+
+    body{
+      margin: 24px;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      line-height: 1.65;
+      background: radial-gradient(1200px 700px at 10% 10%, rgba(122,162,255,.18), transparent 55%),
+                  radial-gradient(900px 600px at 90% 20%, rgba(125,255,202,.12), transparent 55%),
+                  var(--bg);
+      color: var(--text);
+    }
+
+    .container{ max-width: 980px; margin: 0 auto; }
+
+    header{
+      padding: 18px 18px 6px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      box-shadow: 0 12px 30px rgba(0,0,0,.35);
+      margin-bottom: 14px;
+    }
+    header h1{
+      margin: 0 0 6px;
+      font-size: 1.35rem;
+      letter-spacing: .2px;
+    }
+    header p{
+      margin: 0 0 10px;
+      color: var(--muted);
+      font-size: .95rem;
+    }
+
+    /* Details cards */
+    details{
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 10px 12px;
+      margin: 12px 0;
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));
+      box-shadow: 0 10px 24px rgba(0,0,0,.28);
+    }
+    details details{
+      margin: 10px 0 0;
+      background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.02));
+      box-shadow: none;
+    }
+
+    summary{
+      cursor: pointer;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      list-style: none;
+      user-select: none;
+      outline: none;
+      padding: 6px 6px;
+      border-radius: 12px;
+    }
+    summary::-webkit-details-marker{ display:none; }
+
+    /* Chevron */
+    summary::before{
+      content: "›";
+      display: inline-block;
+      font-size: 1.35rem;
+      line-height: 1;
+      transform: rotate(0deg);
+      transition: transform .15s ease;
+      color: var(--accent2);
+      width: 18px;
+      text-align: center;
+    }
+    details[open] > summary::before{
+      transform: rotate(90deg);
+    }
+
+    summary:hover{
+      background: rgba(122,162,255,.10);
+      border: 1px solid rgba(122,162,255,.22);
+    }
+
+    /* Section color chips */
+    .chip{
+      font-size: .78rem;
+      font-weight: 700;
+      padding: 2px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      background: rgba(255,255,255,.04);
+      margin-left: auto;
+    }
+    .chip.sec{ color: #d7e3ff; border-color: rgba(122,162,255,.35); background: rgba(122,162,255,.12); }
+    .chip.sub{ color: #d9fff1; border-color: rgba(125,255,202,.35); background: rgba(125,255,202,.10); }
+    .chip.q{ color: #fff0d1; border-color: rgba(255,210,122,.40); background: rgba(255,210,122,.12); }
+
+    p{ margin: .7em 0; color: var(--text); }
+    strong{ color: #ffffff; }
+
+    ul{ margin: .5em 0 .5em 1.2em; color: var(--text); }
+    li{ margin: .25em 0; }
+
+    .note, .caption{
+      color: var(--muted);
+      font-style: italic;
+      margin-top: .6em;
+    }
+
+    .questions{
+      margin: 10px 0;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,210,122,.30);
+      background: linear-gradient(180deg, rgba(255,210,122,.10), rgba(255,255,255,.02));
+    }
+    .questions p{ color: var(--text); }
+
+    /* Small helper line */
+    .hint{
+      color: var(--muted);
+      font-size: .9rem;
+      margin-top: 6px;
+    }
+
+    /* Make long text nicer */
+    .content{ padding: 2px 6px 6px; }
+	
+	details:not([open]) > *:not(summary) { display: none !important; }
+	
+  </style>
+</head>
+
+<body>
+<div class="container">
+
+  <header>
+    <h1>2. Vsak organizem je zgrajen vsaj iz ene celice</h1>
+    <p>Klikni na naslov razdelka za prikaz/skritje vsebine.</p>    
+    <p class="hint">Namig: tudi podpoglavja so zložljiva.</p>    
+    <label>2. Vsak organizem je zgrajen vsaj iz ene celice</label>    
+                                                             
+  </header>
+
+  
+  <!-- 2 (glavno poglavje) -->
+<details open>
+  <summary>2. Vsak organizem je zgrajen vsaj iz ene celice <span class="chip sec">poglavje</span></summary>
+<details open>
+  <summary>2.0 Uvod <span class="chip sec">section</span></summary>
+  <div class="content">
+<p>V prejšnjem poglavju ste spoznali lastnosti živega. Ena izmed njih je tudi dejstvo, da je vsak organizem oz. vsako živo bitje zgrajeno iz celic. Obstajajo organizmi, ki so enoceličarji, in nekatere od njih ste spoznali v osnovni šoli (npr. evglene, paramecije, glive kvasovke, bakterije). Organizmi, ki jih gradi več kot ena celica, pa so mnogoceličarji. Celice teh so si lahko podobne po zgradbi in nalogah, ki jih opravljajo, praviloma pa sestavljajo tkiva. Različna tkiva sestavljajo organe, ti pa organski sistem organizma.</p>
+<p>Pri tem je potrebno poudariti, da je zgradba živih sistemov in z njo povezanih biotskih procesov rezultat nenehne biološke evolucije.</p>
+<p class="caption">Slika 2.1: Evglena (Euglena mutabilis)</p>
+<p class="caption">Slika 2.2: Zvončica (Vorticella sp.)</p>
+<p class="caption">Slika 2.3: Paramecij (Paramecium caudatum)</p>
+<p class="caption">Slika 2.4: Glive kvasovke (Saccharomyces cerevisiae)</p>
+<p class="caption">Slika 2.5: Bakterija (Escherichia coli)</p>
+<p>korenska celica korensko tkivo korenina rastlina korenski transportni sistem</p>
+<p class="caption">Slika 2.6: Ravni organizacije:</p>
+<p>a) korenska celica, b) korensko tkivo, c) korenina – organ, d) koreninski sistem – organski sistem, e) rastlina – organizem. V evolucijski zgodovini sta se izoblikovala dva glavna tipa celic: prokariontska celica, ki je izvorni tip celice, in evkariontska celica, ki se je razvila kasneje.</p>
+<p>Razvojno drevo (čas v milijardah let):</p>
+<ul>
+<li>nastanek Zemlje</li>
+<li>Zemlja dovolj hladna za nastanek trdne skorje</li>
+<li>najstarejši fosili prokariontov</li>
+<li>kopičenje kisika v ozračju, ki se sprošča zaradi fotosinteznih cianobakterij</li>
+<li>najstarejši fosili evkariontov</li>
+<li>nastanek mnogoceličnih organizmov</li>
+<li>najstarejši fosili živali</li>
+<li>kambrijska eksplozija</li>
+<li>rastline in simbiozne glive naselijo kopno</li>
+<li>izumrtje dinozavrov</li>
+<li>prvi človek</li>
+</ul>
+<p>Prokarionti:</p>
+<ul>
+<li>bakterije</li>
+<li>arheje</li>
+</ul>
+<p>Evkarionti:</p>
+<ul>
+<li>protisti</li>
+<li>rastline</li>
+<li>glive</li>
+<li>živali</li>
+</ul>
+<p>Zadnji skupni prednik vseh danes živečih organizmov Skupni prednik</p>
+<p>Celice obeh tipov so od svoje okolice razmejene s celično membrano, napolnjene so s citoplazmo in vsebujejo dedni material. Med njimi pa so tudi pomembne razlike.</p>
+<p>Prokarionti – bakterijska celica:</p>
+<ul>
+<li>celična membrana</li>
+<li>celična stena</li>
+<li>citoplazma</li>
+<li>ribosomi</li>
+<li>dednina brez membrane</li>
+<li>plazmid</li>
+</ul>
+<p>Evkarionti: Rastlinska celica:</p>
+<ul>
+<li>celična membrana</li>
+<li>celična stena</li>
+<li>kloroplast</li>
+<li>mitohondrij</li>
+<li>ribosomi</li>
+<li>vakuola</li>
+<li>jedro</li>
+<li>endoplazemski retikulum (ER)</li>
+<li>Golgijev aparat (GA)</li>
+</ul>
+<p>Glivna celica:</p>
+<ul>
+<li>celična membrana</li>
+<li>celična stena</li>
+<li>mitohondrij</li>
+<li>ribosomi</li>
+<li>vakuola</li>
+<li>jedro</li>
+<li>ER</li>
+<li>GA</li>
+</ul>
+<p>Živalska celica:</p>
+<ul>
+<li>celična membrana</li>
+<li>mitohondrij</li>
+<li>ribosomi</li>
+<li>jedro</li>
+<li>ER</li>
+<li>GA</li>
+<li>centriol</li>
+</ul>
+<p class="caption">Slika 2.7: Razvojno drevo</p>
+<p class="caption">Slika 2.8: Zgradba različnih tipov celic</p>
+  </div>
+</details>
+<details open>
+  <summary>2.1 Prokariontska celica <span class="chip sec">section</span></summary>
+  <div class="content">
+<p>Poimenovanje tega tipa celic izhaja iz dejstva, da nimajo pravega jedra (iz grščine: pro – pred; karyon – jedro). To pomeni, da njihova dedna snov (dednina) ni obdana z ovojem, pač pa je v obliki ene same krožne molekule DNA, ki leži v citosolu – v tekočem delu citoplazme.</p>
+<p>V citosolu imajo tudi zrnate strukture, imenovane ribosomi, ki jim omogočajo sintezo beljakovin, ter nitaste strukture, ki tvorijo celično ogrodje ali citoskelet, ki omogoča vzdrževanje oblike celice in njeno delitev.</p>
+<p>Celico omejuje celična membrana ali plazmalema, katere uvihki imajo podobno vlogo kot organeli v evkariontskih celicah. Na zunanji strani celične membrane je celična stena, ki se po sestavi razlikuje od celične stene evkariontske celice.</p>
+<p>Nekatere prokariontske celice imajo zunaj stene še želatinasti ovoj (kapsula). Ta v vodi zasluži in celicam omogoča zaščito ter pritrjanje na podlago, druge celice pa se lahko pritrdijo s kratkimi površinskimi izrastki.</p>
+<p>Prokariontske celice so majhne, manjše od evkariontskih. V povprečju merijo od 1 do 10 µm. Mednje sodijo bakterije in arheje.</p>
+<p class="caption">Slika 2.9: Prokariontska celica</p>
+  </div>
+</details>
+<details open>
+  <summary>2.2 Evkariontska celica <span class="chip sec">section</span></summary>
+  <div class="content">
+<p>Med evkariontske celice sodijo celice protistov, gliv, rastlin in živali, med katere lahko uvrstimo tudi človeške celice.</p>
+<p>Celice vseh naštetih organizmov imajo pravo jedro. To je celični organel, ki z dvojno membrano obdaja dedno snov (iz grščine: eu – pravi; karyon – jedro). Z dvojno membrano sta obdana tudi kloroplast in mitohondrij. Na sliki 2.11 poiščite organele, ki so obdani z enojno membrano.</p>
+<p>Z membrano obdani razdelki – membranski organeli – omogočajo potek različnih kemičnih reakcij, ki so prostorsko ločene. Takšna organizacija omogoča, da so evkariontske celice večje od prokariontskih.</p>
+<p>Merijo od 10 do 100 µm. Poznamo pa tudi celice, ki odstopajo od tega, npr. živčne celice. V živcu, ki izhaja iz hrbtenjače in oživčuje spodnji del noge pri človeku, so izrastki živčnih celic dolgi tudi več kot en meter. Še daljše živčne celice so našli pri slonih, žirafah in orjaških lignjih.</p>
+<p class="caption">Slika 2.10: Najdaljša celica v človeškem telesu je živčna celica,</p>
+<p>ki se razteza od hrbtenjače do prstov na nogi. V citoplazmi celic najdemo tudi strukture, ki od citosola niso ločene z membrano. Imenujemo jih nemembranski organeli. Takšni so ribosomi in elementi citoskeleta oz. celičnega ogrodja. Preverite, ali so prikazani na sliki 2.11.</p>
+<p>a) Rastlinska celica:</p>
+<ul>
+<li>celična stena</li>
+<li>celična membrana</li>
+<li>citoplazma</li>
+<li>kloroplast</li>
+<li>mitohondrij</li>
+<li>Golgijev aparat</li>
+<li>gladki endoplazemski retikel</li>
+<li>ribosomi</li>
+<li>vakuole</li>
+<li>z membrano obdane luknjice v steni med sosednjimi celicami</li>
+</ul>
+<p>b) Živalska celica:</p>
+<ul>
+<li>celična membrana</li>
+<li>citoplazma</li>
+<li>mitohondrij</li>
+<li>Golgijev aparat</li>
+<li>gladki endoplazemski retikel</li>
+<li>zrnati endoplazemski retikel</li>
+<li>ribosomi</li>
+<li>lizosomi</li>
+<li>centriol</li>
+</ul>
+<p class="caption">Slika 2.11: Zgradba rastlinske (a) in živalske (b) celice</p>
+<p>V nadaljevanju si bomo ogledali ultrastrukturo celice, kakršno je mogoče videti z elektronskim mikroskopom. Pri pouku boste uporabljali zlasti svetlobni mikroskop, s katerim boste lahko opazovali nekatere organele, ki jih predstavljamo v nadaljevanju.</p>
+  </div>
+<details>
+  <summary>2.2.1 Jedro je nadzorno in informacijsko središče celice <span class="chip sub">subsection</span></summary>
+  <div class="content">
+<p>Če bi bila celica podjetje, bi imelo jedro v njem vlogo direktorja. Jedro namreč vsebuje informacije o zgradbi in delovanju celice, zato lahko uravnava delovanje drugih organelov. Ko govorimo o informacijah v celici, mislimo na informacijsko vlogo molekule. To vlogo v jedru predstavlja molekula DNA (deoksiribonukleinska kislina), ki je s proteini povezana v strukturo, imenovano kromatin.</p>
+<p>Jedro je obdano z jedrnim ovojem, ki ga sestavljata dve membrani. V jedrnem ovoju so jedrne pore, skozi katere poteka izmenjava snovi med jedrom in citoplazmo. Na zunanjo membrano jedrnega ovoja je pripet zrnati endoplazemski retikel z ribosomi.</p>
+<p>Kromatin se med delitvijo jedra vse bolj navije oz. zgosti v obliko, ki ji pravimo kromosom. Kromosomi, obarvani s posebnimi barvili, so v celici vidni tudi s svetlobnim mikroskopom.</p>
+<p class="caption">Slika 2.12: Jedro</p>
+<p class="caption">Slika 2.13: Koreninski vršiček čebule in obarvani kromosomi</p>
+<p>Temnejša gmota znotraj jedra je jedrce, v katerem nastajajo sestavni deli ribosomov. Jedro zapuščajo skozi jedrne pore. To so prekinitve jedrnega ovoja, obdane s kompleksi beljakovin. Jedrne pore omogočajo povezavo notranjosti jedra s citoplazmo.</p>
+  </div>
+</details>
+<details>
+  <summary>2.2.2 Endoplazemski retikel sodeluje pri izgradnji in transportu različnih snovi <span class="chip sub">subsection</span></summary>
+  <div class="content">
+<p>Zunanja jedrna membrana je izrazito izvihana in tvori sploščene membranske strukture, imenovane cisterne. Njeno neposredno nadaljevanje predstavlja nekakšno transportno cestno omrežje celice. To je endoplazemski retikel.</p>
+<p class="caption">Slika 2.14: Endoplazemski retikel</p>
+<p>V endoplazemskem retiklu se sintetizirajo in predelujejo snovi, ki jih celica potrebuje zase ali pa jih s posredovanjem Golgijevega aparata izloča iz celice.</p>
+<p>Del endoplazemskega retikla ima na površini sploščenih membranskih cistern nameščene ribosome. Ker so ribosomi zrnate strukture (granule), ga imenujemo zrnati (granularni) endoplazemski retikel (GER). Ribosomi sintetizirajo beljakovine, ki gredo v notranjost retikla. Po dodajanju določenih skupin, npr. ogljikovih hidratov, so kot glikoproteini primerni za vgradnjo v biotske membrane. GER zapustijo v obliki membranskega mehurčka, ki se odcepi, kot prikazuje slika 2.15.</p>
+<p>Drugi del endoplazemskega retikla sestavljajo cevaste in podolgovatim vrečam podobne membrane brez ribosomov. Imenujemo ga gladki (agranularni) endoplazemski retikel (AER).</p>
+<p>Njegova vloga v celici je izgradnja maščob, fosfolipidov, ki gradijo biotske membrane, in steroidov ter tudi razgradnja različnih strupov, npr. zaužitega alkohola.</p>
+<p>V AER se kopičijo tudi kalcijevi ioni (Ca2+), ki jih celice potrebujejo pri prenosu signalov. V mišičnih celicah je ta ion pomemben pri krčenju.</p>
+<p class="caption">Slika 2.15: Izgradnja beljakovine na zrnatem endoplazemskem retiklu</p>
+<p>Premalokrat poudarjamo, da je alkohol za celice strup. Ob zaužitju zmernih količin alkohola lahko jetrne celice z encimi, ki so v AER, etanol razgradijo in preprečijo, da bi ostajal v krvnem obtoku in nas še naprej omamljal.</p>
+  </div>
+</details>
+<details>
+  <summary>2.2.3 Ribosom omogoča sintezo beljakovin <span class="chip sub">subsection</span></summary>
+  <div class="content">
+<p>Ribosom je majhen nemembranski celični organel, sestavljen iz dveh podenot: večje in manjše. Obe sta zgrajeni iz ribosomske RNA (rRNA) in beljakovin.</p>
+<p class="caption">Slika 2.16: Ribosom (a) in shematski prikaz ribosoma (b)</p>
+<p>Ribosomi nastajajo v jedru. Lahko so nameščeni na membrani GER, lahko pa so tudi prosto v citoplazmi. Slednji sintetizirajo beljakovine, ki ostanejo in delujejo v citoplazmi, beljakovine, sintetizirane na GER, pa se vgradijo v membrane ali izločijo iz celice.</p>
+<p>Ribosomi prokariontov se od evkariontskih razlikujejo po velikosti. Evkariontski so večji in težji. Najmanjše ribosome imata kloroplast in mitohondrij.</p>
+  </div>
+</details>
+<details>
+  <summary>2.2.4 Celično ogrodje (citoskelet) <span class="chip sub">subsection</span></summary>
+  <div class="content">
+<p>V citosolu evkariontskih celic so znanstveniki odkrili miniaturno ogrodje – celično ogrodje ali citoskelet. Ta posebej pri živalski celici vzdržuje obliko celice, kar pri rastlinski in glivni celici v večji meri opravlja celična stena.</p>
+<p>Elementi (gradniki) citoskeleta so nitaste strukture različnih premerov (slika 2.21). Njihova dolžina se lahko spreminja, zato omogočajo gibanje celičnih struktur ter krčenje in premikanje celic.</p>
+<p class="caption">Slika 2.21: Elementi citoskeleta</p>
+<ul>
+<li>mikrotubuli</li>
+<li>intermediarni filamenti</li>
+<li>mikrofilamenti</li>
+</ul>
+<p>Najtanjši med njimi so mikrofilamenti. Sestavljeni so iz dveh niti nanizanih beljakovinskih molekul aktina, ki sta zaviti ena okrog druge, kot prikazuje slika 2.21.</p>
+<p>Celicam brez celične stene elementi citoskeleta omogočajo krčenje in s tem njihovo premikanje. Tako lahko svojo obliko spreminjajo amebe, ki so enocelični organizmi (slika 2.20), in tudi nekateri levkociti, ki so človeške krvne celice.</p>
+<p>Sposobnost spreminjanja oblike (ameboidnost) tem levkocitom omogoča, da se »prerinjejo« med celicami v steni krvnih kapilar in izstopijo iz krvnega obtoka v tkivo. Tam »požirajo« tujke, tako da jih zajamejo z uvihkom celične membrane. Potem se lahko vrnejo nazaj v krvni obtok.</p>
+<p class="caption">Slika 2.22: Ameboidno gibanje je podobno</p>
+<p>pretakanju, pri katerem telo ustvarja nastanek podaljškov ali izrastkov ime, imenovanih psevdopodiji (pralžki). Načinu požiranja z uvihanjem celične membrane pravimo fagocitoza. Levkocitom, ki so tega sposobni, pravimo fagociti.</p>
+<p class="caption">Slika 2.23: Levkociti (na sliki belo)</p>
+<p>V mišičnih celicah živali (tudi človeka) so aktinski in miozinski filamenti urejeni tako, da omogočajo krčenje posamezne celice in končno cele mišice.</p>
+<p class="caption">Slika 2.24: Aktinski in miozinski filamenti v mišični celici</p>
+<p>Najdebelejši elementi citoskeleta so mikrotubuli. Sestavljeni so iz beljakovinskih molekul tubulina, ki so sprijeti v cevasto strukturo. Z dodajanjem ali odcepljanjem molekul tubulina se mikrotubuli lahko krajšajo ali podaljšujejo. Ta lastnost omogoča prerazporejanje kromosomov pri delitvi celice.</p>
+<p>Niti delitvenega vretena, ki se pritrdijo na kromosome, so pravzaprav mikrotubuli, ki se žarkasto širijo iz centrosoma. Živalske celice imajo v centrosomih po dva centriola iz mikrotubulov, ki so urejeni tako, da tvorijo obod devetih trojčkov (9 × 3).</p>
+<p>Mikrotubuli gradijo bičke in migetalke. Pri obojih so urejeni tako, da tvorijo obod devetih parov, dva mikrotubula pa sta v sredini (9 × 2 + 2). Pod vsakim bičkom oz. migetalko je za oporo še bazalno telo, zgrajeno podobno kot centriol (9 × 3 mikrotubuli).</p>
+<p class="caption">Slika 2.25: Centriol (9 × 3 mikrotubuli)</p>
+<p class="caption">Slika 2.26: Razlika v zgradbi centriola in bička</p>
+<ul>
+<li>Centriol: devet trojčkov mikrotubulov je razporejenih v krog (9 × 3).</li>
+<li>Biček: devet parov mikrotubulov je razporejenih v krog, v sredini pa</li>
+</ul>
+<p>sta še dva mikrotubula (9 × 2 + 2).</p>
+<p>Rahlo vzdolžno drsenje mikrotubulov v bičkih in migetalkah omogoča upogibanje teh struktur in s tem aktivno plavanje oz. izpodrivanje medija, ki je običajno voda.</p>
+<p>Mikrotubuli kot elementi celičnega ogrodja sodelujejo tudi pri transportu snovi in premikanju organelov znotraj celice. Membranski mehurčki, ki se odcepljajo od ER in GA, ne lebdijo v citosolu, pač pa potujejo vzdolž mikrotubulov do cilja.</p>
+<p>Potovanje, ki je podobno dvohojni hoji, omogočajo posebne gibalne beljakovine. Med njimi in mikrotubuli izmenično potekajo reakcije vezave in sprostitve, za kar mora celica zagotavljati energijo.</p>
+<p class="caption">Slika 2.27: Transport snovi in premikanje organelov znotraj celice</p>
+  </div>
+</details>
+<details>
+  <summary>2.2.4 Celično ogrodje (citoskelet) <span class="chip sub">subsection</span></summary>
+  <div class="content">
+<p>V citosolu evkariontskih celic so znanstveniki odkrili miniaturno ogrodje – celično ogrodje ali citoskelet. Ta posebej pri živalski celici vzdržuje obliko celice, kar pri rastlinski in glivni celici v večji meri opravlja celična stena.</p>
+<p>Elementi (gradniki) citoskeleta so nitaste strukture različnih premerov (slika 2.21). Njihova dolžina se lahko spreminja, zato omogočajo gibanje celičnih struktur ter krčenje in premikanje celic.</p>
+<p class="caption">Slika 2.21: Elementi citoskeleta</p>
+<ul>
+<li>mikrotubuli</li>
+<li>intermediarni filamenti</li>
+<li>mikrofilamenti</li>
+</ul>
+<p>Najtanjši med njimi so mikrofilamenti. Sestavljeni so iz dveh niti nanizanih beljakovinskih molekul aktina, ki sta zaviti ena okrog druge, kot prikazuje slika 2.21.</p>
+<p>Celicam brez celične stene elementi citoskeleta omogočajo krčenje in s tem njihovo premikanje. Tako lahko svojo obliko spreminjajo amebe, ki so enocelični organizmi (slika 2.20), in tudi nekateri levkociti, ki so človeške krvne celice.</p>
+<p>Sposobnost spreminjanja oblike (ameboidnost) tem levkocitom omogoča, da se »prerinjejo« med celicami v steni krvnih kapilar in izstopijo iz krvnega obtoka v tkivo. Tam »požirajo« tujke, tako da jih zajamejo z uvihkom celične membrane. Potem se lahko vrnejo nazaj v krvni obtok.</p>
+<p class="caption">Slika 2.22: Ameboidno gibanje je podobno</p>
+<p>pretakanju, pri katerem telo ustvarja nastanek podaljškov ali izrastkov ime, imenovanih psevdopodiji (pralžki). Načinu požiranja z uvihanjem celične membrane pravimo fagocitoza. Levkocitom, ki so tega sposobni, pravimo fagociti.</p>
+<p class="caption">Slika 2.23: Levkociti (na sliki belo)</p>
+<p>V mišičnih celicah živali (tudi človeka) so aktinski in miozinski filamenti urejeni tako, da omogočajo krčenje posamezne celice in končno cele mišice.</p>
+<p class="caption">Slika 2.24: Aktinski in miozinski filamenti v mišični celici</p>
+<p>Najdebelejši elementi citoskeleta so mikrotubuli. Sestavljeni so iz beljakovinskih molekul tubulina, ki so sprijeti v cevasto strukturo. Z dodajanjem ali odcepljanjem molekul tubulina se mikrotubuli lahko krajšajo ali podaljšujejo. Ta lastnost omogoča prerazporejanje kromosomov pri delitvi celice.</p>
+<p>Niti delitvenega vretena, ki se pritrdijo na kromosome, so pravzaprav mikrotubuli, ki se žarkasto širijo iz centrosoma. Živalske celice imajo v centrosomih po dva centriola iz mikrotubulov, ki so urejeni tako, da tvorijo obod devetih trojčkov (9 × 3).</p>
+<p>Mikrotubuli gradijo bičke in migetalke. Pri obojih so urejeni tako, da tvorijo obod devetih parov, dva mikrotubula pa sta v sredini (9 × 2 + 2). Pod vsakim bičkom oz. migetalko je za oporo še bazalno telo, zgrajeno podobno kot centriol (9 × 3 mikrotubuli).</p>
+<p class="caption">Slika 2.25: Centriol (9 × 3 mikrotubuli)</p>
+<p class="caption">Slika 2.26: Razlika v zgradbi centriola in bička</p>
+<ul>
+<li>Centriol: devet trojčkov mikrotubulov je razporejenih v krog (9 × 3).</li>
+<li>Biček: devet parov mikrotubulov je razporejenih v krog, v sredini pa</li>
+</ul>
+<p>sta še dva mikrotubula (9 × 2 + 2).</p>
+<p>Rahlo vzdolžno drsenje mikrotubulov v bičkih in migetalkah omogoča upogibanje teh struktur in s tem aktivno plavanje oz. izpodrivanje medija, ki je običajno voda.</p>
+<p>Mikrotubuli kot elementi celičnega ogrodja sodelujejo tudi pri transportu snovi in premikanju organelov znotraj celice. Membranski mehurčki, ki se odcepljajo od ER in GA, ne lebdijo v citosolu, pač pa potujejo vzdolž mikrotubulov do cilja.</p>
+<p>Potovanje, ki je podobno dvohojni hoji, omogočajo posebne gibalne beljakovine. Med njimi in mikrotubuli izmenično potekajo reakcije vezave in sprostitve, za kar mora celica zagotavljati energijo.</p>
+<p class="caption">Slika 2.27: Transport snovi in premikanje organelov znotraj celice</p>
+  </div>
+</details>
+<details>
+  <summary>2.2.5 Vakuola je značilen rastlinski organel <span class="chip sub">subsection</span></summary>
+  <div class="content">
+<p>Vakuola je mehurček, ki je večinoma napolnjen z vodo in v njej raztopljenimi snovmi, kot so beljakovine, barvila in ioni. Vsebuje tudi encime za razgradnjo založnih snovi in odpadne produkte presnove, zato na neki način nadomešča lizosome v živalskih celicah.</p>
+<p>Obdana je z membrano, ki jo imenujemo tonoplast. Njena vsebina je redkejša oz. manj viskozna kot citosol, ki je raztopina soli in različno velikih molekul.</p>
+<p>Vakuola v življenju rastlinske celice uravnava ustrezne koncentracije različnih snovi v celici, zato voda skozi njeno membrano stalno vstopa in izstopa. Vakuola, ki je napolnjena z vodo, skupaj s celično steno daje rastlinski celici oporo in čvrstost, posebej pri neolesenelih rastlinskih tkivih.</p>
+<p>Vakuole namreč lahko zapolnjujejo kar 90 % prostornine celice. Če rastlinam primanjkuje vode, tlak v vakuolah upade in začnejo veneti.</p>
+<p class="caption">Slika 2.28: Barvila v vakuolah mesnatih listov mačehe dajejo cvetovom barvo (a),</p>
+<p>pri travi pa lahko vakuole vsebujejo snovi (strupe, kristale), ki odganjajo morebitne objedovalce (b).</p>
+<p>Nekatere živalske celice imajo mehurčke, v katerih poteka encimska razgradnja, zato jih imenujemo prebavne vakuole. Imajo jih tudi nekateri živalski protisti, kot so parameciji in amebe, ki se prehranjujejo z vključevanjem delcev hrane v citoplazmo.</p>
+<p>Tako paramecij kot ameba imata tudi krčljive ali kontraktilne vakuole, s katerimi aktivno črpata vodo iz celice. To je za preživetje nujno, saj vanju neprestano vdira voda.</p>
+<p class="caption">Slika 2.29: Prebavne vakuole pri amebi</p>
+<p class="caption">Slika 2.30: Prebavne in krčljive vakuole pri parameciju</p>
+  </div>
+</details>
+<details>
+  <summary>2.2.5 Vakuola je značilen rastlinski organel <span class="chip sub">subsection</span></summary>
+  <div class="content">
+<p>Vakuola je mehurček, ki je večinoma napolnjen z vodo in v njej raztopljenimi snovmi, kot so beljakovine, barvila in ioni. Vsebuje tudi encime za razgradnjo založnih snovi in odpadne produkte presnove, zato na neki način nadomešča lizosome v živalskih celicah.</p>
+<p>Obdana je z membrano, ki jo imenujemo tonoplast. Njena vsebina je redkejša oz. manj viskozna kot citosol, ki je raztopina soli in različno velikih molekul.</p>
+<p>Vakuola v življenju rastlinske celice uravnava ustrezne koncentracije različnih snovi v celici, zato voda skozi njeno membrano stalno vstopa in izstopa. Vakuola, ki je napolnjena z vodo, skupaj s celično steno daje rastlinski celici oporo in čvrstost, posebej pri neolesenelih rastlinskih tkivih.</p>
+<p>Vakuole namreč lahko zapolnjujejo kar 90 % prostornine celice. Če rastlinam primanjkuje vode, tlak v vakuolah upade in začnejo veneti.</p>
+<p class="caption">Slika 2.28: Barvila v vakuolah mesnatih listov mačehe dajejo cvetovom barvo (a),</p>
+<p>pri travi pa lahko vakuole vsebujejo snovi (strupe, kristale), ki odganjajo morebitne objedovalce (b).</p>
+<p>Nekatere živalske celice imajo mehurčke, v katerih poteka encimska razgradnja, zato jih imenujemo prebavne vakuole. Imajo jih tudi nekateri živalski protisti, kot so parameciji in amebe, ki se prehranjujejo z vključevanjem delcev hrane v citoplazmo.</p>
+<p>Tako paramecij kot ameba imata tudi krčljive ali kontraktilne vakuole, s katerimi aktivno črpata vodo iz celice. To je za preživetje nujno, saj vanju neprestano vdira voda.</p>
+<p class="caption">Slika 2.29: Prebavne vakuole pri amebi</p>
+<p class="caption">Slika 2.30: Prebavne in krčljive vakuole pri parameciju</p>
+  </div>
+</details>
+<details>
+  <summary>2.2.6 Mitohondrij pretvarja kemično vezano energijo hranilnih molekul v obliko, ki celicam omogoča biotsko delo <span class="chip sub">subsection</span></summary>
+  <div class="content">
+<p class="caption">Slika 2.31: Mitohondrij</p>
+<p>Mitohondrij je celični organel, zgrajen iz dveh membran. Zunanja membrana ovija mitohondrij in ga ločuje od citoplazme celice. Notranja membrana je nagubana. Uvihke membrane, ki jih imenujemo kristae, so lahko v vzdolžnem prerezu videti kot valovite strukture, kot je vidno na mikrografiji (slika 2.32).</p>
+<p>Membrani tvorita dva ločena prostora: matriks in medmembranski prostor (slika 2.31).</p>
+<p>V želatinoznem matriksu so poleg encimov za potek reakcij celičnega dihanja tudi mitohondrijska DNA in mitohondrijski ribosomi. Ti so manjši od evkariontskih ribosomov in so zelo podobni prokariontskim, iz katerih so se razvili.</p>
+<p>Notranja mitohondrijska membrana ima zaradi nagubanosti močno povečano površino. V njej so vsajeni encimi in prenašalci elektronov, ki sodelujejo v procesu celičnega dihanja.</p>
+<p>Ta prostorska ločenost omogoča potek reakcij, ki so opisane v 8. poglavju.</p>
+<p>Zagotovo poznate splošno enačbo celičnega dihanja, v kateri sta kot reaktanta glukoza in kisik, kot produkta pa voda in ogljikov dioksid. Pri celičnem dihanju se kemično vezana energija organskih molekul (npr. glukoze) pretvori v kemično vezano energijo v vezeh molekul ATP (adenozin trifosfat).</p>
+<p>Te molekule predstavljajo obliko energije, ki jo celice lahko uporabijo za svoje aktivnosti. Pravimo, da omogočajo biotsko delo celice.</p>
+<p class="caption">Slika 2.32: Mitohondrij pod elektronskim mikroskopom</p>
+<p class="caption">Slika 2.33: Celično dihanje poteka v mitohondriju</p>
+<p>Razmisli, katere celice vsebujejo več mitohondrijev: kostne ali možganske?</p>
+  </div>
+</details>
+<details>
+  <summary>2.2.7 Kloroplast pretvarja sončno energijo v kemično vezano energijo sladkorjev <span class="chip sub">subsection</span></summary>
+  <div class="content">
+<p>Kloroplast je eden izmed organelov, imenovanih plastidi. Podobno kot za mitohondrije je tudi za plastide značilno, da so iz dveh membran, ki pa so nekoliko drugače organizirane.</p>
+<p>Med membranama, ki omejujeta kloroplast, je ozek medmembranski prostor. V notranjosti je tekoča stroma, v kateri je poleg kloroplastne DNA in ribosomov še membranski sistem: skladovnice membranskih vrečk, tilakoidi, ki so nastale z uvihanjem notranje membrane. Posamezna tilakoida je kot nekakšen žepek, v katerem je prostorček, napolnjen s tekočino.</p>
+<p class="caption">Slika 2.34: Kloroplast</p>
+<p>V kloroplastih poteka fotosinteza. To je proces, pri katerem se svetlobna energija pretvori v energijo, vezano v nastalih organskih molekulah.</p>
+<p>6 CO2 + 6 H2O → C6H12O6 + 6 O2</p>
+<p class="caption">Slika 2.35: Fotosinteza</p>
+<p>Kloroplast je značilen organel rastlinske celice. Pri mikroskopiranju s šolskim svetlobnim mikroskopom njegovo prisotnost lahko opazimo, saj je zelene barve. Barvo mu dajejo klorofili in pomožna fotosintetska barvila (pigmenti), ki so vsajeni v tilakoidno membrano.</p>
+<p>Na tilakoidah potekajo od svetlobe odvisne reakcije, v stromi pa od svetlobe neodvisne reakcije, ki jih boste natančneje spoznali v 8. poglavju.</p>
+<p>Fotosinteza lahko poteka tudi v nekaterih prokariontih, čeprav nimajo kloroplastov. Vlogo tilakoidnih membran prevzamejo uvihki celične membrane (plazmaleme).</p>
+<p class="caption">Slika 2.36: Cianobakterije – prokarionti, ki izvajajo fotosintezo</p>
+<p>Med plastide poleg kloroplastov prištevamo še kromoplaste in levkoplaste. Kromoplasti vsebujejo rdeča, oranžna in rumena barvila, ki obarvajo cvetove, plodove in cele podzemne dele rastlin, kot je korenček. Levkoplasti so brezbarvni. Tiste levkoplaste, ki skladiščijo zrna škroba, rezervno snov rastlin, imenujemo amiloplasti.</p>
+<p>Domnevamo, da so se plastidi, tako kot mitohondriji, razvili iz simbiontskih prokariontov.</p>
+<p>Simbiontski prokarionti so npr. bakterije, ki živijo v sožitju z drugim organizmov. Primer so rizobiji, ki živijo v koreninskih vozličkih stročnic, omogočajo stročnicam fiksiranje dušika, nasprotno pa rastlina bakterijam nudi zatočišče. Številne bakterije živijo v prebavni cevi nekaterih rastlinojedih živali, npr. goveda in termitov, kjer prebavljajo celulozo, ki je gostitelji s svojimi prebavnimi encimi ne morejo razgraditi. Tudi v naših prebavilih je 500 do 1000 vrst bakterij in številne med njimi so simbiontske in sodelujejo pri prebavi snovi.</p>
+  </div>
+</details>
+<details>
+  <summary>2.2.8 Celice in organele omejujejo biotske membrane <span class="chip sub">subsection</span></summary>
+  <div class="content">
+<p>Membrana, ki omejuje posamezno celico od okolja, in membrane, ki omejujejo celične organele, so zelo podobno zgrajene. Imenujemo jih s skupnim pojmom biotske membrane.</p>
+<p>Osnovni gradniki membrane so fosfolipidi. Razporejeni so v dveh plasteh, zato pravimo, da je membrana fosfolipidni dvosloj.</p>
+<p>Fosfolipidne molekule se zaradi hidrofilnih glav, ki so polarne, uredijo tako, da so glave v stiku z vodo (na zunanji strani iz okolice celice, na notranji strani pa voda, ki je v citosolu). Hidrofobni nepolarni repki pa so obrnjeni drug proti drugemu.</p>
+<p>Molekulo fosfolipida boste bolje spoznali v 3. poglavju o kemični sestavi celice.</p>
+<p>Na sliki 2.37 lahko opazimo, da so med molekule fosfolipidov vključene različne beljakovine. Nekatere segajo skozi celoten dvosloj, druge so na površini. Lahko imajo vezane kratke verige ogljikovih hidratov, v tem primeru jih imenujemo glikoproteini. Prisotnost glikoproteinov, npr. v membrani rdečih krvničk (eritrocitov), določa krvno skupino posameznika.</p>
+<p class="caption">Slika 2.37: Celična membrana (debelina 8 nm)</p>
+<p>Holesterol, ki ga poleg glikolipidov vidimo na sliki 2.37, je pomembna sestavina membrane živalskih celic. Vgrajen je v notranjost fosfolipidnega dvosloja in uravnava fluidnost (gibljivost) fosfolipidov in drugih vključenih molekul ter povečuje stabilnost celične membrane.</p>
+<p>Opisano zgradbo membrane najbolje ponazori model tekočega mozaika. Membrana je oljnat (torej tekoč) dvosloj fosfolipidov, med katerimi so tu in tam vključene beljakovinske molekule, kot so posamezni izstopajoči kamenčki v mozaiku.</p>
+<p>Celična membrana (plazmalema) ločuje celico od okolja in drugih celic, posamezna celica ni zaprt sistem. Skozi membrano celica izmenjuje snovi z drugimi celicami in okoljem. Na ta način vzdržuje bolj ali manj stabilno notranje okolje, membranski organeli pa večjo učinkovitost celice.</p>
+<p class="caption">Slika 2.38: Mozaik</p>
+  </div>
+</details>
+<details>
+  <summary>2.2.9 Celična stena <span class="chip sub">subsection</span></summary>
+  <div class="content">
+<p>Rastlinsko in glivno celico na zunanji strani membrane obdaja še celična stena, ki je v primerjavi s celično membrano precej debela. Pri glivah je zgrajena iz hitina, pri rastlinah pa iz celuloze.</p>
+<p>Celulozne molekule so urejene v snope, ki jih povezujejo polisaharidi in beljakovine.</p>
+<p>Celična stena je lahko gibka ali toga, odvisno od vrste celice, v vsakem primeru pa celico ščiti in ji daje oporo ter obliko.</p>
+<p class="caption">Slika 2.39: Celična stena</p>
+  </div>
+</details>
+</details>
+<details open>
+  <summary>2.3 Kako so nastale evkariontske celice <span class="chip sec">section</span></summary>
+  <div class="content">
+<p>Življenje na Zemlji se je razvilo pred 3,5 milijarde let. Dobro milijardo let je obstajalo v obliki prokariontskih celic. Na podlagi fosilnih ostankov vemo, da so se na Zemlji pred 2,1 milijarde let pojavile tudi evkariontske celice.</p>
+<p>V nasprotju s prokariontskimi imajo jedrni ovoj okrog dednega materiala in sistem notranjih membran. Znanstveniki menijo, da so nastale z uvihanjem celične membrane, torej imajo skupen izvor (slika 2.40).</p>
+<p>Kasneje naj bi se prostoživeč prokariont (bakterija), ki je lahko opravljal celično dihanje, evolucijsko uspešno vključil v večjo prokariontsko celico, ki ga je zajela, a ga ni prebavila. Z njo se je pomnoževal in v njej živel. Podobno naj bi se kasneje zgodilo s prokariontom, ki je opravljal fotosintezo.</p>
+<p>Teorija, ki pojasnjuje izvor mitohondrijev in kloroplastov, se imenuje endosimbiontska teorija. Vključena prokarionta sta se v celicah obdržala, ker živita z njimi v sožitju – odnosu, v katerem imata oba udeleženca, gost in gostitelj, korist.</p>
+<p>Teorijo podpirajo dejstva, da imata oba organela dvojno membrano, pri čemer notranja izvira iz endomembranskega sistema. Poleg tega imata oba tudi lastno DNA, ki omogoča njuno delitev, in lastne ribosome za sintezo beljakovin.</p>
+<p>Notranja membrana obeh organelov, krožna molekula DNA in ribosomi so zelo podobni tistim, ki jih imajo danes žive bakterije.</p>
+<p class="caption">Slika 2.40: Evolucijski nastanek evkariontske celice</p>
+  </div>
+</details>
+<details open>
+  <summary>2.4 Celična teorija <span class="chip sec">section</span></summary>
+  <div class="content">
+<p>Pred nekaj stoletji znanstveniki še niso vedeli, kar danes že vsak srednješolec, in sicer da so vsi organizmi zgrajeni iz celic. Kot znanstveno pojavo so življenje sprva razlagali spontano, s prostim nastajanjem živih organizmov. Verjeli so celo, da organizmi lahko spontano nastanejo tako rekoč iz nežive snovi, ter so zagovarjali doktrino vitalizma, ki vključuje oživljajočo silo.</p>
+<p>Postopno razvoj in uporabljanje tehničnih pripomočkov je omogočilo vpogled v ekvivalentno svet zgradbe organizmov – v svet celic.</p>
+<p>Obstajajo tudi organizmi, ki so iz ene same celice – enocelični. Celica takšnega organizma opravlja vse funkcije, potrebne za življenje in razmnoževanje. Pri mnogoceličnih organizmih pa so celice specializirane in sodelujejo. Takšna delitev dela omogoča nastanek tkiv, organov in organskih sistemov. Celice so torej temeljne gradbene in dejavne enote živih bitij.</p>
+<p>To teorijo sta s proučevanjem zgradbe rastlin in živali leta 1837 utemeljila nemška znanstvenika Matthias Schleiden in Theodor Schwann. Nista pa vedela, da celice nastajajo le z delitvijo iz obstoječih celic. To spoznanje je s proučevanjem delitve celic v vipijskih celicah rastlin prvič izrekel Robert Remak leta 1852.</p>
+<p>Pri delitvi celic se dedna informacija prenese na celice potomke. Kljub enaki dedni informaciji pa se posamezne celice istega organizma lahko razlikujejo, saj opravljajo različne naloge. Tako je to npr. v večceličnem telesu rastlin in živali.</p>
+<p>V celicah potekajo presnovni (metabolni) procesi. Pri procesih razgradnje snovi, ki jih celica sprejme iz okolja, razpadajo kemične vezi, sproščena energija pa se lahko porabi za izgradnjo celičnih lastnih snovi, ki jih potrebuje za življenje.</p>
+<p>Celice so odprti in dinamični sistemi, kar pomeni, da si z okoljem izmenjujejo snovi in energijo ter jo pretvarjajo iz ene oblike v drugo. Vse celice imajo po določeno kemično sestavo.</p>
+<p class="caption">Slika 2.41: Živi organizmi – svet prisoten na površju</p>
+<p>2.4.1 Virusi nimajo celične zgradbe</p>
+<p>Tudi virusi vsebujejo kemične elemente, a pri njih ne najdemo organelov, ki smo jih spoznali pri celicah. Vsebujejo le dedno snov, ki je lahko DNA ali pa RNA, beljakovinski plašč, imenovan kapsida, nekateri pa imajo še ovojnico iz dveh slojev lipidov in beljakovin (slika spodaj). Največja struktura virusov ni omejena s celično membrano. Virusi nimajo ne ribosomov ne lastnih presnovnih procesov. Vse, kar potrebujejo, zanje opravlja celica gostiteljica.</p>
+<p class="caption">Slika 2.42: Virus HIV (povzroča AIDS)</p>
+<p class="caption">Slika 2.43: Virus SARS-CoV-2 (povzroča Covid-19)</p>
+<p class="caption">Slika 2.44: Virusi bakteriofagi napadajo bakterije</p>
+<p class="caption">Slika 2.45: Zgradba plašča bakteriofaga: je iz beljakovin, ki tvorijo</p>
+<p>ikosaedrični plašč. Zunaj gostitelja je virus nedejaven delec iz makromolekul, ko pa prodre v ustrezno celico, prevzame nadzor nad njeno presnovo in jo izkoristi za svoje namnoževanje. Po sprostitvi novih virusov iz celice celica propade. V nekaterih primerih se virusna dedna snov vgradi v gostiteljsko in se z njo prenaša na potomke celice gostiteljice. Šele ko pride pa se tudi v takšnih primerih okužba konča s propadom celice.</p>
+<p>Virusi so tako majhni, da bi jih lahko več kot 12.000 zložili med oba prsta, s katerima obrnemo list v učbeniku.</p>
+<p>Samoevalvacija</p>
+<p>Uspešen sem, ko:</p>
+<ul>
+<li>na sliki prepoznam posamezen tip celice (prokariontsko, bakterijsko,</li>
+</ul>
+<p>evkariontsko rastlinsko, glivno, živalsko),</p>
+<ul>
+<li>poznam razlike in podobnosti med različnimi tipi celic,</li>
+<li>navedem vlogo posameznih organelov,</li>
+<li>opišem medsebojno povezanost in sodelovanje jedrnega ovoja,</li>
+</ul>
+<p>endoplazemskega retikla, Golgijevega aparata, lizosomov in drugih membranskih mehurčkov,</p>
+<ul>
+<li>navedem dejstva, ki so v prid endosimbiontski teoriji,</li>
+<li>pojasnim, zakaj znanstveniki virusov ne uvrščajo med žive organizme oz.</li>
+</ul>
+<p>zakaj virusi niso celice.</p>
+  </div>
+</details>
+</details>
+
+
+</div>
+
+
+<script>
+  // Zapri vse podnaslove (vsi <details> znotraj drugega <details>)
+  // Glavni naslovi (npr. 2.1/2.2/2.3/2.4) lahko ostanejo odprti, ker so "prvi nivo".
+  document.querySelectorAll('details details').forEach(d => d.removeAttribute('open'));
+</script>
+</body>
+</html>
+

@@ -16,9 +16,14 @@ BASE_DIR = "/home/robert/insightViewer/source/InsightViewer/app/scripts/rag"
 config = configparser.ConfigParser()
 config.read(os.path.join(BASE_DIR, "..", "..", "..", "config.ini"))
 
+NEO4J_URI = os.getenv("NEO4J_URI")
+NEO4J_USERNAME = os.getenv("NEO4J_USERNAME")
+NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD")
+NEO4J_DATABASE = os.getenv("NEO4J_DATABASE")
+
 driver = GraphDatabase.driver(
-    config["NEO4J"]["URI"],
-    auth=(config["NEO4J"]["USERNAME"], config["NEO4J"]["PASSWORD"]),
+    NEO4J_URI,
+    auth=(NEO4J_USERNAME, NEO4J_PASSWORD),
 )
 
 q = "Kaj določa 10.a člen ZGD-1?"

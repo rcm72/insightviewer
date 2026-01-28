@@ -35,6 +35,9 @@ import requests
 import re 
 from html import unescape
 from neo4j.time import Date as Neo4jDate
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Ensure the app directory is in Python's path
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
@@ -167,12 +170,16 @@ def _ollama_post_embedding(text: str, timeout: int = 30):
     raise RuntimeError(f"Failed to obtain embedding from Ollama. Last error: {last_err}")
 
 # --- Neo4j Setup ---
-URI = config["NEO4J"]["URI"]
-print("DEBUG: final NEO4J URI to be used:", repr(URI))
-USERNAME = config["NEO4J"]["USERNAME"]
-PASSWORD = config["NEO4J"]["PASSWORD"]
-OPENAI_API_KEY = config["OPENAI"].get("OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
-driver = GraphDatabase.driver(URI, auth=(USERNAME, PASSWORD))
+NEO4J_URI = config["NEO4J"]["URI"]
+print("DEBUG: final NEO4J URI to be used:", repr(NEO4J_URI))
+NEO4J_USERNAME = config["NEO4J"]["USERNAME"]
+NEO4J_PASSWORD = config["NEO4J"]["PASSWORD"]
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+
+if not OPENAI_API_KEY:
+    raise RuntimeError("OPENAI_API_KEY not set in environment variables")
+
+driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USERNAME, NEO4J_PASSWORD))
 
 # --- initialize route modules that need the driver BEFORE registering blueprints ---
 # import module object, call its init_driver(driver), then import their blueprints
@@ -219,6 +226,11 @@ def ask_vector_page():
 @app.route("/quiz_ui")
 def quiz_ui_page():
     return render_template("quiz_ui.html")
+
+# --- NEW: quiz_prep_ui page route ---
+@app.route("/quiz_prep_ui")
+def quiz_prep_ui_page():
+    return render_template("quiz_prep_ui.html")
 
 # --- NEW: quiz results viewer route ---
 @app.route("/quiz_results")
@@ -1494,6 +1506,56 @@ def openai_generate():
 def assessment_page():
     return render_template("assessment.html")
 
+@app.route('/ollama_ui', methods=['GET'])
+def ollama_ui_page():
+    return render_template('ollama_ui.html')    
+
+@app.route('/api/ollama/ask', methods=['POST'])
+def ask_ollama():
+    data = request.json
+    question = data.get('question', '')
+
+    if not question:
+        return jsonify({'error': 'No question provided'}), 400
+
+    try:
+        # Forward the question to Ollama API
+        OLLAMA_API_BASE = config.get("OLLAMA", "BASE", fallback=None)
+        if not OLLAMA_API_BASE:
+            return jsonify({'error': 'OLLAMA_API_BASE is not configured'}), 500
+        response = requests.post(f"{OLLAMA_API_BASE}/ask", json={'question': question})
+        response.raise_for_status()
+        return jsonify(response.json())
+    except requests.RequestException as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/proxy/ollama/ask', methods=['POST'])
+def proxy_ollama_ask():
+    data = request.json
+    question = data.get('question', '')
+
+    if not question:
+        return jsonify({'error': 'No question provided'}), 400
+
+    try:
+        OLLAMA_API_BASE = config.get("OLLAMA", "BASE", fallback=None)
+        MODEL = config.get("OLLAMA", "MODEL", fallback="Default model not set")
+        
+        # Log the model being used
+        app.logger.info(f"Using Ollama model: {MODEL}")
+
+        # Forward the request to the correct endpoint
+        response = requests.post(f"{OLLAMA_API_BASE}/ask", json={'question': question})
+        response.raise_for_status()
+        return jsonify(response.json())
+    except requests.RequestException as e:
+        app.logger.exception("Error while forwarding request to Ollama API")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/ollama/model', methods=['GET'])
+def get_ollama_model():
+    model = config.get("OLLAMA", "MODEL", fallback="Default model not set")
+    return jsonify({'model': model})
 
 @app.route('/favicon.ico')
 def favicon():
