@@ -74,3 +74,4 @@ wget-log*
 *.deb
 quiz_results.csv
 test*.txt
+*.map
