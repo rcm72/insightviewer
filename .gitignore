@@ -67,3 +67,10 @@ source/InsightViewer/app/rag/chroma_db/
 
 # Logs
 *.log
+
+# Local logs / downloads / scratch
+*.log
+wget-log*
+*.deb
+quiz_results.csv
+test*.txt
