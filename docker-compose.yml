@@ -144,7 +144,7 @@ services:
     ports:
       - "3000:8080"
     environment:
-      - OLLAMA_BASE_URL=http://192.168.1.26:11434
+      - OLLAMA_BASE_URL=http://192.168.1.36:11434
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:

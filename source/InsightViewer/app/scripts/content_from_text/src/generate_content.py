@@ -25,7 +25,7 @@ Output:
 Usage:
   python generate_content.py --template structure_Vsebina.html --data data.txt --out out.html
   python generate_content.py --template structure_Vsebina.html --data data.txt --out out.html --marked-only
-  python generate_content.py --template structure_Vsebina.html --data data.txt --out out.html --no-fallback
+  python generate_content.py --python3 generate_content.py --template structure_Vsebina.html --data /home/robert/insightViewer/source/InsightViewer/app/scripts/content_from_text/ocr/zgo_grki_urejeno_skupaj.txt --out zgo_grki_urejeno_skupaj.html structure_Vsebina.html --data data.txt --out out.html --no-fallback
 """
 
 from __future__ import annotations
@@ -74,9 +74,9 @@ def parse_entries(data: str, marked_only: bool = False) -> List[dict]:
     Prefer explicit <<...>> headings; if none and fallback allowed, fallback to numeric headings.
     If marked_only=True and no markers exist -> raise ValueError.
     """
-    marked_heading_line = re.compile(r"^\s*<<\s*(.+?)\s*>>\s*$")
-    plain_heading_line = re.compile(r"^\s*(\d+(?:\.\d+)*)(?:\.)?\s+(.+?)\s*$")
+    import re
 
+    marked_heading_line = re.compile(r"^\s*<<\s*(.+?)\s*>>\s*$")
     lines = data.splitlines()
     has_markers = any(marked_heading_line.match(ln) for ln in lines)
 
@@ -87,6 +87,7 @@ def parse_entries(data: str, marked_only: bool = False) -> List[dict]:
     current = None
 
     def flush():
+        """Flush the current entry to the entries list."""
         nonlocal current
         if current is None:
             return
@@ -94,86 +95,36 @@ def parse_entries(data: str, marked_only: bool = False) -> List[dict]:
         entries.append(current)
         current = None
 
-    # Marker mode
-    if has_markers:
-        for ln in lines:
-            mm = marked_heading_line.match(ln)
-            if mm:
-                flush()
-                heading_text = mm.group(1).strip()  # already without << >>
-                sid, title = split_sid_title(heading_text)
-                level = sid.count(".") if sid else 0
-                current = {
-                    "heading_text": heading_text,
-                    "sid": sid,
-                    "title": title,
-                    "level": level,
-                    "body_lines": [],
-                }
-            else:
-                if current is not None:
-                    current["body_lines"].append(ln)
-
-        flush()
-        return entries
-
-    # If marked_only, we stop here (should not reach due to the earlier error)
-    if marked_only:
-        return []
-
-    # Fallback: numeric headings only
-    entries_fb: List[dict] = []
-    current_heading = None
-    buf: List[str] = []
-
+    print("DEBUG: Starting to parse lines...")
     for ln in lines:
-        m = plain_heading_line.match(ln)
-        if m:
-            sid, title = m.group(1).strip(), m.group(2).strip()
-            if not is_false_heading(title):
-                if current_heading is not None:
-                    csid, ctitle = split_sid_title(current_heading)
-                    entries_fb.append(
-                        {
-                            "heading_text": current_heading,
-                            "sid": csid,
-                            "title": ctitle,
-                            "level": csid.count(".") if csid else 0,
-                            "body": "\n".join(buf).strip(),
-                        }
-                    )
-                current_heading = f"{sid} {title}".strip()
-                buf = []
-                continue
-
-        if current_heading is not None:
-            buf.append(ln)
-
-    if current_heading is not None:
-        csid, ctitle = split_sid_title(current_heading)
-        entries_fb.append(
-            {
-                "heading_text": current_heading,
-                "sid": csid,
-                "title": ctitle,
-                "level": csid.count(".") if csid else 0,
-                "body": "\n".join(buf).strip(),
+        print(f"DEBUG: Processing line: {ln}")
+        mm = marked_heading_line.match(ln)
+        if mm:
+            print(f"DEBUG: Matched marker: {ln}")
+            flush()
+            heading_text = mm.group(1).strip()  # already without << >>
+            sid, title = split_sid_title(heading_text)
+            print(f"DEBUG: Parsed heading - SID: {sid}, Title: {title}")
+            level = sid.count(".") if sid else 0
+            current = {
+                "heading_text": heading_text,
+                "sid": sid,
+                "title": title,
+                "level": level,
+                "body_lines": [],
             }
-        )
+        else:
+            if current is not None:
+                # Append non-heading lines to the current entry's body
+                current["body_lines"].append(ln)
 
-    # Normalize fallback entries to same schema (no body_lines)
-    normalized: List[dict] = []
-    for e in entries_fb:
-        normalized.append(
-            {
-                "heading_text": e["heading_text"],
-                "sid": e["sid"],
-                "title": e["title"],
-                "level": e["level"],
-                "body": e.get("body", ""),
-            }
-        )
-    return normalized
+    flush()
+
+    print("DEBUG: Parsed entries:")
+    for entry in entries:
+        print(entry)
+
+    return entries
 
 
 def body_to_html(text: str) -> str:
@@ -284,10 +235,19 @@ def build_details_tree(entries: List[dict]) -> Tuple[str, str]:
         summary_text = f"{sid} {title}".strip()
         open_str = " open" if open_attr else ""
 
+        print(f"DEBUG: Generating details for SID: {sid}, Title: {title}")
+
         parts = [
             f"<details{open_str}>",
             f"  <summary>{html.escape(summary_text)} {chip(level, title)}</summary>",
         ]
+
+        # Add the button here
+        parts.append(f"""
+            <button onclick="window.open('/summary-popup?context={html.escape(title)}', 'popup', 'width=600,height=400')">
+                Ask a Question
+            </button>
+        """)
 
         body_html = body_to_html(n["body"])
         if body_html:
@@ -308,7 +268,7 @@ def build_details_tree(entries: List[dict]) -> Tuple[str, str]:
         f"  <summary>{html.escape(chapter_display)} {chip(0, chapter_title)}</summary>",
     ]
 
-    # add chapter body (if any)
+    # Add chapter body (if any)
     ch_body_html = body_to_html(by_sid[chapter_sid]["body"])
     if ch_body_html:
         chapter_block.append('  <div class="content">')
@@ -316,6 +276,7 @@ def build_details_tree(entries: List[dict]) -> Tuple[str, str]:
         chapter_block.append("  </div>")
 
     for sec in root_sections:
+        print(f"DEBUG: Adding section {sec} to chapter block")
         chapter_block.append(details_for(sec, open_attr=True))
 
     chapter_block.append("</details>")
@@ -337,12 +298,36 @@ def apply_to_template(template_html: str, chapter_display: str, generated_block:
     # Replace content between </header> and closing container + <script> (template style)
     m = re.search(r"(</header>\s*)(.*?)(\s*</div>\s*\n\n<script>)", out, flags=re.DOTALL | re.IGNORECASE)
     if m:
+        print("DEBUG: Replacing content block in template")
         out = out[:m.start(2)] + generated_block + out[m.end(2) :]
     else:
-        # fallback: insert before script tag
+        # Fallback: insert before script tag
+        print("DEBUG: Fallback - inserting content block before script tag")
         out = out.replace("</div>\n\n<script>", generated_block + "\n</div>\n\n<script>")
 
     return out
+
+
+def generate_html(entries: List[dict], template: str) -> str:
+    content = []
+    for entry in entries:
+        print(f"DEBUG: Entry data: {entry}")  # Print the entire entry dictionary
+        print(f"DEBUG: Generating HTML for entry 1: {entry.get('sid', 'MISSING')} - {entry.get('title', 'MISSING')}")
+        details = f"""
+        <details open>
+          <summary>{entry.get('sid', 'MISSING')} {entry.get('title', 'MISSING')} <span class="chip sec">poglavje1</span>
+          <div class="content">
+            <p>{entry['body'].replace('\n', '</p><p>')}</p>
+          </div>
+        </details>
+        """
+        print(f"DEBUG: Generated details block:\n{details}")
+        content.append(details)
+
+    content_block = "\n".join(content)
+    html_output = template.replace("{{content_block}}", content_block)
+    print("DEBUG: Final content block inserted into template.")
+    return html_output
 
 
 def main() -> None:
@@ -365,8 +350,14 @@ def main() -> None:
     data_text = Path(args.data).read_text(encoding="utf-8", errors="ignore")
 
     entries = parse_entries(data_text, marked_only=args.marked_only)
+    for entry in entries:
+        print(f"DEBUG: Generating HTML for entry 2: {entry['sid']} - {entry['title']}")
+        # Generate HTML for this entry
     chapter_display, generated_block = build_details_tree(entries)
     out_html = apply_to_template(template_html, chapter_display, generated_block)
+
+    print("DEBUG: Final HTML output:")
+    print(out_html)
 
     Path(args.out).write_text(out_html, encoding="utf-8")
     print(f"OK: wrote {args.out}")

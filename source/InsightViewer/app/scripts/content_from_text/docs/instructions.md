@@ -10,6 +10,12 @@
    2.2 **Generiranje vsebine lahko narediš na dva načina:**
 
       2.2.1 Uporabi program `generate_content.py` za generiranje vsebine:
+         ```
+            python3 generate_content.py \
+            --template structure_Vsebina.html \
+            --data /home/robert/insightViewer/source/InsightViewer/app/scripts/content_from_text/ocr/zgo_grki_d3.txt \
+            --out /home/robert/insightViewer/source/InsightViewer/app/scripts/content_from_text/ocr/zgo_grki_d3.html
+         ```
       
          ```bash
          python build_cypher_from_text.py bio1_poglavje2.txt \

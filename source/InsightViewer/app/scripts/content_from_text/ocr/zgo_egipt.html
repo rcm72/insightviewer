@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="sl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Poglavje: 2. Egipt</title>
+
+  <style>
+    :root{
+      --bg: #0b1020;
+      --card: #111a33;
+      --card2: #0f1730;
+      --text: #e9eefc;
+      --muted: #b9c5e6;
+      --border: rgba(255,255,255,.12);
+      --accent: #7aa2ff;
+      --accent2: #7dffca;
+      --warn: #ffd27a;
+    }
+
+    body{
+      margin: 24px;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      line-height: 1.65;
+      background: radial-gradient(1200px 700px at 10% 10%, rgba(122,162,255,.18), transparent 55%),
+                  radial-gradient(900px 600px at 90% 20%, rgba(125,255,202,.12), transparent 55%),
+                  var(--bg);
+      color: var(--text);
+    }
+
+    .container{ max-width: 980px; margin: 0 auto; }
+
+    header{
+      padding: 18px 18px 6px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      box-shadow: 0 12px 30px rgba(0,0,0,.35);
+      margin-bottom: 14px;
+    }
+    header h1{
+      margin: 0 0 6px;
+      font-size: 1.35rem;
+      letter-spacing: .2px;
+    }
+    header p{
+      margin: 0 0 10px;
+      color: var(--muted);
+      font-size: .95rem;
+    }
+
+    /* Details cards */
+    details{
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 10px 12px;
+      margin: 12px 0;
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));
+      box-shadow: 0 10px 24px rgba(0,0,0,.28);
+    }
+    details details{
+      margin: 10px 0 0;
+      background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.02));
+      box-shadow: none;
+    }
+
+    summary{
+      cursor: pointer;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      list-style: none;
+      user-select: none;
+      outline: none;
+      padding: 6px 6px;
+      border-radius: 12px;
+    }
+    summary::-webkit-details-marker{ display:none; }
+
+    /* Chevron */
+    summary::before{
+      content: "›";
+      display: inline-block;
+      font-size: 1.35rem;
+      line-height: 1;
+      transform: rotate(0deg);
+      transition: transform .15s ease;
+      color: var(--accent2);
+      width: 18px;
+      text-align: center;
+    }
+    details[open] > summary::before{
+      transform: rotate(90deg);
+    }
+
+    summary:hover{
+      background: rgba(122,162,255,.10);
+      border: 1px solid rgba(122,162,255,.22);
+    }
+
+    /* Section color chips */
+    .chip{
+      font-size: .78rem;
+      font-weight: 700;
+      padding: 2px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      background: rgba(255,255,255,.04);
+      margin-left: auto;
+    }
+    .chip.sec{ color: #d7e3ff; border-color: rgba(122,162,255,.35); background: rgba(122,162,255,.12); }
+    .chip.sub{ color: #d9fff1; border-color: rgba(125,255,202,.35); background: rgba(125,255,202,.10); }
+    .chip.q{ color: #fff0d1; border-color: rgba(255,210,122,.40); background: rgba(255,210,122,.12); }
+
+    p{ margin: .7em 0; color: var(--text); }
+    strong{ color: #ffffff; }
+
+    ul{ margin: .5em 0 .5em 1.2em; color: var(--text); }
+    li{ margin: .25em 0; }
+
+    .note, .caption{
+      color: var(--muted);
+      font-style: italic;
+      margin-top: .6em;
+    }
+
+    .questions{
+      margin: 10px 0;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,210,122,.30);
+      background: linear-gradient(180deg, rgba(255,210,122,.10), rgba(255,255,255,.02));
+    }
+    .questions p{ color: var(--text); }
+
+    /* Small helper line */
+    .hint{
+      color: var(--muted);
+      font-size: .9rem;
+      margin-top: 6px;
+    }
+
+    /* Make long text nicer */
+    .content{ padding: 2px 6px 6px; }
+    
+    details:not([open]) > *:not(summary) { display: none !important; }
+    
+  .red-link {
+    color: red;
+    text-decoration: none;
+  }
+
+  .white-link {
+    color: #ffffff;
+    text-decoration: none;
+  }
+
+  .white-link:hover {
+    color: #dddddd; /* optional hover effect */
+  }    
+    
+  </style>
+</head>
+
+<body>
+<div class="container">
+  
+  <div>
+    <a href="/static/images/bookBiologija1/html/bio1_pog2_flipCard.html"
+       class="red-link"
+       target="_blank"
+       rel="noopener noreferrer">
+      Open Flip Card
+    </a>
+  </div>
+  <br>
+  <div>
+    <a href="/static/images/bookBiologija1/html/bio1_pog2_pages.html"
+       class="red-link"
+       target="_blank"
+       rel="noopener noreferrer">
+      Pregled knjige
+    </a>
+  </div>
+  <br>
+  <div>
+    <a href="/quiz_ui"
+       class="red-link"
+       target="_blank"
+       rel="noopener noreferrer">
+      Kviz
+    </a>
+  </div>
+  
+  <header>
+    <h1>2. Egipt</h1>
+    <p>Klikni na naslov razdelka za prikaz/skritje vsebine.</p>    
+    <p class="hint">Namig: tudi podpoglavja so zložljiva.</p>    
+    <label>2. Egipt</label>    
+  </header>
+  
+  
+  <!-- 2 (glavno poglavje) -->
+<details open>
+  <summary>2. Egipt <span class="chip sec">poglavje</span></summary>
+<details open>
+  <summary>2.1 TRIJE LETNI ČASI V EGIPTU <span class="chip sec">section</span></summary>
+
+            <button onclick="window.open('/summary-popup?context=TRIJE LETNI ČASI V EGIPTU', 'popup', 'width=600,height=400')">
+                Ask a Question
+            </button>
+        
+  <div class="content">
+<p>LETNI ČASI IN OBDOBJA ŽIVLJENJA OB NILU (delovni list)</p>
+<p>1. Stari Egipčani so poznali tri letne čase (po štiri mesece) oz. različna obdobja življenja ob reki Nil. Naštej letne čase in jih razvrsti v leto:</p>
+<p>čas poplav</p>
+<p>čas setve</p>
+<p>čas žetve</p>
+<p>2. Navedi značilnosti prvega letnega časa, ki nastopi v koledarskem poletju:</p>
+<p>Prvi letni čas je bil čas poplav. Na začetku tega letnega časa je bilo novo leto.</p>
+<p>V tem času so kmetje poskrbeli za izdelavo ali popravilo orodja, ter se preživljali z ribolovom in javnimi deli, ki so jih naročili faraoni.</p>
+<p>V drugem letnem času se je poplavni Nil umaknil in pustil za seboj rodovitno blato. Zemljo so kmetje preorali z lesenim plugom, kasneje tudi s kovinskim plugom.</p>
+<p>To je bil najpomembnejši letni čas, saj so kmetje morali pravočasno posejati semena in v ta namen tudi pripraviti polja. Sejali so z rokami, živali, ki so hodile za sejalci, pa so poteptale semena v zemljo. Za črpanje vode iz prekopov na polja so izumili šaduf.</p>
+<p>V tretjem letnem času, času žetve, so kmetje žito oz. pridelek poželi in ga shranili v žitnice ali skladišča, ki so bile zgrajene iz blata (ilovice).</p>
+<p>Uradniki so skrbno zabeležili, koliko žita je bilo pridelanega, in o tem poročali faraonu. Polja so na novo pripravili, kmetje pa so pripravili namakalne kanale za naslednje obdobje, obdobje poplav.</p>
+<p>Pomembna rastlina v Egiptu je bil sladkorni trs, ki je rasel na močvirnatih področjih ob Nilu. Bil je vsestransko uporaben, saj so iz njega lahko izdelovali: sladkor.</p>
+  </div>
+</details>
+<details open>
+  <summary>2.2 ZGRADBA DRUŽBE V STAREM EGIPTU <span class="chip sec">section</span></summary>
+
+            <button onclick="window.open('/summary-popup?context=ZGRADBA DRUŽBE V STAREM EGIPTU', 'popup', 'width=600,height=400')">
+                Ask a Question
+            </button>
+        
+<details>
+  <summary>2.2.1 DRŽAVNA ORGANIZACIJA IN UPRAVA <span class="chip sub">subsection</span></summary>
+
+            <button onclick="window.open('/summary-popup?context=DRŽAVNA ORGANIZACIJA IN UPRAVA', 'popup', 'width=600,height=400')">
+                Ask a Question
+            </button>
+        
+  <div class="content">
+<p>1. Državna organizacija in uprava v starem Egiptu</p>
+<p>Družba v starem Egiptu se začne razslojevati hierarhično v 4. tisočletju pr. Kr.</p>
+<p>Vladarji poljedelskih skupnosti ob Nilu skrbijo za: organizacijo poljedelstva, rejo živali, obrt in gradnjo stavb;</p>
+<p>Konec 4. tisočletja se naselbine ob Nilu, da bi lažje organizirale namakanje polj (irigacija), povežejo v enotno državo.</p>
+<p>Državo vodi kralj, ki ga imenujejo faraon kar pomeni velika hiša, saj njegovega imena niso smeli omenjati. Predstavljal je božjega posrednika na zemlji, ki so ga postavili bogovi.</p>
+<p>Vladal je despotsko, kar pomeni, da je vladal sam brez posvetovanja s plemstvom ali ljudstvom, zato stari Egipt imenujemo despotovina. V rokah je imel vse veje oblasti:</p>
+<p>Zakonodajno, upravno, sodno, bil je vrhovni vojaški poveljnik in vrhovni svečenik.</p>
+<p>Oblast faraona je bila dedna in zato dinastična, včasih so vladajočo dinastijo ali družino vrgli s prestola vojaški poveljniki, vrhovni svečeniki in drugi konkurenti in ustanovili svojo dinastijo.</p>
+<p>Vsa zemlja je pripadala faraonu, poročali so se z najožjimi sorodniki, da bi ohranili čisto kri (tudi ostanek materinskega prava).</p>
+<p>Stalne prestolnice ni imel, najdlje sta za prestolnico veljali mesti Memfis in kasneje Tebe.</p>
+<p>Dvor so sestavljali faraon z družino in višji uradniki, ki so mu pomagali voditi in nadzorovati državo.</p>
+<p>Uradniški sistem je bil urejen hierarhično oziroma po stopnjah. Najvišji predstavnik uradništva takoj za faraonom je predstavljali vezir - pogostokrat kraljevi sin ali potomec.</p>
+<p>Naloge vezirja: nadzornik zakladnice, sodnik velikega sodišča, vodi arhiv, gradbena dela in nadzira pridelavo hrane.</p>
+<p>Vezirju podrejeni so bili predstojniki kraljevih uradov za vojsko, gradnjo, plovbo, meje, trgovino, davki ipd. Sledili so jim predstojniki okrožji ali nomov, župani mest in kraljevi pisarji, ki so popisovali in pobirali davke.</p>
+<p>Sodno oblast so izvrševali upravni uradniki, prizadeti se je lahko pritožil na veliko sodišče in celo na faraona, katerega sodba je bila dokončna.</p>
+<p>Vojska je skrbela za red v državi in osvajalne vojaške pohode. Bila je hierarhično urejena. Po 2. tisočletju pr. Kr. sestavlja vojsko poklicna pehota opremljena s sulicami in ščiti, meči in loki. Od 17. stoletja dalje pa imajo enote tudi bojne vozove. Služenje v vojski je omogočalo vzpon na lestvici uradniških služb. Sprva so vojake zbirali s pomočjo nabora, kasneje pa so uporabljali najemniške plačane vojake. Visoki vojaški častniki so imeli lahko velik vpliv na faraona.</p>
+<p>Svečeniki so v svetiščih opravljali verske obrede, da bi izprosili naklonjenost bogov in upravljali z obsežnim premoženjem svetišč in veleposestev, ki jim jih je podaril faraon. Svečeniška služba je bila dedna ali pa jo je faraon podaril kot nagrado za usluge svojemu plemstvu ali zaslužnim vojakom.</p>
+<p>Svečeniki so poleg vojske predstavljali najvplivnejšo skupino v državi in velikokrat vplivali na odstavitev posameznih faraonov.</p>
+<p>Za delo po izdanih ukazih je skrbelo ljudstvo, ki so ga sestavljali kmetje, trgovci, obrtniki in sužnji.</p>
+  </div>
+</details>
+<details>
+  <summary>2.2.2 DRUŽBENA ZGRADBA V EGIPTU <span class="chip sub">subsection</span></summary>
+
+            <button onclick="window.open('/summary-popup?context=DRUŽBENA ZGRADBA V EGIPTU', 'popup', 'width=600,height=400')">
+                Ask a Question
+            </button>
+        
+  <div class="content">
+<p>Družba je bila hierarhično urejena:</p>
+<p>Na čelu je bil faraon z družino, sledili so visoki uradniki, svečeniki in vojaški častniki, vsi skupaj so tvorili plemstvo. V njihovih rokah se je nakopičilo ogromno bogastva, ugleda in moči. Premoženje so si povečevali z bojnim plenom. Faraon jih je plačeval z zlatom in podeljevanjem zemljiških veleposesti.</p>
+<p>Meščanstvo predstavlja tanek in šibak sloj obrtnikov, trgovcev, umetnikov in pisarjev. Ti so živeli v mestih, plačevali davke in služili v vojski.</p>
+<p>Kmetje in sužnji so tvorili spodnja sloja družbe. Sužnji so bili vojni ujetniki. Bili so nesvobodni lahko so se poročili in ustvarili družino.</p>
+  </div>
+</details>
+</details>
+<details open>
+  <summary>2.3 RAZVOJ EGIPČANSKE DRŽAVE <span class="chip sec">section</span></summary>
+
+            <button onclick="window.open('/summary-popup?context=RAZVOJ EGIPČANSKE DRŽAVE', 'popup', 'width=600,height=400')">
+                Ask a Question
+            </button>
+        
+  <div class="content">
+<p>Zgodovino starega Egipta delimo na posamezna obdobja z vmesnimi obdobji ali po dinastijah.</p>
+  </div>
+<details>
+  <summary>2.3.1 PREDDINASTICNO OBDOBJE V EGIPTU <span class="chip sub">subsection</span></summary>
+
+            <button onclick="window.open('/summary-popup?context=PREDDINASTICNO OBDOBJE V EGIPTU', 'popup', 'width=600,height=400')">
+                Ask a Question
+            </button>
+        
+  <div class="content">
+<p>Traja od 5. tisočletja do vzpona prve dinastije okoli 3200 pr. Kr. V ta čas štejemo prve skupnosti kmetov, ki so živele v 5. tisočletju v Fajumski oazi, kjer so odkrili tudi najstarejše znane shrambe žita na svetu (glej zemljevid na strani 73 v učbeniku).</p>
+<p>Do leta 3200 pr. Kr. se je Egipt delil na dve državi Spodnjega ali Severnega, ki je obsegal Nilovo delto in Zgornjega ali Južnega, ki je segal v času največjega obsega od prvega katarakta do 4. katarakta ali brzice.</p>
+<p>&lt;2.3.2 NASTANEK STAREGA KRALJESTVA V EGIPTU&gt;&gt;</p>
+<p>Zgodovina stare države se začne z združitvijo Egipta v eno državo pod faraonom Menesom, ustanoviteljem prve dinastije. Za prestolnico določi mesto Memfis (kar pomeni Belo obzidje).</p>
+<p>Egipt v tem času doživi prvi vrhunec razvoja. Država se upravno deli na 42 okrožij ali nomov, na čelu katerih so bili nomarhi. Faraoni postanejo kralji in hkrati bogovi. Kasneje, ko njihova moč peša postanejo le še božji namestniki na zemlji.</p>
+<p>Bogastvo države (kmetijstvo, trgovina) omogoči, da v tem obdobju gradijo piramide. Te naj bi bile grobnice faraonov, saj so Egipčani verjeli v posmrtno življenje in v ta namen umrie mumificirali, faraonom pa gradili veličastna poslednja bivališča.</p>
+<p>Najstarejša je stopničasta piramida v Sakari namenjena pokopu faraona Džoserja. Vrh pa doživijo s 4. dinastijo, ko faraoni te dinastije zgradijo piramide v Gizi in morda tudi Sfingo. Največji in prvo med piramidami je dal zgraditi faraon Kufu oz. Keops (po grško), sledila sta mu sin Khafra (Kefren) in Menkaure (Mikerinos).</p>
+<p>Konec starega kraljestva pomeni padec 8. dinastije, ker se je oblast nomarhov močno povečala je faraonova močno opešala.</p>
+  </div>
+</details>
+<details>
+  <summary>2.3.3 SREDNJE KRALJESTVO EGIPTA <span class="chip sub">subsection</span></summary>
+
+            <button onclick="window.open('/summary-popup?context=SREDNJE KRALJESTVO EGIPTA', 'popup', 'width=600,height=400')">
+                Ask a Question
+            </button>
+        
+  <div class="content">
+<p>Obdobje srednjega kraljestva je pomenilo egiptovsko klasično dobo.</p>
+<p>Po dolgotrajni državljanski vojni (prvo vmesno obdobje) so kot zmagovalci izšli tebanski knezi, ki so spet združili oba Egipta in kot faraoni 11. dinastije utemeljili srednjo državo s Tebami kot prestolnico. Faraonom 12. dinastije je uspelo osvojiti z zlatom bogato ozemlje takratne dežele Nubije do 2. brzice, in pridobiti nove pridelovalne površine z izsušitvijo fajumskega močvirja. Na Sinaju so kopali baker in turkiz. Razpustili so službo nomarhov, centralizirali upravo, širili trgovino v Azijo.</p>
+<p>V 18. stoletju pr. Kr. je Egipt politično in gospodarsko oslabel, kar je vodilo v začetek novega vmesnega obdobja. To slabost so izkoristili Hikisi (zveza semitskih plemen iz Anatolije) in zavladali Egiptu skoraj sto let (od okoli 1650 do 1550 pr. Kr.). Egipčansko vojsko so obogatili z uvedbo bojnega voza, bronastimi puščicami in uporabo konj.</p>
+  </div>
+</details>
+<details>
+  <summary>2.3.4 NOVO KRALJESTVO EGIPTA (okoli 1550-1070 pr. Kr.) <span class="chip sub">subsection</span></summary>
+
+            <button onclick="window.open('/summary-popup?context=NOVO KRALJESTVO EGIPTA (okoli 1550-1070 pr. Kr.)', 'popup', 'width=600,height=400')">
+                Ask a Question
+            </button>
+        
+  <div class="content">
+<p>Za časa novega kraljestva so si faraoni prizadevali za svetovno oblast. Hikse je sredi 16. stoletja pr. Kr. pregnal faraon Ahmoze in združil Egipt pod enotno oblastjo s prestolnico v Tebah. Faraone so zaradi njihove moči spet pojmovali kot božanska bitja.</p>
+<p>Egipčanska država se je razširila do Sirije in Evfrata, ter do 4. brzice Nila - Nubije, od koder so dobivali zlasti zlato. Najuspešnejši vojskovodja je bil faraon Tutmozis III. (vladal v 15. stoletju pr. Kr.), ki je osvojil Sirijo in Palestino, davek pa so mu morali plačevati še Asirci, Hetiti, Babilonci in Egejci. -7 grēja</p>
+<p>Stoletje kasneje je faraon Amenofis IV. (1372-1354 pr. Kr.) izvedel versko reformo, da bi oslabil moč svečenikov. V ta namen je uvedel monoteistično vero v enega samega boga</p>
+<p>Atona (v sončno energijo). Atona so upodabljali kot sončno ploščo, faraon pa je napisal tudi Himno sončnemu božanstvu, ki se je ohranila do danes, sebe pa preimenoval v Ehnatona (kar pomeni Atonu všečen). Njegov sin (ali pa zet) Tutankamon je bil prisiljen, zaradi pritiska svečenikov, obnoviti stari kult egipčanskih bogov. Umrl je nasilne smrti star komaj 20 let.</p>
+<p>Faraonom 18. dinastije, ki smo jih omenili zgoraj, so sledili faraoni 19. dinastije. Z Ramzesom II. (1298-1235 pr. Kr.) je ta dinastija doživela vrh razvoja. Faraon je prestolnico prenesel v mesto Tanis v delto Nila. Egipt je v tem obdobju doživel največji gospodarski, politični in kulturni razcvet. Vladar je izvajal številna gradbena dela (gradnja Rameseja, svetišče Abu Simbel) in bil pomemben vojskovodja. Vojaški spopad s Hetiti po bitki pri Kadešu pri reki Orontes, se je končal neodločeno in podpisana je bila prva ohranjena mirovna pogodba v zgodovini s katero sta si faraon Ramzes II. in hetitski kralj Hatušili III. razdelila ozemlje in določila vplivna področja.</p>
+<p>Nasledniki Ramzesa II. so še nekaj časa ohranjali moč države. Pomemben je bil zlasti Ramzes III. (1198-1188 pr. Kr.), ki je uspel Egipt obraniti pred &gt;&gt;ljudstvi z morja.&lt;&lt;&lt; Slednje so predstavljala plemena, ki so se pred nosilci kulture žarnih grobišč umikala iz jugovzhodne Evrope preko Male Azije, Sirije, Palestine do Egipta.</p>
+<p>V tem času se je po Bližnjem vzhodu in Egiptu začela širiti uporaba železa. 442.3.5 ZATON EGIPTA)) Po smrti Ramzesa II. je Egipt zajela kriza, ki je vodila v tretje vmesno obdobje (od 1069-702 pr. Kr.). Egipt je razpadel na dva dela, kasneje pa na več držav. V tem obdobju Egiptu vladajo tuji vladarji (Lidijci, Nubijci), v 7. stoletju pa mu zavladajo Asirci.</p>
+<p>Zadnji razcvet pod domačimi vladarji doživi Egipt po oslabitvi Asirije z vladarji iz dinastije Saitov (26. dinastija, 609-594 pr. Kr.). Leta 525 pr. Kr. pa je perzijski vladar Kambiz II. osvojil Egipt in ga spremenil v perzijsko provinco.</p>
+<p>Aleksander Veliki je leta 332 pr. Kr. brez boja osvojil Egipt izpod Perzijcev in je okronan za kralja. Po njegovi smrti (323 pr. Kr.) Egiptu zavlada eden od vojaških poveljnikov Aleksandra, Ptolemaj I. začetnik dinastije Ptolemajcev, ki vlada Egiptu do rimske osvojitv leta 30 pr. Kr. iz nove prestolnice Aleksandrije. Zadnja vladarica te dinastije je bila kraljica Kleopatra.</p>
+  </div>
+</details>
+</details>
+<details open>
+  <summary>2.4 POSMRTNO ŽIVLJENJE V EGIPTU <span class="chip sec">section</span></summary>
+
+            <button onclick="window.open('/summary-popup?context=POSMRTNO ŽIVLJENJE V EGIPTU', 'popup', 'width=600,height=400')">
+                Ask a Question
+            </button>
+        
+<details>
+  <summary>2.4.1 Priprave na posmrtno življenje v Egiptu <span class="chip sub">subsection</span></summary>
+
+            <button onclick="window.open('/summary-popup?context=Priprave na posmrtno življenje v Egiptu', 'popup', 'width=600,height=400')">
+                Ask a Question
+            </button>
+        
+  <div class="content">
+<p>Egipčani so verjeli, da se bo duša umrlega po smrti vrnila v telo, zato ga je bilo treba ohraniti. Da bi preprečili razpadanje trupla, so ga mumificirali: odstranili so možgane in notranje organe, telo solili, balzamirali in povili s povoji. Pri tem so telo izsušili, obraz pa prekrili s posmrtno masko.</p>
+<p>Mumijo so položili v sarkofag (včasih v več sarkofagov), tega pa v grobnico z mnogimi grobnimi pridatki, ki jih bo preminuli potreboval v posmrtnem življenju. Različna besedila iz Knjige mrtvih (zbirke navodil in čarobnih izrekov), ki so jih dodajali k mumijam ali pisali na stene in reliefe, naj bi pokojniku pomagala pri poti skozi podzemlje in pri obredu »tehtanja srca«, v katerem bog podzemlja Oziris sodi duši.</p>
+<p>Pogrebni obredi Egipčanov so močno vplivali na razvoj medicine, umetnosti in arhitekture v onstranstvu.</p>
+  </div>
+</details>
+<details>
+  <summary>2.4.2 Dolina kraljev v Egiptu <span class="chip sub">subsection</span></summary>
+
+            <button onclick="window.open('/summary-popup?context=Dolina kraljev v Egiptu', 'popup', 'width=600,height=400')">
+                Ask a Question
+            </button>
+        
+  <div class="content">
+<p>→ Tebansko zahodno gorovje je bilo območje, kamor so pokopavali faraone Novega kraljestva skoraj 500 let (od 16. do 11. stoletja pr. Kr.).</p>
+<p>→ Grobnice tam pokopanih kraljev 18.–20. dinastije so bile izdolbene 100 do 200 metrov globoko v skalovje.</p>
+<p>→ Na tem območju je danes znanih 63 grobnic. Starejše grobnice so združevale grobnico in tempelj ter so bile zato bolj izpostavljene roparjem. Grobnice kraljev Novega kraljestva pa imajo tempelj ločen od grobnice; povezava je nakazana tako, da se tempelj nahaja na oddaljeni lokaciji.</p>
+  </div>
+</details>
+</details>
+<details open>
+  <summary>2.5 TEMPLJI STAREGA EGIPTA <span class="chip sec">section</span></summary>
+
+            <button onclick="window.open('/summary-popup?context=TEMPLJI STAREGA EGIPTA', 'popup', 'width=600,height=400')">
+                Ask a Question
+            </button>
+        
+  <div class="content">
+<p>Veliki templji starega Egipta</p>
+<ul>
+<li>Tempelj vrhovnega boga Amona – Raja v Karnaku</li>
+</ul>
+<p>V Tebah; glavni tempelj postane v 18. dinastiji (novo kraljestvo), ko postanejo Tebe znova prestolnica Egipta.</p>
+<p>→ Piramide v Gizi: Keopsova, Kefrenova in Mikerinova</p>
+<p>→ Najstarejša in najvišja je Keopsova (Kufujeva) piramida, zgrajena približno med letoma 2560–2540 pr. Kr. Ob izgradnji je bila visoka 146,5 m (danes je približno 10 m nižja).</p>
+<p>Za izgradnjo so porabili več kot 2 milijona kamnitih blokov apnenca, od katerih je vsak tehtal od 2 do 15 ton. Kamne so prevažali po Nilu, po kopnem pa z vozovi ali ročno po klančinah.</p>
+<p>Piramide so usmerjene proti stranem neba → stranice piramidnih zgradb tvorijo kvadrat.</p>
+<p>Skrivnost velike sfinge</p>
+<p>→ Sfinga predstavlja mitološko bitje, ki ima telo leva in človeško glavo (včasih tudi krila). Kdor ne reši njenih ugank, je pogubljen.</p>
+<p>→ Stoji ob Keopsovi piramidi – varovala naj bi Gizo.</p>
+<p>→ Dolga je 73 m, njen najvišji del pa meri približno 20 m.</p>
+<p>→ Gre za najstarejšo monumentalno zgradbo starega Egipta, ki jo poznamo.</p>
+<p>Zgrajena naj bi bila v času vladanja faraona Kefrena (Kefreja) med letoma 2558–2532 pr. Kr.</p>
+<p>→ Mnogi, zlasti amaterski raziskovalci starega Egipta, se s tem datiranjem ne strinjajo.</p>
+  </div>
+</details>
+</details>
+
+
+</div>
+
+<script>
+  // Zapri vse podnaslove (vsi <details> znotraj drugega <details>)
+  // Glavni naslovi (npr. 2.1/2.2/2.3/2.4) lahko ostanejo odprti, ker so "prvi nivo".
+  document.querySelectorAll('details details').forEach(d => d.removeAttribute('open'));
+</script>
+</body>
+</html>

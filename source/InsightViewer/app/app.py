@@ -1076,7 +1076,7 @@ def load_custom_graph(customLoadGraphName):
 
                         # Process relationship                            
                         rel_props = dict(relationship)
-                        rel_id = rel_props.get("id_rc", f"{relationship.start_node.id}-{relationship.end_node.id}-{relationship.type}")
+                        rel_id = rel_props.get("id_rc") or f"{relationship.start_node.id}-{relationship.end_node.id}-{relationship.type}"
                         start_props = dict(relationship.start_node)
                         end_props = dict(relationship.end_node)
                         edge = {
@@ -1561,8 +1561,115 @@ def get_ollama_model():
 def favicon():
     return '', 204  # Empty response, no error
 
+from flask import render_template_string
+
+
+@app.route('/ask-question', methods=['POST'])
+def ask_question():
+    """
+    API endpoint to forward user questions along with context to OpenAI API.
+    Expects JSON: { "question": "...", "context": "..." }
+    """
+    data = request.json or {}
+    question = data.get("question", "").strip()
+    context = data.get("context", "").strip()
+
+    if not question or not context:
+        return jsonify({"success": False, "error": "Missing 'question' or 'context'"}), 400
+
+    api_key = OPENAI_API_KEY
+    if not api_key:
+        app.logger.error("OPENAI_API_KEY is not set in environment variables")
+        return jsonify({"success": False, "error": "OPENAI_API_KEY not set"}), 500
+
+    prompt = f"Context:\n{context}\n\nQuestion:\n{question}"
+    payload = {
+        "model": "gpt-4.1-mini",
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0.2,
+        "max_tokens": 500
+    }
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+
+    try:
+        response = requests.post("https://api.openai.com/v1/chat/completions", json=payload, headers=headers, timeout=30)
+        response.raise_for_status()
+        result = response.json()
+        answer = result.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+        return jsonify({"success": True, "answer": answer})
+    except requests.exceptions.HTTPError as e:
+        if response.status_code == 401:
+            app.logger.error("Unauthorized: Check your OpenAI API key")
+            return jsonify({"success": False, "error": "Unauthorized: Invalid API key"}), 401
+        app.logger.exception("HTTP error occurred while calling OpenAI API")
+        return jsonify({"success": False, "error": str(e)}), 500
+    except requests.RequestException as e:
+        app.logger.exception("Request error occurred while calling OpenAI API")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/summary-popup', methods=['GET'])
+def summary_popup():
+    """
+    Render a popup template for asking questions about a summary.
+    Use the context provided in the query string.
+    """
+    context = request.args.get('context')
+    if not context:
+        app.logger.error("Missing or invalid 'context' parameter in request")
+        return render_template_string('''
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Error</title>
+        </head>
+        <body>
+            <h3>Error: Missing context</h3>
+            <p>Please provide valid context in the URL.</p>
+        </body>
+        </html>
+        '''), 400
+
+    app.logger.info(f"Received context: {context}")
+    return render_template_string('''
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Ask Question</title>
+        <script>
+            async function sendQuestion() {
+                const question = document.getElementById('question').value;
+                const context = document.getElementById('context').value;
+                const response = await fetch('/ask-question', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question, context })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    document.getElementById('answer').innerText = result.answer;
+                } else {
+                    document.getElementById('answer').innerText = "Error: " + result.error;
+                }
+            }
+        </script>
+    </head>
+    <body>
+        <h3>Ask a Question</h3>
+        <textarea id="context" style="display:none;">{{ context }}</textarea>
+        <label for="question">Your Question:</label><br>
+        <textarea id="question" rows="4" cols="50"></textarea><br>
+        <button onclick="sendQuestion()">Submit</button>
+        <h4>Answer:</h4>
+        <div id="answer" style="white-space: pre-wrap; border: 1px solid #ccc; padding: 10px;"></div>
+    </body>
+    </html>
+    ''', context=context)
+
 if __name__ == '__main__':
-    app.run(host='::', port=5000, debug=False)
+    app.run(host='::', port=5000, debug=True)
 
 
 #   sudo lsof -i :5001

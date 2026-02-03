@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="sl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Poglavje: 4. Grčija</title>
+
+  <style>
+    :root{
+      --bg: #0b1020;
+      --card: #111a33;
+      --card2: #0f1730;
+      --text: #e9eefc;
+      --muted: #b9c5e6;
+      --border: rgba(255,255,255,.12);
+      --accent: #7aa2ff;
+      --accent2: #7dffca;
+      --warn: #ffd27a;
+    }
+
+    body{
+      margin: 24px;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      line-height: 1.65;
+      background: radial-gradient(1200px 700px at 10% 10%, rgba(122,162,255,.18), transparent 55%),
+                  radial-gradient(900px 600px at 90% 20%, rgba(125,255,202,.12), transparent 55%),
+                  var(--bg);
+      color: var(--text);
+    }
+
+    .container{ max-width: 980px; margin: 0 auto; }
+
+    header{
+      padding: 18px 18px 6px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      box-shadow: 0 12px 30px rgba(0,0,0,.35);
+      margin-bottom: 14px;
+    }
+    header h1{
+      margin: 0 0 6px;
+      font-size: 1.35rem;
+      letter-spacing: .2px;
+    }
+    header p{
+      margin: 0 0 10px;
+      color: var(--muted);
+      font-size: .95rem;
+    }
+
+    /* Details cards */
+    details{
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 10px 12px;
+      margin: 12px 0;
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));
+      box-shadow: 0 10px 24px rgba(0,0,0,.28);
+    }
+    details details{
+      margin: 10px 0 0;
+      background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.02));
+      box-shadow: none;
+    }
+
+    summary{
+      cursor: pointer;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      list-style: none;
+      user-select: none;
+      outline: none;
+      padding: 6px 6px;
+      border-radius: 12px;
+    }
+    summary::-webkit-details-marker{ display:none; }
+
+    /* Chevron */
+    summary::before{
+      content: "›";
+      display: inline-block;
+      font-size: 1.35rem;
+      line-height: 1;
+      transform: rotate(0deg);
+      transition: transform .15s ease;
+      color: var(--accent2);
+      width: 18px;
+      text-align: center;
+    }
+    details[open] > summary::before{
+      transform: rotate(90deg);
+    }
+
+    summary:hover{
+      background: rgba(122,162,255,.10);
+      border: 1px solid rgba(122,162,255,.22);
+    }
+
+    /* Section color chips */
+    .chip{
+      font-size: .78rem;
+      font-weight: 700;
+      padding: 2px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      background: rgba(255,255,255,.04);
+      margin-left: auto;
+    }
+    .chip.sec{ color: #d7e3ff; border-color: rgba(122,162,255,.35); background: rgba(122,162,255,.12); }
+    .chip.sub{ color: #d9fff1; border-color: rgba(125,255,202,.35); background: rgba(125,255,202,.10); }
+    .chip.q{ color: #fff0d1; border-color: rgba(255,210,122,.40); background: rgba(255,210,122,.12); }
+
+    p{ margin: .7em 0; color: var(--text); }
+    strong{ color: #ffffff; }
+
+    ul{ margin: .5em 0 .5em 1.2em; color: var(--text); }
+    li{ margin: .25em 0; }
+
+    .note, .caption{
+      color: var(--muted);
+      font-style: italic;
+      margin-top: .6em;
+    }
+
+    .questions{
+      margin: 10px 0;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,210,122,.30);
+      background: linear-gradient(180deg, rgba(255,210,122,.10), rgba(255,255,255,.02));
+    }
+    .questions p{ color: var(--text); }
+
+    /* Small helper line */
+    .hint{
+      color: var(--muted);
+      font-size: .9rem;
+      margin-top: 6px;
+    }
+
+    /* Make long text nicer */
+    .content{ padding: 2px 6px 6px; }
+    
+    details:not([open]) > *:not(summary) { display: none !important; }
+    
+  .red-link {
+    color: red;
+    text-decoration: none;
+  }
+
+  .white-link {
+    color: #ffffff;
+    text-decoration: none;
+  }
+
+  .white-link:hover {
+    color: #dddddd; /* optional hover effect */
+  }    
+    
+  </style>
+</head>
+
+<body>
+<div class="container">
+  
+  <div>
+    <a href="/static/images/bookBiologija1/html/bio1_pog2_flipCard.html"
+       class="red-link"
+       target="_blank"
+       rel="noopener noreferrer">
+      Open Flip Card
+    </a>
+  </div>
+  <br>
+  <div>
+    <a href="/static/images/bookBiologija1/html/bio1_pog2_pages.html"
+       class="red-link"
+       target="_blank"
+       rel="noopener noreferrer">
+      Pregled knjige
+    </a>
+  </div>
+  <br>
+  <div>
+    <a href="/quiz_ui"
+       class="red-link"
+       target="_blank"
+       rel="noopener noreferrer">
+      Kviz
+    </a>
+  </div>
+  
+  <header>
+    <h1>4. Grčija</h1>
+    <p>Klikni na naslov razdelka za prikaz/skritje vsebine.</p>    
+    <p class="hint">Namig: tudi podpoglavja so zložljiva.</p>    
+    <label>4. Grčija</label>    
+  </header>
+  
+  
+  <!-- 4 (glavno poglavje) -->
+<details open>
+  <summary>4. Grčija <span class="chip sec">poglavje</span></summary>
+<details open>
+  <summary>4.10 Grško perzijske vojne <span class="chip sec">section</span></summary>
+
+            <button onclick="window.open('/summary-popup?context=Grško perzijske vojne', 'popup', 'width=600,height=400')">
+                Ask a Question
+            </button>
+        
+<details>
+  <summary>4.10.1 Perzija kot največja grožnja Grkom <span class="chip sub">subsection</span></summary>
+
+            <button onclick="window.open('/summary-popup?context=Perzija kot največja grožnja Grkom', 'popup', 'width=600,height=400')">
+                Ask a Question
+            </button>
+        
+  <div class="content">
+<p>V 6. stoletju pr. n. št. je bila največja grožnja grškemu svetu mogočna Perzija. Leta 546 pr. n. št. so Perzijci premagali lidijskega kralja Kreza in zavzeli Malo Azijo. S tem so pod njihovo oblast prišle tudi vse grške kolonije na maloazijski obali. Kmalu zatem so Perzijci osvojili še Egipt in ustvarili obsežno Ahemenidsko cesarstvo, ki se je raztezalo od Indije do Sredozemlja.</p>
+  </div>
+</details>
+<details>
+  <summary>4.10.2 Jonija in jonski upor <span class="chip sub">subsection</span></summary>
+
+            <button onclick="window.open('/summary-popup?context=Jonija in jonski upor', 'popup', 'width=600,height=400')">
+                Ask a Question
+            </button>
+        
+  <div class="content">
+<p>Jonski Grki v zahodni Mali Aziji so pred perzijsko okupacijo veljali za kulturno, politično in znanstveno najbolj razvite Grke. Njihove polis so bile središča filozofije, književnosti, znanosti in trgovine. Po osvojitvi so Perzijci območje razdelili na satrapije ter na čelo grških polis postavili sebi zveste grške tirane.</p>
+<p>Nezadovoljstvo je naraščalo zaradi občutka podrejenosti in gospodarskih težav, saj so Perzijci podpirali feničansko trgovino, kar je slabilo položaj grških mest. Leta 500 pr. n. št. je izbruhnil jonski upor, na čelu katerega je bil Milet. Upornikom sta pomagali le Atene in Eretrija, medtem ko so ostali Grki pomoč odklonili. Sprva je bil upor uspešen, vendar so ga Perzijci po petih letih bojev zadušili. Leta 494 pr. n. št. so Milet popolnoma porušili. Pomoč Atencev in Eretrijcev je perzijskemu kralju služila kot izgovor za napad na Grčijo.</p>
+  </div>
+</details>
+<details>
+  <summary>4.10.3 Perzijski kralj Darej I. <span class="chip sub">subsection</span></summary>
+
+            <button onclick="window.open('/summary-popup?context=Perzijski kralj Darej I.', 'popup', 'width=600,height=400')">
+                Ask a Question
+            </button>
+        
+  <div class="content">
+<p>Perzijski kralj Darej I. (549–486 pr. n. št.) je slovel kot sposoben vladar in odličen organizator. Cesarstvo je razdelil na satrapije, uvedel enoten zlati denar, zgradil obsežno cestno omrežje in vzpostavil strog sodni sistem. Na novo osvojenih ozemljih so ga sprejemali različno: v Egiptu so ga imeli za dobrotnika, Grki pa so ga sovražili zaradi izgube svobode.</p>
+  </div>
+</details>
+<details>
+  <summary>4.10.4 Bitka na Maratonskem polju (490 pr. n. št.) <span class="chip sub">subsection</span></summary>
+
+            <button onclick="window.open('/summary-popup?context=Bitka na Maratonskem polju (490 pr. n. št.)', 'popup', 'width=600,height=400')">
+                Ask a Question
+            </button>
+        
+  <div class="content">
+<p>Leta 490 pr. n. št. je perzijska vojska po morju napadla Grčijo. Po oplenitvi Eretrije so se Perzijci izkrcali na Maratonskem polju. Grke je vodil atenski strateg Miltiad, Perzijce pa kralj Darej. Spartanci zaradi verskega praznika niso mogli takoj priskočiti na pomoč, zato so se Perzijcem zoperstavili predvsem Atenci in Platajci.</p>
+<p>Okoli 11.000 grških hoplitov v falangi je uspelo premagati približno 20.000 Perzijcev. Medtem ko se je del perzijske vojske skušal po morju prebiti do nezaščitenih Aten, so se grški hopliti po zmagi pri Maratonu hitro vrnili in mesto obranili. Zmaga pri Maratonu je bila zgodovinskega pomena, saj je prvič evropsko mesto premagalo perzijsko državo. S tem dogodkom je povezan tudi mit o tekaču Fidipidu, ki naj bi novico o zmagi prinesel v Atene in nato umrl od izčrpanosti – po njem je nastal maratonski tek.</p>
+  </div>
+</details>
+<details>
+  <summary>4.10.5 Priprave na novo vojno <span class="chip sub">subsection</span></summary>
+
+            <button onclick="window.open('/summary-popup?context=Priprave na novo vojno', 'popup', 'width=600,height=400')">
+                Ask a Question
+            </button>
+        
+  <div class="content">
+<p>Po porazu Perzijci niso opustili načrtov. Leta 481 pr. n. št. so grške polis ustanovile helensko zvezo pod vodstvom Šparte in razglasile konec medsebojnih sporov. V Atenah je imel ključno vlogo Temistokles, ki je prepričal Atence v gradnjo močne mornarice s 180 trierami, s čimer so Atene postale vodilna pomorska sila v Grčiji.</p>
+  </div>
+</details>
+<details>
+  <summary>4.10.6 Bitka pri Termopilah (480 pr. n. št.) <span class="chip sub">subsection</span></summary>
+
+            <button onclick="window.open('/summary-popup?context=Bitka pri Termopilah (480 pr. n. št.)', 'popup', 'width=600,height=400')">
+                Ask a Question
+            </button>
+        
+  <div class="content">
+<p>Po Darejevi smrti je perzijski prestol prevzel Kserkses, ki je z ogromno kopensko in pomorsko vojsko napadel Grčijo prek Helesponta. Grki so prvo obrambno linijo postavili v ozki soteski Termopile, kjer so lahko številčno šibkejši branilci izkoristili teren.</p>
+<p>Perzijci so dva dni zaman napadali grške sile pod vodstvom špartanskega kralja Leonidasa. Z izdajo domačina so Perzijci našli obhodno pot in obkolili Grke. Leonidas je večini vojske ukazal umik, sam pa je s 300 Špartanci in 700 Tespijci do zadnjega moža branil prehod in omogočil varen umik zaveznikom. Po zmagi so Perzijci vdrli v Atiko in požgali Atene, prebivalstvo pa se je pravočasno umaknilo na otoke.</p>
+  </div>
+</details>
+<details>
+  <summary>4.10.7 Bitka pri Salamini (480 pr. n. št.) <span class="chip sub">subsection</span></summary>
+
+            <button onclick="window.open('/summary-popup?context=Bitka pri Salamini (480 pr. n. št.)', 'popup', 'width=600,height=400')">
+                Ask a Question
+            </button>
+        
+  <div class="content">
+<p>Po padcu Termopil so Grki obrambno črto prestavili na Korintsko ožino. Septembra 480 pr. n. št. je prišlo do odločilne pomorske bitke pri Salamini. Temistokles je s prevaro zvabil perzijsko ladjevje v ozko morsko ožino, kjer so manjše in okretnejše grške ladje izkoristile boljšo taktiko.</p>
+<p>Grška mornarica je premagala številčno močnejše perzijsko ladjevje. Kserkses je poraz opazoval z obale, nato pa se vrnil v Perzijo in poveljstvo prepustil Mardoniju.</p>
+  </div>
+</details>
+<details>
+  <summary>4.10.8 Bitki pri Platajah in Mikali (479 pr. n. št.) <span class="chip sub">subsection</span></summary>
+
+            <button onclick="window.open('/summary-popup?context=Bitki pri Platajah in Mikali (479 pr. n. št.)', 'popup', 'width=600,height=400')">
+                Ask a Question
+            </button>
+        
+  <div class="content">
+<p>Naslednjo pomlad so Perzijci še enkrat poskusili poraziti Grke, vendar so bili odločilno premagani v kopenski bitki pri Platajah pod vodstvom špartanskega kralja Pauzanija. S tem so bili prisiljeni zapustiti Evropo.</p>
+<p>Isto leto je grška mornarica v Joniji pri Mikali napadla zasidrane perzijske ladje in jih zažgala. Po tej zmagi so se vsa jonska mesta osvobodila perzijske oblasti in izgnala tirane. Atene so z obalnimi in otoškimi mesti sklenile zavezništvo, ki je postalo temelj atiške pomorske zveze.</p>
+  </div>
+</details>
+<details>
+  <summary>4.10.9 Vzroki za perzijski poraz in posledice <span class="chip sub">subsection</span></summary>
+
+            <button onclick="window.open('/summary-popup?context=Vzroki za perzijski poraz in posledice', 'popup', 'width=600,height=400')">
+                Ask a Question
+            </button>
+        
+  <div class="content">
+<p>Perzijci so bili poraženi zaradi boljše organiziranosti in izurjenosti grške vojske, predvsem hoplitov in mornarice, učinkovitejšega poveljevanja, dobrega poznavanja terena ter močne motivacije, saj so se Grki borili za svobodo. Zmage so še posebej okrepile zavest o svobodi med Atenci in pokazale, da lahko tudi nižji sloji pomembno sodelujejo pri upravljanju države.</p>
+  </div>
+</details>
+</details>
+</details>
+
+
+</div>
+
+<script>
+  // Zapri vse podnaslove (vsi <details> znotraj drugega <details>)
+  // Glavni naslovi (npr. 2.1/2.2/2.3/2.4) lahko ostanejo odprti, ker so "prvi nivo".
+  document.querySelectorAll('details details').forEach(d => d.removeAttribute('open'));
+</script>
+</body>
+</html>

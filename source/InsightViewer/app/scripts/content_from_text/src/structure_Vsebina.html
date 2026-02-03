@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="sl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Poglavje: {{chapter_title}}</title>
+
+  <style>
+    :root{
+      --bg: #0b1020;
+      --card: #111a33;
+      --card2: #0f1730;
+      --text: #e9eefc;
+      --muted: #b9c5e6;
+      --border: rgba(255,255,255,.12);
+      --accent: #7aa2ff;
+      --accent2: #7dffca;
+      --warn: #ffd27a;
+    }
+
+    body{
+      margin: 24px;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      line-height: 1.65;
+      background: radial-gradient(1200px 700px at 10% 10%, rgba(122,162,255,.18), transparent 55%),
+                  radial-gradient(900px 600px at 90% 20%, rgba(125,255,202,.12), transparent 55%),
+                  var(--bg);
+      color: var(--text);
+    }
+
+    .container{ max-width: 980px; margin: 0 auto; }
+
+    header{
+      padding: 18px 18px 6px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      box-shadow: 0 12px 30px rgba(0,0,0,.35);
+      margin-bottom: 14px;
+    }
+    header h1{
+      margin: 0 0 6px;
+      font-size: 1.35rem;
+      letter-spacing: .2px;
+    }
+    header p{
+      margin: 0 0 10px;
+      color: var(--muted);
+      font-size: .95rem;
+    }
+
+    /* Details cards */
+    details{
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 10px 12px;
+      margin: 12px 0;
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));
+      box-shadow: 0 10px 24px rgba(0,0,0,.28);
+    }
+    details details{
+      margin: 10px 0 0;
+      background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.02));
+      box-shadow: none;
+    }
+
+    summary{
+      cursor: pointer;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      list-style: none;
+      user-select: none;
+      outline: none;
+      padding: 6px 6px;
+      border-radius: 12px;
+    }
+    summary::-webkit-details-marker{ display:none; }
+
+    /* Chevron */
+    summary::before{
+      content: "›";
+      display: inline-block;
+      font-size: 1.35rem;
+      line-height: 1;
+      transform: rotate(0deg);
+      transition: transform .15s ease;
+      color: var(--accent2);
+      width: 18px;
+      text-align: center;
+    }
+    details[open] > summary::before{
+      transform: rotate(90deg);
+    }
+
+    summary:hover{
+      background: rgba(122,162,255,.10);
+      border: 1px solid rgba(122,162,255,.22);
+    }
+
+    /* Section color chips */
+    .chip{
+      font-size: .78rem;
+      font-weight: 700;
+      padding: 2px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      background: rgba(255,255,255,.04);
+      margin-left: auto;
+    }
+    .chip.sec{ color: #d7e3ff; border-color: rgba(122,162,255,.35); background: rgba(122,162,255,.12); }
+    .chip.sub{ color: #d9fff1; border-color: rgba(125,255,202,.35); background: rgba(125,255,202,.10); }
+    .chip.q{ color: #fff0d1; border-color: rgba(255,210,122,.40); background: rgba(255,210,122,.12); }
+
+    p{ margin: .7em 0; color: var(--text); }
+    strong{ color: #ffffff; }
+
+    ul{ margin: .5em 0 .5em 1.2em; color: var(--text); }
+    li{ margin: .25em 0; }
+
+    .note, .caption{
+      color: var(--muted);
+      font-style: italic;
+      margin-top: .6em;
+    }
+
+    .questions{
+      margin: 10px 0;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,210,122,.30);
+      background: linear-gradient(180deg, rgba(255,210,122,.10), rgba(255,255,255,.02));
+    }
+    .questions p{ color: var(--text); }
+
+    /* Small helper line */
+    .hint{
+      color: var(--muted);
+      font-size: .9rem;
+      margin-top: 6px;
+    }
+
+    /* Make long text nicer */
+    .content{ padding: 2px 6px 6px; }
+    
+    details:not([open]) > *:not(summary) { display: none !important; }
+    
+  .red-link {
+    color: red;
+    text-decoration: none;
+  }
+
+  .white-link {
+    color: #ffffff;
+    text-decoration: none;
+  }
+
+  .white-link:hover {
+    color: #dddddd; /* optional hover effect */
+  }    
+    
+  </style>
+</head>
+
+<body>
+<div class="container">
+  
+  <div>
+    <a href="/static/images/bookBiologija1/html/bio1_pog2_flipCard.html"
+       class="red-link"
+       target="_blank"
+       rel="noopener noreferrer">
+      Open Flip Card
+    </a>
+  </div>
+  <br>
+  <div>
+    <a href="/static/images/bookBiologija1/html/bio1_pog2_pages.html"
+       class="red-link"
+       target="_blank"
+       rel="noopener noreferrer">
+      Pregled knjige
+    </a>
+  </div>
+  <br>
+  <div>
+    <a href="/quiz_ui"
+       class="red-link"
+       target="_blank"
+       rel="noopener noreferrer">
+      Kviz
+    </a>
+  </div>
+  
+  <header>
+    <h1>{{chapter_title}}</h1>
+    <p>Klikni na naslov razdelka za prikaz/skritje vsebine.</p>    
+    <p class="hint">Namig: tudi podpoglavja so zložljiva.</p>    
+    <label>{{chapter_title}}</label>    
+  </header>
+  
+  <!-- Content will be dynamically inserted here -->
+  {{content_block}}
+
+</div>
+
+<script>
+  // Zapri vse podnaslove (vsi <details> znotraj drugega <details>)
+  // Glavni naslovi (npr. 2.1/2.2/2.3/2.4) lahko ostanejo odprti, ker so "prvi nivo".
+  document.querySelectorAll('details details').forEach(d => d.removeAttribute('open'));
+</script>
+</body>
+</html>
