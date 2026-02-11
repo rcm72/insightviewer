@@ -117,6 +117,11 @@ Copyright (c) 2025 Robert Čmrlec
         <input type="email" id="email" name="email" required placeholder="vas.email@primer.si">
       </div>
 
+      <div style="margin-bottom:12px;">
+        <label for="password">Geslo</label>
+        <input type="password" id="password" name="password" required placeholder="••••••••">
+      </div>      
+
       <div style="margin-bottom:8px;">
         <label for="project">Projekt</label>
         <select id="project" name="project" required>
@@ -190,33 +195,40 @@ Copyright (c) 2025 Robert Čmrlec
       document.getElementById('login-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value.trim();
         const project = document.getElementById('project').value;
         const errorEl = document.getElementById('error');
         errorEl.textContent = '';
 
-        if (!email || !project) {
-          errorEl.textContent = 'Prosimo, vnesite e-pošto in izberite projekt.';
+        if (!email || !password || !project) {
+          errorEl.textContent = 'Enter e-mail and password. Do not forget to choose project ';
           return;
         }
 
-        // store on client (for now)
-        localStorage.setItem('iv_email', email);
-        localStorage.setItem('iv_project', project);
-//        sessionStorage.setItem('iv_email', email);
-//        sessionStorage.setItem('iv_project', project);
-
-        // (optional) tell backend who logged in
         try {
-          await fetch('/api/login', {
+          const res = await fetch('/api/login', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ email, project })
+            body: JSON.stringify({ email, password, project })
           });
+
+          if (!res.ok) {
+            // Handle error response
+            const data = await res.json();
+            errorEl.textContent = data.error || 'Napaka pri prijavi.';
+            return;
+          }
+
+          // If login is successful, store email and project in localStorage
+          localStorage.setItem('iv_email', email);
+          localStorage.setItem('iv_project', project);
+
+          // Redirect to the main app
+          window.location.href = '/home';
         } catch (e) {
-          console.warn('Login tracking failed, continuing anyway', e);
+          console.error('Login request failed', e);
+          errorEl.textContent = 'Napaka pri povezavi s strežnikom.';
         }
-        // redirect to main app
-        window.location.href = '/home';
       });
     });
   </script>

@@ -3,6 +3,7 @@
 
 # createNodeTypes.py
 import os
+import jwt
 import neo4j
 import requests 
 from flask import Blueprint, jsonify, request
@@ -12,12 +13,32 @@ import sys
 import uuid
 import re  # add near other imports
 
+# JWT configuration
+JWT_SECRET = os.environ["JWT_SECRET"]
+JWT_ALG = "HS256"
+
 # Create a Flask Blueprint with a URL prefix to avoid route conflicts
 nodes_bp = Blueprint("createNodeTypes", __name__, url_prefix="/nodes")
 
 # Do NOT read config or create a driver at import-time.
 # Provide functions the application can call to initialize the driver.
 driver = None
+
+def validate_jwt():
+    token = request.cookies.get('access_token')
+    if not token:
+        return None, jsonify({"error": "Unauthorized: No token provided"}), 401
+
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
+        uid = payload.get("sub")
+        project = payload.get("project")
+        if not uid or not project:
+            return None, jsonify({"error": "Unauthorized: Invalid token"}), 401
+        return {"uid": uid, "project": project}, None, None
+    except jwt.PyJWTError as e:  # Updated exception
+        print(f"JWT Error: {e}")
+        return None, jsonify({"error": "Unauthorized: Invalid token"}), 401
 
 def init_driver(d):
     """Attach an already-created neo4j driver instance."""
@@ -67,6 +88,15 @@ def create_node_types():
 
 @nodes_bp.route("/update-node-properties", methods=["POST"])
 def update_node_properties():
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]   
+
     _ensure_driver()
     print("update_node_properties")
     data = request.json
@@ -97,6 +127,15 @@ def update_node_properties():
     
 @nodes_bp.route("/get_node_types", methods=["GET"])
 def get_node_types():
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]   
+
     _ensure_driver()
 
     # Prefer query string, then JSON body (silent)
@@ -136,6 +175,15 @@ def get_node_types():
 
 @nodes_bp.route("/get_node_type_visuals", methods=["POST"])
 def get_node_type_visuals():
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]   
+
     _ensure_driver()
     try:
         data = request.json
@@ -193,6 +241,15 @@ def test_post():
 
 @nodes_bp.route("/add_node_type", methods=["POST"])
 def add_node_type():
+  # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]   
+
     print("add_node_type start")
     _ensure_driver()
     data = request.json or {}
@@ -277,10 +334,27 @@ def add_node_type():
 
 @nodes_bp.route("/test", methods=["GET"])
 def test():
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]       
     return "ok"
 
 @nodes_bp.route("/get_node_type_shape", methods=["POST"])
 def get_node_type_shape():
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]    
+    project = user_data["project"]       
+
     _ensure_driver()
     """
     Fetch the shape and type (label) of a node based on its type (label).
@@ -324,6 +398,15 @@ def get_node_type_shape():
 
 @nodes_bp.route("/create-custom-graph", methods=["POST"])
 def create_custom_graph():
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]       
+
     _ensure_driver()
     """
     Create a new manual graph in Neo4j.
@@ -352,7 +435,16 @@ def create_custom_graph():
 
 @nodes_bp.route("/connect-custom-graph-position", methods=["POST"])
 def connect_custom_graph_position():
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]       
     _ensure_driver()
+
     """
     Connect nodes to the CustomGraph node and create customGraphNodePosition nodes.
     """
@@ -419,6 +511,15 @@ def connect_custom_graph_position():
 
 @nodes_bp.route("/get_nodes_by_type", methods=["POST"])
 def get_nodes_by_type():
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]   
+
     _ensure_driver()
     """
     Return nodes that have the specified label (node type).
@@ -456,6 +557,15 @@ def get_nodes_by_type():
 
 @nodes_bp.route("/remove-node-custom-graph", methods=["POST"])
 def remove_node_custom_graph():
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]   
+
     _ensure_driver()
     """
     Remove references so a node no longer appears in custom graph.
@@ -537,6 +647,16 @@ def get_node_type_properties(node_type):
 # Add a POST endpoint to fetch node type properties by JSON payload
 @nodes_bp.route("/get_node_type_property", methods=["POST"])
 def get_node_type_property():
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]   
+
+
     _ensure_driver()
     """
     POST endpoint: accepts JSON body with node_type / nodeType / name and returns node type properties.
@@ -561,6 +681,16 @@ def node_type_properties(node_type):
 
 @nodes_bp.route("/create_name_indexes", methods=["GET","POST"])
 def create_name_indexes():
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]   
+
+
     _ensure_driver()
     """
     Create name indexes for a given label (if provided) or for all labels in the DB.
@@ -624,6 +754,16 @@ def create_name_indexes():
 #need a roudte /getCustomGraps which will return a custom graph based on this cypher query match(s:CustomGraph) order by s.name return s
 @nodes_bp.route("/getCustomGraphs", methods=["GET"])
 def get_custom_graphs():
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]   
+
+
     _ensure_driver()
     """Fetch custom graphs from Neo4j."""
     query = "MATCH (s:CustomGraph) ORDER BY s.name RETURN s"

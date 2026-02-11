@@ -1,10 +1,27 @@
+
 # Linux
+
+## venv
+source .venv/bin/activate
 
 ## nvidia
 sudo nvidia-smi
 nvtop
 
 ## Linux - docker
+1. execute in neo4j running in docker
+docker exec -it neo4j cypher-shell -u neo4j -p  Sonja1val. "MATCH (s) RETURN count(s)"
+2. start and stop docker services
+docker compose down
+docker compose up
+3. start and stop single docker service
+docker compose down insightviewer
+docker compose up insightviewer
+4. what is running
+docker ps
+5. whatch the logs
+docker logs insightviewer
+
 
 ## Ubuntu Network Configuration Guide
 
@@ -34,3 +51,25 @@ ip link show | grep ether
 
 # Goose
 goose session -r --name 20260203_14
+
+# Git
+git add .
+git commit -m "multiple changes"
+git push
+git status
+
+
+
+# neo4j
+1. Unblock
+powershell -NoProfile -Command "Get-ChildItem -Recurse 'C:\Work\install\neo4j\neo4j-community-5.26.20-windows\neo4j-community-5.26.20' | Unblock-File"
+
+2. 
+set "PATH=C:\Windows\System32\WindowsPowerShell\v1.0\;%PATH%"
+
+where powershell.exe
+
+cd C:\Work\install\neo4j\neo4j-community-5.26.20-windows\neo4j-community-5.26.20>
+bin\neo4j.bat console
+
+

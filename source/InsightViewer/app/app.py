@@ -27,6 +27,7 @@ import json
 import configparser
 from datetime import datetime, date 
 from flask import Flask, abort, render_template, request, jsonify, render_template_string, url_for, send_from_directory, send_file, redirect
+import jwt  # Import the jwt module  
 from flask.json.provider import DefaultJSONProvider
 from neo4j import GraphDatabase
 import uuid  # For generating unique IDs
@@ -36,6 +37,12 @@ import re
 from html import unescape
 from neo4j.time import Date as Neo4jDate
 from dotenv import load_dotenv
+import sys
+import os
+
+# JWT configuration
+JWT_SECRET = os.environ["JWT_SECRET"]
+JWT_ALG = "HS256"
 
 load_dotenv()
 
@@ -43,6 +50,9 @@ load_dotenv()
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'routes')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'backend\auth')))
+
+from backend.auth.security_bp import security_bp
 
 SYSTEM_BUNDLE = (
     "You are a senior front-end engineer.  "
@@ -98,6 +108,11 @@ app.config.setdefault("MAX_CONTENT_LENGTH", 512 * 1024 * 1024)
 # Register uploader blueprint
 from routes.uploader import uploader_bp
 app.register_blueprint(uploader_bp, url_prefix="/uploader")
+
+
+
+# Register the security blueprint
+app.register_blueprint(security_bp)
 
 config = configparser.ConfigParser()
 
@@ -205,41 +220,120 @@ def root():
     # vedno pokaži login (frontend sam poskrbi za redirect naprej)
     return render_template("login.html")
 
+from flask import redirect
+
 @app.route("/home")
 def main_app():
-    return render_template("index.html")
+    try:
+        # Extract JWT from the 'access_token' cookie
+        token = request.cookies.get('access_token')
+        if not token:
+            return redirect("/login")
+
+        # Decode and verify the JWT
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
+        uid = payload.get("sub")  # 'sub' is the user ID
+        project = payload.get("project")
+
+        if not uid or not project:
+            return redirect("/login")
+
+        # Render the home page with user-specific data
+        return render_template("index.html", user_id=uid, project=project)
+
+    except jwt.JWTError as e:
+        print(f"JWT Error: {e}")
+        return redirect("/login")
 
 @app.route("/about")
 def about_app():
+  # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]    
+
     return render_template("about.html")
 
 @app.route("/quiz_rag")
 def quiz_rag():
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]        
     return render_template("quiz_rag.html")
 
 # --- NEW: quiz page route ---
 @app.route("/ask_vector")
 def ask_vector_page():
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]        
     return render_template("ask_vector.html")
 
 # --- NEW: quiz_ui page route ---
 @app.route("/quiz_ui")
 def quiz_ui_page():
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]        
     return render_template("quiz_ui.html")
 
 # --- NEW: quiz_prep_ui page route ---
 @app.route("/quiz_prep_ui")
 def quiz_prep_ui_page():
+  # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]    
+
     return render_template("quiz_prep_ui.html")
 
 # --- NEW: quiz results viewer route ---
 @app.route("/quiz_results")
 def quiz_results_page():
+  # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]        
     return render_template("quiz_results.html")
 
 # --- NEW: vector search API used by quiz front-end ---
 @app.post("/api/quiz/search")
 def api_quiz_search():
+  # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]        
     """
     POST JSON: { "question": "...", "top_k": 6 }
     Returns top matching Chunk nodes (id, text, score).
@@ -301,14 +395,30 @@ def index_page():
 
 @app.route("/index", endpoint="root_index")
 def index_page():
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]        
     return render_template("index.html")
 
 @app.route("/quiz")
 def quiz_page():
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]        
     return render_template("quiz_rag_egipt.html")
 
 @app.get("/api/projects")
-def get_projects():
+def get_projects():     
     """
     Fetch list of projects from Neo4j (Project nodes).
     Returns JSON array of {id, name} objects.
@@ -322,15 +432,18 @@ def get_projects():
         app.logger.exception("Failed to fetch projects from Neo4j")
         return jsonify({"error": str(e)}), 500
 
-@app.post("/api/login")
-def api_login():
-    data = request.get_json() or {}
-    email = data.get("email")
-    project = data.get("project")
-    return jsonify({"ok": True})
+
 
 @app.route("/run-cypher", methods=["POST"])
 def run_cypher():
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]
+
     try:
         data = request.json or {}
         query = data.get("query")
@@ -349,7 +462,7 @@ def run_cypher():
                 for value in record.values():
                     # Debugging
                     print("Debugging value:", value)
-                    print("Labels:", getattr(value, "labels", None))
+                    print("Labels 1:", getattr(value, "labels", None))
 
                     # ---- NODES ----
                     if hasattr(value, "id") and hasattr(value, "labels"):
@@ -405,6 +518,7 @@ def run_cypher():
                             "label": value.type
                         }
 
+                        print("DEBUG: Edge deduplication check:", rel_id)
                         edge = convert_dates(edge)
 
                         if edge not in edges:
@@ -436,6 +550,15 @@ def run_cypher():
 # --- API Endpoint to Add a Node ---
 @app.route("/add-node", methods=["POST"])
 def add_node():
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]    
+
     try:
         data = request.json
         print("Request data:", data)  # Debugging log        
@@ -495,6 +618,14 @@ def add_node():
 
 @app.route("/update-node", methods=["POST"])
 def update_node():
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]        
     data = request.json
     node_id = data.get("id")
     new_name = data.get("name")
@@ -518,15 +649,41 @@ def update_node():
 
 @app.route("/get_node_types", methods=["GET"])
 def get_node_types_route():
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]        
     return get_node_types()  # Call the function directly
 
 @app.route("/get_edge_types", methods=["GET"])
 def get_edge_types_route():
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]        
     return get_edge_types()  # Call the function directly
 
 @app.route("/expand-node", methods=["POST"])
 def expand_node():
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]        
+
     print("Executing expand_node start...")
+
     try:
         data = request.get_json() or {}
         node_id = data.get("node_id")
@@ -556,6 +713,8 @@ def expand_node():
         edges_dict = {}  # use dict keyed by edge_id to deduplicate
 
         print("Executing expand_node query...")
+        print("expand_node query:", query)
+        print("node_id parameter:", node_id)    
         with driver.session() as session:
             result = session.run(query, node_id=node_id)
             records = list(result)
@@ -590,6 +749,8 @@ def expand_node():
                     }
 
                 # --- edges ---
+                print("********************")
+                print("expand_node processing relationship r:", r_rel)
                 if isinstance(r_rel, Relationship) and n_node and m_node:
                     from_id = n_node.get("id_rc")
                     to_id   = m_node.get("id_rc")
@@ -627,6 +788,7 @@ def expand_node():
             "edges": list(edges_dict.values()),
         }
         payload = convert_dates(payload)
+        print("DEBUG: expand_node response payload:", payload)
         return jsonify(payload)
 
     except Exception as e:
@@ -639,6 +801,17 @@ def delete_selected():
     """
     Deletes the selected nodes and edges from the Neo4j database.
     """
+
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]        
+    
+
     print("delete-selected called") 
 
     data = request.json
@@ -681,6 +854,15 @@ def delete_selected():
     
 @app.route('/editor', methods=['GET', 'POST'])
 def editor():
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]       
+
     if request.method == 'POST':
         content = request.form.get('content')
         print("Submitted Content:", content)
@@ -692,6 +874,15 @@ def editor():
         
 @app.route('/edit/<node_id>', methods=['GET', 'POST'])
 def edit_node(node_id):
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]       
+
     try:
         with driver.session() as session:
             query = """
@@ -808,6 +999,14 @@ td:not([style*="dotted"]):not([style*="dashed"]):not([style*="double"]):not([sty
 
 @app.route('/edit_v4/<node_id>', methods=['GET', 'POST'])
 def edit_node_v4(node_id):
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]           
     try:
         with driver.session() as session:
             # Fetch the node's name and unique identifier
@@ -878,6 +1077,14 @@ def edit_node_v4(node_id):
 # New endpoints to list and view images placed in app/static/images
 @app.route('/list-images', methods=['GET'])
 def list_images():
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]           
     """
     Return a JSON list of image filenames found in static/images and their absolute URLs.
     """
@@ -892,11 +1099,19 @@ def list_images():
     return jsonify({"images": files, "urls": urls})
 
 @app.route('/show-image/<path:filename>', methods=['GET'])
-def show_image(filename):
+def show_image(filename):    
     """
     Simple viewer for an image in static/images.
     Validates that the filename exists in the images directory to avoid path traversal.
     """
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]           
     images_dir = os.path.join(app.static_folder, 'images')
     safe_path = os.path.join(images_dir, os.path.basename(filename))
     if not os.path.isfile(safe_path):
@@ -917,6 +1132,14 @@ def show_image(filename):
 
 @app.route('/show-html/<node_id>', methods=['GET'])
 def show_html(node_id):
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]           
     try:
         # Fetch the unique name for the node
         with driver.session() as session:
@@ -967,36 +1190,34 @@ def convert_neo4j_id(obj):
 @app.route('/loadCustomGraph/<customLoadGraphName>', methods=['GET'])
 def load_custom_graph(customLoadGraphName):
     """
-    Load a custom graph based on the provided name.
-    # """
-    # queryNodes = "MATCH (s {name:$customLoadGraphName})
-    #     OPTIONAL MATCH (s)-[]-(t)-[]-(u:customGraphNodePosition)
-    #     WITH u
-    #     MATCH (m:customGraphNodePosition)
-    #     WHERE m.id_rc = u.id_rc
-    #     match(finalNode) 
-    #     where finalNode.id_rc=m.id and NOT (finalNode:customGraphNodePosition OR finalNode:customGraphNode)
-    #     return DISTINCT finalNode, finalNode.id_rc as id_rc
-    # """
+    Load a custom graph based on the provided name, with project filtering.
+    """
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]
 
     queryNodes = """
-                MATCH (s:CustomGraph) - [r] -(t) 
-                where s.name=$customLoadGraphName 
-                with t match(origNode) 
-                where t.original_id=origNode.id_rc
-                match(ntype:NodeType) where ntype.name in labels(origNode)
-                RETURN origNode, t.x as x, t.y as y, ntype.size as size, t
+        MATCH (s:CustomGraph)-[r]-(t)
+        WHERE s.name = $customLoadGraphName
+        WITH t
+        MATCH (origNode)
+        WHERE t.original_id = origNode.id_rc
+        MATCH (ntype:NodeType) WHERE ntype.name IN labels(origNode)
+        RETURN origNode, t.x AS x, t.y AS y, ntype.size AS size, t
     """
 
-    queryNodeType ="""match(s:NodeType) where s.name=$NodeTypeName RETURN s"""
-
-    queryNodesPos = """
-        match(finalNodeProp:customGraphNodePosition) 
-        where finalNodeProp.id=$rc_id
-        return finalNodeProp
+    queryNodeType = """
+        MATCH (s:NodeType)
+        WHERE s.name = $NodeTypeName
+        RETURN s
     """
 
-    print("loadCustomGraph query:", queryNodes)  
+    print("loadCustomGraph query:", queryNodes)
 
     try:
         with driver.session() as session:
@@ -1005,100 +1226,101 @@ def load_custom_graph(customLoadGraphName):
             nodes = {}
             edges = []
 
-            
-
             for record in result:
                 origNode = record["origNode"]
                 tNode = record["t"]
-                if origNode not in nodes:
-                    # get name from origNode                    
-                    origNodeProp = dict(origNode)
-                    origNode_name = origNodeProp.get("name", str(origNode.id))
-                    origNode_id = origNodeProp.get("id_rc", str(origNode.id))
-                    origNodeLabels = list(origNode.labels)
 
-                    resultNodeType = session.run(queryNodeType, NodeTypeName=origNodeLabels[0])
-                    recordNodeType = resultNodeType.single()
-                    print("recordNodeType: " + str(recordNodeType))
+                # FILTER BY PROJECT for nodes
+                origNodeProp = dict(origNode)
+                print("origNodeProp: "+ origNodeProp.get("projectName") +" : project: "+ project)
+                if project and origNodeProp.get("projectName") != project:
+                    print(f"Skipping node: {origNodeProp.get('name')} (projectName: {origNodeProp.get('projectName')})")
+                    continue
 
-                    # Assuming `recordNodeType` is the Record object you provided
-                    node_data = recordNodeType["s"]  # Access the Node object from the Record
-                    node_properties = dict(node_data)  # Convert the Node object to a dictionary
-                    shape_value = node_properties.get("shape")  # Extract the value for the key 'shape'
+                origNode_name = origNodeProp.get("name", str(origNode.id))
+                origNode_id = origNodeProp.get("id_rc", str(origNode.id))
+                origNodeLabels = list(origNode.labels)
 
-                    print("Shape value:", shape_value)
+                resultNodeType = session.run(queryNodeType, NodeTypeName=origNodeLabels[0])
+                recordNodeType = resultNodeType.single()
+                print("recordNodeType:", recordNodeType)
 
-                    x = record["x"]
-                    y = record["y"]
-                    size = record["size"]      
-                    full_name = origNode_name  # Extract name property
-                    short_name = full_name.split(".")[-1]  # Get last part after the last dot              
-                    nodes[origNode_id] = {
-                        "id": origNode_id,
-                        "label": short_name,
-                        "name": full_name,
-                        #"shape": origNodeProp.get("shape", "ellipse"),
-                        "shape": shape_value,
-                        "color": node_properties.get("color", "#97C2FC"),
-                        "image": origNodeProp.get("image", ""),                        
-                        "x": record["x"],                
-                        "y": record["y"],
-                        "size": record["size"],
-                        #"labels": origNodeLabels,  # Include all labels
-                        "labels": origNodeLabels,  # Include all labels
-                        "properties": convert_neo4j_id(origNode)  # Convert properties
+                # Assuming `recordNodeType` is the Record object you provided
+                node_data = recordNodeType["s"]  # Access the Node object from the Record
+                node_properties = dict(node_data)  # Convert the Node object to a dictionary
+                shape_value = node_properties.get("shape")  # Extract the value for the key 'shape'
+
+                x = record["x"]
+                y = record["y"]
+                size = record["size"]
+                full_name = origNode_name  # Extract name property
+                short_name = full_name.split(".")[-1]  # Get last part after the last dot
+                nodes[origNode_id] = {
+                    "id": origNode_id,
+                    "label": short_name,
+                    "name": full_name,
+                    "shape": shape_value,
+                    "color": node_properties.get("color", "#97C2FC"),
+                    "image": origNodeProp.get("image", ""),
+                    "x": x,
+                    "y": y,
+                    "size": size,
+                    "labels": origNodeLabels,  # Include all labels
+                    "properties": convert_neo4j_id(origNode)  # Convert properties
+                }
+                print("Node added:", nodes[origNode_id])
+
+                # Find relationships for this node
+                rel_query = """
+                    MATCH (n)-[r]->(m)
+                    WHERE (n.id_rc = $node_id OR m.id_rc = $node_id)
+                      AND NOT 'CustomGraph' IN labels(m)
+                      AND NOT 'customGraphNode' IN labels(m)
+                      AND NOT 'customGraphNodePosition' IN labels(m)
+                      AND NOT 'CustomGraph' IN labels(n)
+                      AND NOT 'customGraphNode' IN labels(n)
+                      AND NOT 'customGraphNodePosition' IN labels(n)
+                    RETURN n, r, m
+                """
+                rel_result = session.run(rel_query, node_id=origNode_id)
+                for rel_record in rel_result:
+                    n_node = rel_record["n"]
+                    m_node = rel_record["m"]
+                    relationship = rel_record["r"]
+
+                    # FILTER BY PROJECT for relationships
+                    n_props = dict(n_node)
+                    m_props = dict(m_node)
+                    if project:
+                        n_proj = n_props.get("projectName")
+                        m_proj = m_props.get("projectName")
+                        if n_proj != project and m_proj != project:
+                            print(f"Skipping relationship: {relationship} (projects: {n_proj}, {m_proj})")
+                            continue
+
+                    # Process relationship
+                    rel_props = dict(relationship)
+                    rel_id = rel_props.get("id_rc") or f"{relationship.start_node.id}-{relationship.end_node.id}-{relationship.type}"
+                    start_props = dict(relationship.start_node)
+                    end_props = dict(relationship.end_node)
+                    edge = {
+                        "id": rel_id,  # Unique edge ID (prefer id_rc)
+                        "from": start_props.get("id_rc", str(relationship.start_node.id)),
+                        "to": end_props.get("id_rc", str(relationship.end_node.id)),
+                        "type": relationship.type,
+                        "label": relationship.type  # Set the label to the relationship type
                     }
-                    print("")
-                    print("Node added:", nodes[origNode_id])
-                    # find relationships for this node
-                    rel_query = """
-                        MATCH (n)-[r]->(m)
-                        WHERE (n.id_rc = $node_id OR m.id_rc = $node_id)
-                        and NOT 'CustomGraph' IN labels(m)
-                        and NOT 'customGraphNode' IN labels(m)
-                        and NOT 'customGraphNodePosition' IN labels(m)
-                        and NOT 'CustomGraph' IN labels(n)
-                        and NOT 'customGraphNode' IN labels(n)
-                        and NOT 'customGraphNodePosition' IN labels(n)
-                        RETURN n, r, m                            
-                    """
-                    rel_result = session.run(rel_query, node_id=origNode_id)
-                    print("")
-                    print("Edges found:", nodes[origNode_id])                    
-                    for rel_record in rel_result:
-                        n_node = rel_record["n"]
-                        m_node = rel_record["m"]
-                        relationship = rel_record["r"]                        
 
-                        # Process 'from' node
-                        n_props = dict(n_node)
-                        n_id = n_props.get("id_rc", str(n_node.id))
+                    if edge not in edges:
+                        edges.append(edge)
 
-                        # Process relationship                            
-                        rel_props = dict(relationship)
-                        rel_id = rel_props.get("id_rc") or f"{relationship.start_node.id}-{relationship.end_node.id}-{relationship.type}"
-                        start_props = dict(relationship.start_node)
-                        end_props = dict(relationship.end_node)
-                        edge = {
-                            "id": rel_id,  # Unique edge ID (prefer id_rc)
-                            "from": start_props.get("id_rc", str(relationship.start_node.id)),
-                            "to": end_props.get("id_rc", str(relationship.end_node.id)),
-                            "type": relationship.type,
-                            "label": relationship.type  # Set the label to the relationship type                            
-                        }
-
-                        if edge not in edges:
-                            edges.append(edge)                                                                                        
             print("Load graph completed")
             print("list(nodes.values()):", list(nodes.values()))
             return jsonify({"success": True, "nodes": list(nodes.values()), "edges": edges})
 
     except Exception as e:
-        app.logger.exception("Error in loadCustomGraph")  # logs file:line + stack
-        raise  # optional: let Flask show the full debugger in dev
-
-        print(f"Error loading custom graph: {e}")
-        return jsonify({"success": False, "error": str(e)}), 500 
+        app.logger.exception("Error in loadCustomGraph")  # Logs file:line + stack
+        return jsonify({"success": False, "error": str(e)}), 500
 
 # helper: validate read-only Cypher
 READ_ONLY_DISALLOWED = re.compile(
@@ -1120,6 +1342,14 @@ def is_safe_read_query(cypher: str) -> bool:
 
 @app.route("/openai-cypher", methods=["POST"])
 def openai_cypher():
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]           
     """
     POST JSON:
       - For analysis/validation/rewrite of an existing Cypher:
@@ -1290,6 +1520,14 @@ def editor_file_path(name_unique: str) -> str:
 
 @app.get("/get-html/<node_id>")
 def get_html(node_id):
+        # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]       
     try:
         with driver.session() as s:
             name_unique = ensure_name_unique(s, node_id)
@@ -1306,6 +1544,14 @@ def get_html(node_id):
 
 @app.post("/save-html/<node_id>")
 def save_html(node_id):
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]           
     try:
         with driver.session() as s:
             name_unique = ensure_name_unique(s, node_id)
@@ -1339,7 +1585,7 @@ def save_html(node_id):
 #     Invoke-RestMethod -Method Post -Uri 'http://localhost:5000/openai-generate' -ContentType 'application/json' -Body '{"prompt":"...","model":"gpt-4o-mini"}'
 
 @app.route("/openai-generate", methods=["POST"])
-def openai_generate():
+def openai_generate():    
     """
     Generate code with OpenAI.
 
@@ -1358,6 +1604,14 @@ def openai_generate():
     Response JSON (split):
       { success, html, css, js, code, raw }
     """
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]           
     if not OPENAI_API_KEY:
         return jsonify({"success": False, "error": "OPENAI_API_KEY not set"}), 500
 
@@ -1504,14 +1758,38 @@ def openai_generate():
 
 @app.route("/assessment")
 def assessment_page():
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]           
     return render_template("assessment.html")
 
 @app.route('/ollama_ui', methods=['GET'])
 def ollama_ui_page():
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]           
     return render_template('ollama_ui.html')    
 
 @app.route('/api/ollama/ask', methods=['POST'])
 def ask_ollama():
+        # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]       
     data = request.json
     question = data.get('question', '')
 
@@ -1531,6 +1809,14 @@ def ask_ollama():
 
 @app.route('/proxy/ollama/ask', methods=['POST'])
 def proxy_ollama_ask():
+        # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]       
     data = request.json
     question = data.get('question', '')
 
@@ -1570,6 +1856,15 @@ def ask_question():
     API endpoint to forward user questions along with context to OpenAI API.
     Expects JSON: { "question": "...", "context": "..." }
     """
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]       
+
     data = request.json or {}
     question = data.get("question", "").strip()
     context = data.get("context", "").strip()
@@ -1616,6 +1911,15 @@ def summary_popup():
     Render a popup template for asking questions about a summary.
     Use the context provided in the query string.
     """
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]       
+
     context = request.args.get('context')
     if not context:
         app.logger.error("Missing or invalid 'context' parameter in request")
@@ -1667,6 +1971,22 @@ def summary_popup():
     </body>
     </html>
     ''', context=context)
+
+def validate_jwt():
+    token = request.cookies.get('access_token')
+    if not token:
+        return None, jsonify({"error": "Unauthorized: No token provided"}), 401
+
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
+        uid = payload.get("sub")
+        project = payload.get("project")
+        if not uid or not project:
+            return None, jsonify({"error": "Unauthorized: Invalid token"}), 401
+        return {"uid": uid, "project": project}, None, None
+    except jwt.PyJWTError as e:  # Updated exception
+        print(f"JWT Error: {e}")
+        return None, jsonify({"error": "Unauthorized: Invalid token"}), 401
 
 if __name__ == '__main__':
     app.run(host='::', port=5000, debug=True)

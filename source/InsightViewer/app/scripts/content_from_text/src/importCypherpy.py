@@ -11,6 +11,7 @@ from __future__ import annotations
 import configparser
 import json
 import sys
+import argparse
 from pathlib import Path
 from typing import List
 
@@ -23,7 +24,6 @@ def split_cypher_statements(script: str) -> List[str]:
     Split Cypher script into statements by ';' but don't split inside strings.
     Removes // comments.
     """
-    # strip // comments
     cleaned_lines = []
     for ln in script.splitlines():
         s = ln.strip()
@@ -78,12 +78,15 @@ def split_cypher_statements(script: str) -> List[str]:
 
 
 def main() -> int:
-    # Resolve paths relative to the script's location
-    BASE_DIR = Path(__file__).resolve().parent.parent  # Go up one level to `content_from_text`
-    OUTPUT_DIR = BASE_DIR / "output"  # Point to the `output` directory
+    # Parse command-line arguments
+    parser = argparse.ArgumentParser(description="Import data into Neo4j using Cypher and JSON.")
+    parser.add_argument("--cypher", required=True, help="Path to the Cypher script file.")
+    parser.add_argument("--json", required=True, help="Path to the JSON payload file.")
+    args = parser.parse_args()
 
-    cypher_path = OUTPUT_DIR / "utBiologija1_ch2.cypher"  # Updated to match the new location
-    payload_path = OUTPUT_DIR / "payloadBiologija1_ch2.json"  # Updated to match the new location
+    # Resolve paths
+    cypher_path = Path(args.cypher)
+    payload_path = Path(args.json)
 
     if not cypher_path.exists():
         print(f"ERROR: missing {cypher_path.resolve()}", file=sys.stderr)
@@ -102,15 +105,11 @@ def main() -> int:
     config.read(CONFIG_PATH)
 
     # Extract Neo4j connection details from the config file
-    # Replace '192.168.1.16' with the container's IP or host IP if ports are exposed
     URI = config.get("NEO4J", "URI", fallback="bolt://192.168.1.16:7687")
-    USER = config.get("NEO4J", "USER", fallback="neo4j")
+    USER = config.get("NEO4J", "USER", fallback="NEO4J")
     PASSWORD = config.get("NEO4J", "PASSWORD", fallback="password")
 
     print(f"Using Neo4j URI: {URI}, User: {USER}")
-    print("URI" + (" found in config." if config.has_option("NEO4J", "URI") else " not found in config, using default."))
-    print("password" + (" found in config." if config.has_option("NEO4J", "PASSWORD") else " not found in config, using default."))
-
 
     script = cypher_path.read_text(encoding="utf-8")
     statements = split_cypher_statements(script)

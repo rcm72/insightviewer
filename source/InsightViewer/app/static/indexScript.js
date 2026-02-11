@@ -892,14 +892,13 @@ document.addEventListener("DOMContentLoaded", function () {
        });
    
        // Add new edges to the dataset
+       const existingEdgeIds = new Set(edges.getIds());
        data.edges.forEach(edge => {
-           edges.add({
-               id: edge.id, // Use the Neo4j edge ID (integer)
-               from: edge.from,
-               to: edge.to,
-               label: edge.label,
-               arrows: "to"
-           });
+           if (!existingEdgeIds.has(edge.id)) {
+               edges.add(edge);
+           } else {
+               console.warn(`Skipping duplicate edge with id: ${edge.id}`);
+           }
        });
    
        // Refresh and stabilize the graph
@@ -1302,6 +1301,8 @@ document.addEventListener("DOMContentLoaded", function () {
                alert("Expand failed:\n" + (data && data.error ? data.error : "Unknown error"));
                return;
            }
+           console.log("data")
+           console.log(data)
            visualizeGraph(data, gAllowedNodeLabels);
        })
        .catch(error => console.error("Error expanding node:", error));
@@ -2005,6 +2006,7 @@ function saveCustomGraph() {
    const graphNodes = nodes.get(); // Get all nodes from the graph
    console.log("Sending data to backend:", { customGraphName: gCustomGraphName, nodes: graphNodes });
    console.log("nodes:", { Pnodes : nodes.get() });
+   console.log("Nodes dataset:", nodes.get());
    
 
    const positions = network.getPositions(); // Get positions for all nodes
