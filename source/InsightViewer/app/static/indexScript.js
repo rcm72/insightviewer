@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Copyright (c) 2025 Robert ÄŒmrlec
+// Copyright (c) 2025 Robert Èmrlec
 
 // Get current project and user email
 const currentProject = window.IV_CURRENT_USER?.project;
@@ -547,6 +547,231 @@ function createNode(shape) {
    
 }
 
+function visualizeGraph(data, allowedNodeLabels = []) {
+    console.log("Visualizing graph with data:", data);
+
+    if (!data || !Array.isArray(data.nodes) || !Array.isArray(data.edges)) {
+        console.error("visualizeGraph: invalid data shape", data);
+        return;
+    }
+
+    // Add new nodes to the dataset
+    data.nodes.forEach(node => {
+        if (!nodes.get(node.id)) {
+            console.log("Node object:", node);
+            console.log("Node properties:", node.properties);
+
+            const nodeType = node.nodeType || "Default"; // Assuming 'nodeType' is a property of the node
+
+            // Fetch the shape and color for the nodeType
+            fetchNodeVisuals(nodeType, (visuals) => {
+                if (!visuals) visuals = {};
+
+                // Decide shape and image safely: if shape requires an image but none provided, fall back
+                let shapeToUse = visuals.shape || createNodeCurrentShape || "ellipse";
+                let imageToUse = node.properties && node.properties.image ? node.properties.image : (visuals.image || undefined);
+                console.log('imageToUse 1: ', imageToUse);
+
+                // If an image-shape was requested but no usable image exists, fall back to ellipse
+                const isImageShapeRequested = (shapeToUse === "image" || shapeToUse === "circularImage");
+                if (isImageShapeRequested && !imageToUse) {
+                    console.warn(`Node type "${nodeType}" requested image shape but no image provided; falling back to "ellipse".`);
+                    shapeToUse = "ellipse";
+                    imageToUse = undefined;
+                }
+
+                // Ensure a sensible default size so images are visible
+                const finalSize = (visuals.size && Number(visuals.size) > 0) ? Number(visuals.size) : 40;
+
+                // Final node object builder
+                const buildNodeObj = (finalShape, finalImage) => {
+                    const n = {
+                        id: node.id,
+                        label: node.label,
+                        shape: finalShape,
+                        color: visuals.color || "#97C2FC",
+                        image: finalImage,
+                        size: finalSize,
+                        properties: node.properties,
+                        labels: node.labels || ["Unknown"]
+                    };
+                    return n;
+                };
+
+                // If an image is actually to be used, verify it loads before adding the node.
+                if ((shapeToUse === "image" || shapeToUse === "circularImage") && imageToUse) {
+                    const img = new Image();
+                    img.onload = function () {
+                        const nobj = buildNodeObj(shapeToUse, imageToUse);
+                        nodes.add(nobj);
+                        console.log(`Node with ID ${node.id} added with shape ${shapeToUse} and color ${visuals.color}`);
+                        if (network) {
+                            network.redraw();
+                            network.stabilize();
+                        }
+                    };
+                    img.onerror = function () {
+                        console.warn(`Image failed to load for node ${node.id}: ${imageToUse}. Falling back to ellipse.`);
+                        const nobj = buildNodeObj("ellipse", undefined);
+                        nodes.add(nobj);
+                        if (network) {
+                            network.redraw();
+                            network.stabilize();
+                        }
+                    };
+                    // start loading (relative or absolute URL)
+                    img.src = imageToUse;
+                } else {
+                    // Non-image nodes: add immediately
+                    const nobj = buildNodeObj(shapeToUse, imageToUse);
+                    nodes.add(nobj);
+                    console.log(`Node with ID ${node.id} added with shape ${shapeToUse} and color ${visuals.color}`);
+                    if (network) {
+                        network.redraw();
+                        network.stabilize();
+                    }
+                }
+            });
+        } else {
+            console.log(`Node with ID ${node.id} already exists`);
+        }
+    });
+
+    // Add new edges to the dataset
+    const existingEdgeIds = new Set(edges.getIds());
+    data.edges.forEach(edge => {
+        if (!existingEdgeIds.has(edge.id)) {
+            edges.add(edge);
+        } else {
+            console.warn(`Skipping duplicate edge with id: ${edge.id}`);
+        }
+    });
+
+    // Refresh and stabilize the graph
+    if (network) {
+        // network.redraw/stabilize are now called after each node is actually added;
+        // keep these for a final pass to ensure layout is up-to-date.
+        network.redraw();
+        network.stabilize();
+        console.log("Graph updated");
+    } else {
+        console.error("Network object is not initialized");
+    }
+}
+
+async function expandByEdgeType() {
+    const selectedNodes = network.getSelectedNodes();
+    if (selectedNodes.length === 0) {
+        alert("Please select a node to expand.");
+        return;
+    }
+
+    const nodeId = selectedNodes[0];
+    console.log("Fetching edge types for node ID:", nodeId);
+
+    try {
+        const response = await fetch(`/api/node/${nodeId}/edge-types`);
+        const data = await response.json();
+
+        if (!data.success) {
+            alert("Failed to fetch edge types: " + (data.error || "Unknown error"));
+            return;
+        }
+
+        const edgeTypes = data.edge_types;
+        if (!edgeTypes || edgeTypes.length === 0) {
+            alert("No edge types available for this node.");
+            return;
+        }
+
+        // Show a dialog to let the user select edge types
+        const selectedEdgeTypes = await showEdgeTypeSelectionDialog(edgeTypes);
+        if (!selectedEdgeTypes || selectedEdgeTypes.length === 0) {
+            alert("No edge types selected.");
+            return;
+        }
+
+        console.log("Expanding node by edge types:", selectedEdgeTypes);
+
+        // Send the selected edge types to the backend to expand the node
+        console.log("expandByEdgeType: " + JSON.stringify({ node_id: nodeId, edge_types: selectedEdgeTypes }));
+        const expandResponse = await fetch(`/expand-node`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ node_id: nodeId, edge_types: selectedEdgeTypes })
+        });
+
+        const expandData = await expandResponse.json();
+        if (!expandData.success) {
+            alert("Failed to expand node: " + (expandData.error || "Unknown error"));
+            return;
+        }
+
+        console.log("visualizeGraph:", typeof visualizeGraph);
+        console.log("visualizeGraph:", expandData);
+        console.log("visualizeGraph:", gAllowedNodeLabels);
+        visualizeGraph(expandData, gAllowedNodeLabels);
+    } catch (error) {
+        console.error("Error in expandByEdgeType:", error);
+        alert("An error occurred while expanding the node.");
+    }
+}
+
+function showEdgeTypeSelectionDialog(edgeTypes) {
+    return new Promise((resolve) => {
+        const dialog = document.createElement("div");
+        dialog.className = "edge-type-dialog";
+        dialog.style.position = "fixed";
+        dialog.style.top = "50%";
+        dialog.style.left = "50%";
+        dialog.style.transform = "translate(-50%, -50%)";
+        dialog.style.backgroundColor = "#fff";
+        dialog.style.border = "1px solid #ccc";
+        dialog.style.padding = "20px";
+        dialog.style.zIndex = "1000";
+
+        const title = document.createElement("h3");
+        title.textContent = "Select Edge Types";
+        dialog.appendChild(title);
+
+        const list = document.createElement("ul");
+        edgeTypes.forEach((type) => {
+            const item = document.createElement("li");
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.value = type;
+            item.appendChild(checkbox);
+            item.appendChild(document.createTextNode(type));
+            list.appendChild(item);
+        });
+        dialog.appendChild(list);
+
+        const buttons = document.createElement("div");
+        buttons.style.marginTop = "10px";
+
+        const okButton = document.createElement("button");
+        okButton.textContent = "OK";
+        okButton.onclick = () => {
+            const selected = Array.from(list.querySelectorAll("input:checked")).map((cb) => cb.value);
+            document.body.removeChild(dialog);
+            resolve(selected);
+        };
+        buttons.appendChild(okButton);
+
+        const cancelButton = document.createElement("button");
+        cancelButton.textContent = "Cancel";
+        cancelButton.style.marginLeft = "10px";
+        cancelButton.onclick = () => {
+            document.body.removeChild(dialog);
+            resolve([]);
+        };
+        buttons.appendChild(cancelButton);
+
+        dialog.appendChild(buttons);
+        document.body.appendChild(dialog);
+    });
+}
+
 document.addEventListener("DOMContentLoaded", function () {
 
    var menu = document.getElementById("menu");
@@ -725,7 +950,7 @@ document.addEventListener("DOMContentLoaded", function () {
        // If the text does NOT contain the word MATCH (case-insensitive), call OpenAI endpoint
        const hasMatch = /\bMATCH\b/i.test(cypherQuery);
        if (!hasMatch) {
-           console.log("No MATCH found in textarea ï¿½ calling /openai-cypher to generate/transform Cypher");
+           console.log("No MATCH found in textarea ˜ calling /openai-cypher to generate/transform Cypher");
            fetch("/openai-cypher", {
                method: "POST",
                headers: { "Content-Type": "application/json" },
@@ -801,117 +1026,7 @@ document.addEventListener("DOMContentLoaded", function () {
            .catch(error => console.error("Error fetching node types:", error));
    }    
 
-   function visualizeGraph(data, allowedNodeLabels = []) {
-       console.log("Visualizing graph with data:", data);
 
-       if (!data || !Array.isArray(data.nodes) || !Array.isArray(data.edges)) {
-           console.error("visualizeGraph: invalid data shape", data);
-           return;
-       }
-
-       // Add new nodes to the dataset
-       data.nodes.forEach(node => {
-           if (!nodes.get(node.id)) {
-               console.log("Node object:", node);
-               console.log("Node properties:", node.properties);
-   
-               const nodeType = node.nodeType || "Default"; // Assuming 'nodeType' is a property of the node
-   
-               // Fetch the shape and color for the nodeType
-               fetchNodeVisuals(nodeType, (visuals) => {
-                   if (!visuals) visuals = {};
-   
-                   // Decide shape and image safely: if shape requires an image but none provided, fall back
-                   let shapeToUse = visuals.shape || createNodeCurrentShape || "ellipse";
-                   let imageToUse = node.properties && node.properties.image ? node.properties.image : (visuals.image || undefined);
-                   console.log('imageToUse 1: ', imageToUse);
-   
-                   // If an image-shape was requested but no usable image exists, fall back to ellipse
-                   const isImageShapeRequested = (shapeToUse === "image" || shapeToUse === "circularImage");
-                   if (isImageShapeRequested && !imageToUse) {
-                       console.warn(`Node type "${nodeType}" requested image shape but no image provided; falling back to "ellipse".`);
-                       shapeToUse = "ellipse";
-                       imageToUse = undefined;
-                   }
-   
-                   // Ensure a sensible default size so images are visible
-                   const finalSize = (visuals.size && Number(visuals.size) > 0) ? Number(visuals.size) : 40;
-   
-                   // Final node object builder
-                   const buildNodeObj = (finalShape, finalImage) => {
-                       const n = {
-                           id: node.id,
-                           label: node.label,
-                           shape: finalShape,
-                           color: visuals.color || "#97C2FC",
-                           image: finalImage,
-                           size: finalSize,
-                           properties: node.properties,
-                           labels: node.labels || ["Unknown"]
-                       };
-                       return n;
-                   };
-   
-                   // If an image is actually to be used, verify it loads before adding the node.
-                   if ((shapeToUse === "image" || shapeToUse === "circularImage") && imageToUse) {
-                       const img = new Image();
-                       img.onload = function () {
-                           const nobj = buildNodeObj(shapeToUse, imageToUse);
-                           nodes.add(nobj);
-                           console.log(`Node with ID ${node.id} added with shape ${shapeToUse} and color ${visuals.color}`);
-                           if (network) {
-                               network.redraw();
-                               network.stabilize();
-                           }
-                       };
-                       img.onerror = function () {
-                           console.warn(`Image failed to load for node ${node.id}: ${imageToUse}. Falling back to ellipse.`);
-                           const nobj = buildNodeObj("ellipse", undefined);
-                           nodes.add(nobj);
-                           if (network) {
-                               network.redraw();
-                               network.stabilize();
-                           }
-                       };
-                       // start loading (relative or absolute URL)
-                       img.src = imageToUse;
-                   } else {
-                       // Non-image nodes: add immediately
-                       const nobj = buildNodeObj(shapeToUse, imageToUse);
-                       nodes.add(nobj);
-                       console.log(`Node with ID ${node.id} added with shape ${shapeToUse} and color ${visuals.color}`);
-                       if (network) {
-                           network.redraw();
-                           network.stabilize();
-                       }
-                   }
-               });
-           } else {
-               console.log(`Node with ID ${node.id} already exists`);
-           }
-       });
-   
-       // Add new edges to the dataset
-       const existingEdgeIds = new Set(edges.getIds());
-       data.edges.forEach(edge => {
-           if (!existingEdgeIds.has(edge.id)) {
-               edges.add(edge);
-           } else {
-               console.warn(`Skipping duplicate edge with id: ${edge.id}`);
-           }
-       });
-   
-       // Refresh and stabilize the graph
-       if (network) {
-           // network.redraw/stabilize are now called after each node is actually added;
-           // keep these for a final pass to ensure layout is up-to-date.
-           network.redraw();
-           network.stabilize();
-           console.log("Graph updated");
-       } else {
-           console.error("Network object is not initialized");
-       }
-   }
 
    var selectedNodeId = null;
 
@@ -977,7 +1092,7 @@ document.addEventListener("DOMContentLoaded", function () {
        const prompt = (document.getElementById('ai-prompt')?.value || '').trim();
        const output = document.getElementById('ai-snippet-output');
        if (!prompt) return alert('Please enter a prompt.');
-       if (output) output.value = 'Generatingâ€¦';
+       if (output) output.value = 'Generating…';
        try {
        const res = await fetch('/openai-generate', {
            method: 'POST',
@@ -986,7 +1101,7 @@ document.addEventListener("DOMContentLoaded", function () {
        });
        const data = await res.json();
        if (data.success) {
-           // Your Flask returns { success, response, code } â€“ prefer code block if present.
+           // Your Flask returns { success, response, code } – prefer code block if present.
            const snippet = (data.code && data.code.trim()) || (data.response || '').trim();
            output.value = snippet;
        } else {
@@ -1126,14 +1241,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
        // open dialog
        const dlg = document.getElementById('html-editor-dialog');
-       document.getElementById('html-editor-title').textContent = `HTML Editor â€” node ${htmlEditorNodeId}`;
+       document.getElementById('html-editor-title').textContent = `HTML Editor — node ${htmlEditorNodeId}`;
        dlg.style.display = 'block';
        makeDialogDraggable(dlg);
 
        
 
        await ensureCodeMirror();
-       setEditorStatus('Loadingâ€¦');
+       setEditorStatus('Loading…');
 
        try {
            const res = await fetch(`/get-html/${htmlEditorNodeId}`);
@@ -1168,14 +1283,14 @@ document.addEventListener("DOMContentLoaded", function () {
    async function saveHtmlFromEditor() {
        if (!htmlEditorNodeId) return alert("No node selected.");
        const content = cmEditor ? cmEditor.getValue() : '';
-       setEditorStatus('Savingâ€¦');
+       setEditorStatus('Saving…');
        try {
            const form = new FormData();
            form.append('content', content);
            const res = await fetch(`/save-html/${htmlEditorNodeId}`, { method: 'POST', body: form });
            const data = await res.json();
            if (data.success) {
-               setEditorStatus('Saved âœ“');
+               setEditorStatus('Saved ?');
                alert(data.message || 'Saved.');
            } else {
                setEditorStatus('Save failed');
@@ -1207,7 +1322,7 @@ document.addEventListener("DOMContentLoaded", function () {
    window.saveHtmlFromEditor = saveHtmlFromEditor;
    window.setEditorStatus = setEditorStatus;
 
-   // AI snippet helpers â€” only overwrite if real functions were defined
+   // AI snippet helpers — only overwrite if real functions were defined
    if (typeof openAiSnippetDialog !== 'undefined') window.openAiSnippetDialog = openAiSnippetDialog;
    if (typeof closeAiSnippetDialog !== 'undefined') window.closeAiSnippetDialog = closeAiSnippetDialog;
    if (typeof askAiForSnippet !== 'undefined') window.askAiForSnippet = askAiForSnippet;
@@ -2399,7 +2514,7 @@ async function removeNodeCustomGraph() {
            if (!contentType.toLowerCase().includes("application/json")) {
                console.error(`Non-JSON response from ${attempt.url}:`, { status: resp.status, body: text });
                alert(`Server returned non-JSON response (status ${resp.status}). See console for details.`);
-               // If it was an error page (HTML), don't try further attempts ï¿½ but continue loop if you prefer
+               // If it was an error page (HTML), don't try further attempts ˜ but continue loop if you prefer
                // We'll stop here to avoid accidental repeated side-effects.
                finalResult = { success: false, error: `Non-JSON response (status ${resp.status}).` };
                break;

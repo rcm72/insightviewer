@@ -687,20 +687,28 @@ def expand_node():
     try:
         data = request.get_json() or {}
         node_id = data.get("node_id")
+        edge_types = data.get("edge_types")  # Read the edge_types parameter
         print(f"expand_node called with node_id: {node_id}")
 
         if not node_id:
             return jsonify({"success": False, "error": "Missing node ID"}), 400
 
+        # If edge_types is provided, we can add a filter to the query to only return relationships of those types.    
+        edge_type_filter = ""
+        if edge_types and isinstance(edge_types, list) and edge_types:
+            edge_type_filter = "AND type(r) IN $edge_types"
+
+        
         query = """
         MATCH (n)-[r]-(m)
         WHERE (n.id_rc = $node_id OR m.id_rc = $node_id)
-          AND NOT 'CustomGraph' IN labels(n)
-          AND NOT 'CustomGraph' IN labels(m)
-          AND NOT 'customGraphNode' IN labels(n)
-          AND NOT 'customGraphNode' IN labels(m)
-          AND NOT 'customGraphNodePosition' IN labels(n)
-          AND NOT 'customGraphNodePosition' IN labels(m)
+        AND NOT 'CustomGraph' IN labels(n)
+        AND NOT 'CustomGraph' IN labels(m)
+        AND NOT 'customGraphNode' IN labels(n)
+        AND NOT 'customGraphNode' IN labels(m)
+        AND NOT 'customGraphNodePosition' IN labels(n)
+        AND NOT 'customGraphNodePosition' IN labels(m)
+        """ + edge_type_filter + """
         RETURN n, r, m
         """
         query1 = """
@@ -716,7 +724,12 @@ def expand_node():
         print("expand_node query:", query)
         print("node_id parameter:", node_id)    
         with driver.session() as session:
-            result = session.run(query, node_id=node_id)
+            # Pass edge_types only if it is used in the query
+            params = {"node_id": node_id}
+            if edge_type_filter:
+                params["edge_types"] = edge_types
+
+            result = session.run(query, node_id=node_id, edge_types=edge_types if edge_type_filter else None)
             records = list(result)
             print(f"expand_node query returned {len(records)} records")
 
@@ -1971,6 +1984,35 @@ def summary_popup():
     </body>
     </html>
     ''', context=context)
+
+@app.route("/api/node/<node_id>/edge-types", methods=["GET"])
+def get_edge_types_for_node(node_id):
+    print(f"Fetching edge types for node_id: {node_id}")
+    """
+    Fetch distinct edge types connected to a specific node.
+    """
+    # Validate JWT and extract user data
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    # Extract user data from JWT
+    uid = user_data["uid"]
+    project = user_data["project"]
+
+    try:
+        query = """
+        MATCH (n)-[r]->() WHERE n.id_rc = $node_id
+        RETURN DISTINCT type(r) AS edge_type
+        """
+        with driver.session() as session:
+            result = session.run(query, node_id=node_id)
+            edge_types = [record["edge_type"] for record in result]
+
+        return jsonify({"success": True, "edge_types": edge_types})
+    except Exception as e:
+        app.logger.exception("Failed to fetch edge types for node")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 def validate_jwt():
     token = request.cookies.get('access_token')
