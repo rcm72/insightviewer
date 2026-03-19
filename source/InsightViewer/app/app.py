@@ -1,3 +1,4 @@
+   
 # -*- coding: utf-8 -*-
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (c) 2025 Robert �mrlec
@@ -2030,9 +2031,20 @@ def validate_jwt():
         print(f"JWT Error: {e}")
         return None, jsonify({"error": "Unauthorized: Invalid token"}), 401
 
+													
+																  
+																
+															   
+															   
+								  
+
+							  
+
 if __name__ == '__main__':
-    app.run(host='::', port=5000, debug=True)
+    app.run(host='::', port=8081, debug=True)
+    #app.run(host='0.0.0.0', port=8081, debug=True)
 
 
 #   sudo lsof -i :5001
 #   sudo kill -9 <PID>
+

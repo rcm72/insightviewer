@@ -42,7 +42,7 @@ ph = PasswordHasher()
 # JWT configuration
 JWT_SECRET = os.environ["JWT_SECRET"]
 JWT_ALG = "HS256"
-EXPIRE_SECONDS = 3600
+EXPIRE_SECONDS = 3600 * 24
 
 COOKIE_SECURE = os.environ.get("COOKIE_SECURE", "0") == "1"
 COOKIE_SAMESITE = os.environ.get("COOKIE_SAMESITE", "Lax")

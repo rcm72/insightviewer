@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+
+<html lang="sl">
+
+<head>
+
+  <meta charset="UTF-8" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Oracle APEX arhitektura izvajanja</title>
+
+  <style>
+
+    :root {
+
+      --bg: #f4f7fb;
+
+      --card: #ffffff;
+
+      --text: #1f2937;
+
+      --muted: #6b7280;
+
+      --accent: #2563eb;
+
+      --accent-light: #dbeafe;
+
+      --border: #dbe3ef;
+
+      --shadow: 0 10px 30px rgba(37, 99, 235, 0.08);
+
+      --radius: 16px;
+
+    }
+
+
+
+    * {
+
+      box-sizing: border-box;
+
+    }
+
+
+
+    body {
+
+      margin: 0;
+
+      font-family: "Segoe UI", Roboto, Arial, sans-serif;
+
+      background: linear-gradient(180deg, #eef4ff 0%, var(--bg) 100%);
+
+      color: var(--text);
+
+      line-height: 1.6;
+
+    }
+
+
+
+    .container {
+
+      max-width: 1100px;
+
+      margin: 40px auto;
+
+      padding: 0 20px 50px;
+
+    }
+
+
+
+    .hero {
+
+      background: linear-gradient(135deg, #1d4ed8, #2563eb 55%, #3b82f6);
+
+      color: white;
+
+      border-radius: 24px;
+
+      padding: 34px 30px;
+
+      box-shadow: 0 18px 40px rgba(37, 99, 235, 0.22);
+
+      margin-bottom: 28px;
+
+    }
+
+
+
+    .hero h1 {
+
+      margin: 0 0 12px;
+
+      font-size: 2rem;
+
+      line-height: 1.2;
+
+    }
+
+
+
+    .hero p {
+
+      margin: 0;
+
+      font-size: 1.05rem;
+
+      color: rgba(255,255,255,0.92);
+
+      max-width: 900px;
+
+    }
+
+
+
+    .summary {
+
+      display: grid;
+
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+
+      gap: 16px;
+
+      margin: 24px 0 30px;
+
+    }
+
+
+
+    .summary-card {
+
+      background: var(--card);
+
+      border: 1px solid var(--border);
+
+      border-radius: var(--radius);
+
+      padding: 18px 18px 16px;
+
+      box-shadow: var(--shadow);
+
+    }
+
+
+
+    .summary-card h3 {
+
+      margin: 0 0 8px;
+
+      font-size: 1rem;
+
+      color: var(--accent);
+
+    }
+
+
+
+    .summary-card p {
+
+      margin: 0;
+
+      color: var(--muted);
+
+      font-size: 0.95rem;
+
+    }
+
+
+
+    .section-title {
+
+      margin: 34px 0 14px;
+
+      font-size: 1.45rem;
+
+    }
+
+
+
+    details {
+
+      background: var(--card);
+
+      border: 1px solid var(--border);
+
+      border-radius: var(--radius);
+
+      margin-bottom: 16px;
+
+      overflow: hidden;
+
+      box-shadow: var(--shadow);
+
+      transition: transform 0.15s ease;
+
+    }
+
+
+
+    details:hover {
+
+      transform: translateY(-1px);
+
+    }
+
+
+
+    summary {
+
+      list-style: none;
+
+      cursor: pointer;
+
+      padding: 18px 22px;
+
+      font-size: 1.08rem;
+
+      font-weight: 700;
+
+      color: var(--text);
+
+      position: relative;
+
+      background: linear-gradient(180deg, #ffffff, #f9fbff);
+
+      border-bottom: 1px solid transparent;
+
+    }
+
+
+
+    summary::-webkit-details-marker {
+
+      display: none;
+
+    }
+
+
+
+    summary::after {
+
+      content: "+";
+
+      position: absolute;
+
+      right: 22px;
+
+      top: 50%;
+
+      transform: translateY(-50%);
+
+      font-size: 1.5rem;
+
+      color: var(--accent);
+
+      font-weight: 400;
+
+    }
+
+
+
+    details[open] summary {
+
+      background: var(--accent-light);
+
+      border-bottom-color: var(--border);
+
+    }
+
+
+
+    details[open] summary::after {
+
+      content: "–";
+
+    }
+
+
+
+    .content {
+
+      padding: 20px 22px 24px;
+
+    }
+
+
+
+    .content p:first-child {
+
+      margin-top: 0;
+
+    }
+
+
+
+    .content p:last-child {
+
+      margin-bottom: 0;
+
+    }
+
+
+
+    .content ul,
+
+    .content ol {
+
+      margin: 10px 0 16px 22px;
+
+    }
+
+
+
+    .content li {
+
+      margin-bottom: 8px;
+
+    }
+
+
+
+    .note {
+
+      background: #f8fbff;
+
+      border-left: 4px solid var(--accent);
+
+      padding: 12px 14px;
+
+      border-radius: 10px;
+
+      color: #334155;
+
+      margin: 14px 0;
+
+    }
+
+
+
+    .flow {
+
+      display: grid;
+
+      gap: 12px;
+
+      margin-top: 16px;
+
+    }
+
+
+
+    .flow-step {
+
+      display: flex;
+
+      gap: 14px;
+
+      align-items: flex-start;
+
+      background: #f9fbff;
+
+      border: 1px solid #e5eefc;
+
+      border-radius: 14px;
+
+      padding: 14px 16px;
+
+    }
+
+
+
+    .flow-step .num {
+
+      width: 34px;
+
+      height: 34px;
+
+      min-width: 34px;
+
+      border-radius: 50%;
+
+      background: var(--accent);
+
+      color: white;
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      font-weight: 700;
+
+      margin-top: 2px;
+
+    }
+
+
+
+    code {
+
+      background: #eef2ff;
+
+      color: #1e3a8a;
+
+      padding: 2px 7px;
+
+      border-radius: 8px;
+
+      font-size: 0.95em;
+
+    }
+
+
+
+    .footer {
+
+      margin-top: 30px;
+
+      color: var(--muted);
+
+      font-size: 0.95rem;
+
+      text-align: center;
+
+    }
+
+
+
+    @media (max-width: 700px) {
+
+      .hero h1 {
+
+        font-size: 1.6rem;
+
+      }
+
+
+
+      summary {
+
+        padding-right: 52px;
+
+      }
+
+    }
+
+  </style>
+
+</head>
+
+<body>
+
+  <div class="container">
+
+    <section class="hero">
+
+      <h1>Oracle APEX – arhitektura izvajanja kode</h1>
+
+      <p>
+
+        Pregled tega, kako APEX obdeluje uporabniške akcije, kako deluje
+
+        <strong>Submit Page</strong>, ter kakšna je vloga komponent
+
+        <strong>Computations</strong>, <strong>Validations</strong>,
+
+        <strong>Processes</strong> in <strong>Branches</strong>.
+
+      </p>
+
+    </section>
+
+
+
+    <section class="summary">
+
+      <div class="summary-card">
+
+        <h3>Show Page</h3>
+
+        <p>APEX pripravi in izriše stran za prikaz v brskalniku.</p>
+
+      </div>
+
+      <div class="summary-card">
+
+        <h3>Accept Page</h3>
+
+        <p>APEX sprejme oddane vrednosti in izvede strežniško logiko.</p>
+
+      </div>
+
+      <div class="summary-card">
+
+        <h3>Session State</h3>
+
+        <p>Vrednosti page itemov se na strežniku hranijo v session state.</p>
+
+      </div>
+
+      <div class="summary-card">
+
+        <h3>REQUEST</h3>
+
+        <p>Tipično vsebuje ime gumba, ki je sprožil submit.</p>
+
+      </div>
+
+    </section>
+
+
+
+    <h2 class="section-title">Podrobnosti</h2>
+
+
+
+    <details>
+
+      <summary>Execution Flow</summary>
+
+      <div class="content">
+
+        <p>
+
+          Osnovni model delovanja APEX-a lahko razdeliš na dva glavna dela:
+
+          <strong>Show Page</strong> in <strong>Accept Page</strong>.
+
+        </p>
+
+
+
+        <div class="flow">
+
+          <div class="flow-step">
+
+            <div class="num">1</div>
+
+            <div>
+
+              <strong>Show Page</strong><br />
+
+              APEX prebere definicijo strani, regionov, itemov, gumbov in procesov,
+
+              nato generira HTML, CSS in JavaScript za brskalnik.
+
+            </div>
+
+          </div>
+
+
+
+          <div class="flow-step">
+
+            <div class="num">2</div>
+
+            <div>
+
+              <strong>Uporabnik dela v brskalniku</strong><br />
+
+              Vnaša podatke, klika gumbe, sproža Dynamic Actions in JavaScript.
+
+            </div>
+
+          </div>
+
+
+
+          <div class="flow-step">
+
+            <div class="num">3</div>
+
+            <div>
+
+              <strong>Submit ali AJAX klic</strong><br />
+
+              Če pride do <code>Submit Page</code>, APEX preide v polni strežniški cikel.
+
+              Če gre za AJAX Dynamic Action, se izvede samo delna strežniška obdelava.
+
+            </div>
+
+          </div>
+
+
+
+          <div class="flow-step">
+
+            <div class="num">4</div>
+
+            <div>
+
+              <strong>Accept Page</strong><br />
+
+              APEX shrani submitted vrednosti v session state in nato izvede
+
+              computations, validations, processes ter branches.
+
+            </div>
+
+          </div>
+
+
+
+          <div class="flow-step">
+
+            <div class="num">5</div>
+
+            <div>
+
+              <strong>Redirect ali ponovni prikaz strani</strong><br />
+
+              Če validacije uspejo, lahko APEX izvede branch in preusmeri na drugo stran.
+
+              Če validacije padejo, ponovno prikaže isto stran z napakami.
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </details>
+
+
+
+    <details>
+
+      <summary>Key Components</summary>
+
+      <div class="content">
+
+        <p>Najpomembnejše komponente v APEX page processing modelu so:</p>
+
+        <ul>
+
+          <li><strong>Buttons</strong> – sprožijo submit, redirect ali dynamic action.</li>
+
+          <li><strong>Dynamic Actions</strong> – odjemalske ali AJAX akcije ob dogodkih.</li>
+
+          <li><strong>Session State</strong> – strežniška hramba vrednosti itemov.</li>
+
+          <li><strong>Computations</strong> – nastavitev vrednosti itemov.</li>
+
+          <li><strong>Validations</strong> – preverjanje pravilnosti vhodnih podatkov.</li>
+
+          <li><strong>Processes</strong> – dejanska poslovna logika, DML, PL/SQL, klici procedur.</li>
+
+          <li><strong>Branches</strong> – odločitev, kam gre uporabnik po obdelavi.</li>
+
+          <li><strong>REQUEST</strong> – identifikacija akcije, običajno ime gumba.</li>
+
+        </ul>
+
+
+
+        <div class="note">
+
+          Pomembno: APEX ni samo “HTML aplikacija”, ampak predvsem
+
+          <strong>request/response engine nad Oracle bazo</strong>, ki uporablja
+
+          session state kot most med brskalnikom in strežnikom.
+
+        </div>
+
+      </div>
+
+    </details>
+
+
+
+    <details>
+
+      <summary>What Submit Page does</summary>
+
+      <div class="content">
+
+        <p>
+
+          <strong>Submit Page</strong> pomeni, da se trenutne vrednosti s strani pošljejo
+
+          na strežnik in APEX začne <strong>Accept Page</strong> fazo.
+
+        </p>
+
+
+
+        <ol>
+
+          <li>Brskalnik pošlje vrednosti page itemov na strežnik.</li>
+
+          <li>APEX te vrednosti zapiše v <strong>session state</strong>.</li>
+
+          <li>Nastavi se <strong>REQUEST</strong>, pogosto na ime gumba.</li>
+
+          <li>Zaženejo se submit-time computations.</li>
+
+          <li>Izvedejo se validations.</li>
+
+          <li>Če validacije uspejo, se izvedejo processes.</li>
+
+          <li>Na koncu se preverijo branches in določi naslednja navigacija.</li>
+
+        </ol>
+
+
+
+        <div class="note">
+
+          Submit Page sam po sebi še ne pomeni shranjevanja v tabelo. Shranjevanje se zgodi
+
+          šele, če obstaja ustrezen <strong>process</strong>, ki izvede INSERT, UPDATE, MERGE
+
+          ali klic procedure.
+
+        </div>
+
+      </div>
+
+    </details>
+
+
+
+    <details>
+
+      <summary>Computations</summary>
+
+      <div class="content">
+
+        <p>
+
+          <strong>Computations</strong> so namenjene temu, da APEX nastavi vrednost nekega itema
+
+          ob določenem trenutku izvajanja.
+
+        </p>
+
+        <ul>
+
+          <li>lahko nastavijo default vrednost ob renderiranju strani,</li>
+
+          <li>lahko izračunajo novo vrednost po submitu,</li>
+
+          <li>običajno so manjši, ciljno usmerjeni koraki.</li>
+
+        </ul>
+
+        <p>
+
+          Primer: <code>P10_TOTAL := P10_QTY * P10_PRICE</code>
+
+        </p>
+
+        <div class="note">
+
+          Computation običajno ni “glavna poslovna logika”, ampak bolj
+
+          <strong>izračun ali nastavitev vrednosti itema</strong>.
+
+        </div>
+
+      </div>
+
+    </details>
+
+
+
+    <details>
+
+      <summary>Validations</summary>
+
+      <div class="content">
+
+        <p>
+
+          <strong>Validations</strong> preverjajo, ali je stanje podatkov pravilno,
+
+          preden se izvedejo procesi.
+
+        </p>
+
+        <ul>
+
+          <li>required field</li>
+
+          <li>pravilen format številke ali datuma</li>
+
+          <li>logično pravilo med več polji</li>
+
+          <li>custom PL/SQL preverjanje</li>
+
+        </ul>
+
+        <p>
+
+          Če validacija ne uspe, APEX praviloma ne nadaljuje v glavne procese,
+
+          ampak ponovno prikaže isto stran in pokaže napake.
+
+        </p>
+
+      </div>
+
+    </details>
+
+
+
+    <details>
+
+      <summary>Processes</summary>
+
+      <div class="content">
+
+        <p>
+
+          <strong>Processes</strong> so del, kjer se običajno zgodi glavno delo na strežniku.
+
+        </p>
+
+        <ul>
+
+          <li>INSERT, UPDATE, DELETE</li>
+
+          <li>klic PL/SQL procedure ali package procedure</li>
+
+          <li>Automatic Row Processing</li>
+
+          <li>Interactive Grid DML processing</li>
+
+          <li>klic API-ja</li>
+
+          <li>čiščenje session state</li>
+
+        </ul>
+
+        <div class="note">
+
+          Če želiš razumeti, “kaj stran v resnici naredi”, so procesi pogosto najpomembnejši del.
+
+        </div>
+
+      </div>
+
+    </details>
+
+
+
+    <details>
+
+      <summary>Branches</summary>
+
+      <div class="content">
+
+        <p>
+
+          <strong>Branch</strong> določa, kam se uporabnik preusmeri po obdelavi.
+
+        </p>
+
+        <ul>
+
+          <li>na drugo APEX stran,</li>
+
+          <li>na isto stran,</li>
+
+          <li>na zunanji URL,</li>
+
+          <li>pogojno glede na REQUEST ali druge pogoje.</li>
+
+        </ul>
+
+        <p>
+
+          Pogosto branch dela nekaj takega:
+
+          po uspešnem shranjevanju preusmeri na report stran ali nazaj na detail.
+
+        </p>
+
+      </div>
+
+    </details>
+
+
+
+    <details>
+
+      <summary>Dynamic Actions vs Submit Page</summary>
+
+      <div class="content">
+
+        <p>
+
+          <strong>Dynamic Actions</strong> in <strong>Submit Page</strong> nista ista stvar.
+
+        </p>
+
+
+
+        <ul>
+
+          <li>
+
+            <strong>Execute JavaScript Code</strong> deluje samo v brskalniku.
+
+          </li>
+
+          <li>
+
+            <strong>Execute Server-side Code</strong> naredi AJAX klic na strežnik,
+
+            vendar to še ni poln page submit.
+
+          </li>
+
+          <li>
+
+            <strong>Submit Page</strong> sproži polni Accept Page lifecycle.
+
+          </li>
+
+        </ul>
+
+
+
+        <div class="note">
+
+          Zato se pogosto zgodi, da PL/SQL v Dynamic Action ne vidi najnovejših vrednosti,
+
+          če niso navedene v <strong>Page Items to Submit</strong>.
+
+        </div>
+
+      </div>
+
+    </details>
+
+
+
+    <details>
+
+      <summary>REQUEST and button logic</summary>
+
+      <div class="content">
+
+        <p>
+
+          Ko uporabnik klikne gumb z akcijo <strong>Submit Page</strong>, APEX običajno nastavi
+
+          <code>REQUEST</code> na ime gumba.
+
+        </p>
+
+        <p>
+
+          To omogoča, da ima ista stran več različnih poti izvajanja:
+
+        </p>
+
+        <ul>
+
+          <li><code>SAVE</code></li>
+
+          <li><code>DELETE</code></li>
+
+          <li><code>CANCEL</code></li>
+
+          <li><code>APPROVE</code></li>
+
+        </ul>
+
+        <p>
+
+          Posamezni validations, processes in branches se lahko izvajajo samo za določen REQUEST.
+
+        </p>
+
+      </div>
+
+    </details>
+
+
+
+    <details>
+
+      <summary>Practical interpretation</summary>
+
+      <div class="content">
+
+        <p>
+
+          Če želiš stran v APEX-u razumeti arhitekturno, jo glej tako:
+
+        </p>
+
+        <ol>
+
+          <li>Kaj se zgodi ob renderiranju?</li>
+
+          <li>Kateri gumbi sprožijo submit, redirect ali dynamic action?</li>
+
+          <li>Kateri itemi se pošiljajo v session state?</li>
+
+          <li>Katere validations odločajo, ali se nadaljuje?</li>
+
+          <li>Kateri processes izvajajo dejansko poslovno logiko?</li>
+
+          <li>Kateri branch določi naslednji korak?</li>
+
+        </ol>
+
+
+
+        <div class="note">
+
+          Zelo poenostavljeno:
+
+          <strong>Computation = nastavi vrednost</strong>,
+
+          <strong>Validation = preveri</strong>,
+
+          <strong>Process = naredi delo</strong>,
+
+          <strong>Branch = odloči, kam naprej</strong>.
+
+        </div>
+
+      </div>
+
+    </details>
+
+
+
+    <p class="footer">
+
+      Oracle APEX execution model — pregledna HTML predstavitev z zložljivimi sekcijami.
+
+    </p>
+
+  </div>
+
+</body>
+
+</html>
