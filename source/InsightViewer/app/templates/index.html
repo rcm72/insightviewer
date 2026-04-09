@@ -337,7 +337,68 @@ RETURN s, r, t
             <input type="checkbox" id="clear-graph-checkbox">
             <label for="clear-graph-checkbox">Clear existing graph</label>
         </div>
-        <button onclick="runCypherQuery()">Run</button>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
+          <button onclick="runCypherQuery()">Run</button>
+          <button onclick="openGuidedSearchDialog()">Guided Search</button>
+        </div>
+      </div>
+
+      <div id="guided-search-dialog" class="floating-dialog" style="display:none; width:680px; max-width:95vw;">
+        <div class="dialog-header">
+          <span>Guided Global Search</span>
+          <button onclick="closeGuidedSearchDialog()">X</button>
+        </div>
+        <div style="display:grid; gap:10px; padding:8px 0;">
+          <div style="display:grid; gap:4px;">
+            <label for="gs-template">Question template</label>
+            <select id="gs-template" style="width:100%;"></select>
+            <div id="gs-template-description" style="font-size:12px; color:#666;"></div>
+          </div>
+
+          <div style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px;">
+            <div style="display:grid; gap:4px; position:relative;">
+              <label for="gs-source-type">Source node type</label>
+              <select id="gs-source-type" style="width:100%;"></select>
+            </div>
+            <div style="display:grid; gap:4px; position:relative;">
+              <label for="gs-source-name">Source node name</label>
+              <input id="gs-source-name" type="text" autocomplete="off" placeholder="Start typing to search nodes">
+              <div id="gs-source-suggestions" style="display:none; position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid #ccc; max-height:180px; overflow:auto; z-index:1200;"></div>
+              <div id="gs-source-selection" style="font-size:12px; color:#666;"></div>
+            </div>
+          </div>
+
+          <div id="gs-target-block" style="display:none; gap:10px;">
+            <div style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px;">
+              <div style="display:grid; gap:4px; position:relative;">
+                <label for="gs-target-type">Target node type</label>
+                <select id="gs-target-type" style="width:100%;"></select>
+              </div>
+              <div id="gs-target-name-wrap" style="display:grid; gap:4px; position:relative;">
+                <label for="gs-target-name">Target node name</label>
+                <input id="gs-target-name" type="text" autocomplete="off" placeholder="Start typing to search nodes">
+                <div id="gs-target-suggestions" style="display:none; position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid #ccc; max-height:180px; overflow:auto; z-index:1200;"></div>
+                <div id="gs-target-selection" style="font-size:12px; color:#666;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:grid; gap:4px;">
+            <label>Include edge types</label>
+            <div id="gs-edge-types" style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:6px; max-height:180px; overflow:auto; border:1px solid #ddd; padding:8px;"></div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button type="button" onclick="selectAllGuidedEdgeTypes(true)">Select all</button>
+              <button type="button" onclick="selectAllGuidedEdgeTypes(false)">Clear all</button>
+            </div>
+          </div>
+
+          <div id="gs-status" style="font-size:12px; color:#666;"></div>
+
+          <div style="display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap;">
+            <button onclick="buildGuidedSearchCypher()">Build Cypher</button>
+            <button onclick="closeGuidedSearchDialog()">Cancel</button>
+          </div>
+        </div>
     </div>
 
     <!-- Floating Node Dialog -->
@@ -829,5 +890,6 @@ window.showHtmlEditorDialog = function() {
     </script>
 
 <script src="{{ url_for('static', filename='indexScript.js') }}"></script>
+<script src="{{ url_for('static', filename='globalSearch.js') }}"></script>
 </body>
 </html>

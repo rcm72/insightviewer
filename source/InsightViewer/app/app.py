@@ -205,6 +205,9 @@ createNodeTypes.init_driver(driver)
 import routes.ai_graph as ai_graph
 ai_graph.init_driver(driver)
 
+import routes.global_search as global_search
+global_search.init_driver(driver)
+
 # if other route modules expose init_driver, do the same:
 # import routes.createRelationsTypes as createRelationsTypes
 # createRelationsTypes.init_driver(driver)
@@ -213,12 +216,14 @@ ai_graph.init_driver(driver)
 from routes.createNodeTypes import nodes_bp, get_node_types, get_node_type_visuals, add_node_type, update_node_properties, test_post, create_name_indexes, get_custom_graphs
 from routes.createRelationsTypes import relations_bp, get_edge_types
 from routes.ai_graph import ai_graph_bp
+from routes.global_search import global_search_bp
 from routes.templates_api import bp as templates_api_bp
 
 # Register Blueprints
 app.register_blueprint(relations_bp, url_prefix="/relations")
 app.register_blueprint(nodes_bp, url_prefix="/nodes")
 app.register_blueprint(ai_graph_bp)
+app.register_blueprint(global_search_bp)
 app.register_blueprint(templates_api_bp, url_prefix="/api")
 
 @app.route("/")
