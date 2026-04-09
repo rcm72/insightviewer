@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Copyright (c) 2025 Robert Èmrlec
+// Copyright (c) 2025 Robert ï¿½mrlec
 
 // Get current project and user email
 const currentProject = window.IV_CURRENT_USER?.project;
@@ -950,7 +950,7 @@ document.addEventListener("DOMContentLoaded", function () {
        // If the text does NOT contain the word MATCH (case-insensitive), call OpenAI endpoint
        const hasMatch = /\bMATCH\b/i.test(cypherQuery);
        if (!hasMatch) {
-           console.log("No MATCH found in textarea ˜ calling /openai-cypher to generate/transform Cypher");
+           console.log("No MATCH found in textarea ï¿½ calling /openai-cypher to generate/transform Cypher");
            fetch("/openai-cypher", {
                method: "POST",
                headers: { "Content-Type": "application/json" },
@@ -1028,7 +1028,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
 
-   var selectedNodeId = null;
+    var selectedNodeId = null;
+    window.selectedNodeId = null;
 
    // Show context menu on right-click
    network.on("oncontext", function (params) {
@@ -1037,6 +1038,7 @@ document.addEventListener("DOMContentLoaded", function () {
        const nodeId = network.getNodeAt(params.pointer.DOM);
        if (nodeId) {
            selectedNodeId = nodeId;
+           window.selectedNodeId = nodeId;
 
            // Show the context menu
            const menu = document.getElementById("node-context-menu");
@@ -1070,6 +1072,175 @@ document.addEventListener("DOMContentLoaded", function () {
        window.open(`/edit/${nodeId}`, '_blank');
    };
 
+   function getSelectedGraphNodeId() {
+       return window.selectedNodeId || selectedNodeId || null;
+   }
+
+   let graphAiProvidersCache = null;
+
+   function setSelectOptions(selectEl, items, placeholder) {
+       if (!selectEl) return;
+       selectEl.innerHTML = '';
+       if (placeholder) {
+           const option = document.createElement('option');
+           option.value = '';
+           option.textContent = placeholder;
+           selectEl.appendChild(option);
+       }
+       items.forEach(item => {
+           const option = document.createElement('option');
+           option.value = item.value;
+           option.textContent = item.label;
+           selectEl.appendChild(option);
+       });
+   }
+
+   function syncGraphAiModelOptions() {
+       const providerSelect = document.getElementById('graph-ai-provider');
+       const modelSelect = document.getElementById('graph-ai-model');
+       if (!providerSelect || !modelSelect || !graphAiProvidersCache) return;
+
+       const provider = providerSelect.value;
+       const entry = graphAiProvidersCache.find(p => p.id === provider) || graphAiProvidersCache[0];
+       const models = entry?.models || [];
+       setSelectOptions(
+           modelSelect,
+           models.map(model => ({ value: model, label: model })),
+           models.length ? null : 'No models available'
+       );
+       if (models.length) {
+           modelSelect.value = models.includes(modelSelect.value) ? modelSelect.value : models[0];
+       }
+   }
+
+   async function loadGraphAiProviders() {
+       if (graphAiProvidersCache) return graphAiProvidersCache;
+       const providerSelect = document.getElementById('graph-ai-provider');
+       const modelSelect = document.getElementById('graph-ai-model');
+       if (providerSelect) setSelectOptions(providerSelect, [], 'Loading providers...');
+       if (modelSelect) setSelectOptions(modelSelect, [], 'Loading models...');
+
+       const res = await fetch('/api/ai/providers');
+       const data = await res.json();
+       if (!res.ok || !data.success) {
+           throw new Error(data.error || 'Failed to load AI providers');
+       }
+
+       graphAiProvidersCache = Array.isArray(data.providers) ? data.providers : [];
+       if (providerSelect) {
+           setSelectOptions(
+               providerSelect,
+               graphAiProvidersCache.map(provider => ({ value: provider.id, label: provider.label || provider.id })),
+               graphAiProvidersCache.length ? null : 'No providers available'
+           );
+           providerSelect.value = graphAiProvidersCache[0]?.id || '';
+           providerSelect.onchange = syncGraphAiModelOptions;
+       }
+       syncGraphAiModelOptions();
+       return graphAiProvidersCache;
+   }
+
+   async function openGraphAiDialog() {
+       const dlg = document.getElementById('graph-ai-dialog');
+       if (!dlg) { alert('Graph AI dialog element missing in index.html'); return; }
+
+       const nodeId = getSelectedGraphNodeId();
+       if (!nodeId) {
+           alert('Right-click a node first.');
+           return;
+       }
+
+       const nodeLabel = nodeIdToNameMap.get(nodeId) || nodeId;
+       const nodeField = document.getElementById('graph-ai-node');
+       const question = document.getElementById('graph-ai-question');
+       const result = document.getElementById('graph-ai-result');
+
+       if (nodeField) nodeField.value = `${nodeLabel} (${nodeId})`;
+       if (question && !question.value.trim()) {
+           question.value = `Explain this node and the chunks connected within depth 2.`;
+       }
+       if (result) result.value = '';
+
+       dlg.style.display = 'block';
+       makeDialogDraggable(dlg);
+
+       try {
+           await loadGraphAiProviders();
+       } catch (e) {
+           console.error(e);
+           if (result) result.value = `Error loading providers: ${e.message || e}`;
+       }
+
+       const promptEl = document.getElementById('graph-ai-question');
+       if (promptEl) promptEl.focus();
+   }
+
+   function closeGraphAiDialog() {
+       const dlg = document.getElementById('graph-ai-dialog');
+       if (dlg) dlg.style.display = 'none';
+   }
+
+   async function runGraphAiForSelectedNode() {
+       const result = document.getElementById('graph-ai-result');
+       const question = (document.getElementById('graph-ai-question')?.value || '').trim();
+       const provider = document.getElementById('graph-ai-provider')?.value || '';
+       const model = document.getElementById('graph-ai-model')?.value || '';
+       const depth = parseInt(document.getElementById('graph-ai-depth')?.value || '2', 10);
+       const chunkLimit = parseInt(document.getElementById('graph-ai-chunk-limit')?.value || '80', 10);
+       const nodeId = getSelectedGraphNodeId();
+
+       if (!nodeId) {
+           alert('Right-click a node first.');
+           return;
+       }
+       if (!question) {
+           alert('Please enter a question.');
+           return;
+       }
+
+       if (result) result.value = 'Thinking...';
+
+       try {
+           const res = await fetch('/api/ai/graph/ask-by-depth', {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify({
+                   question,
+                   node_ids: [nodeId],
+                   depth: Number.isFinite(depth) ? depth : 2,
+                   provider,
+                   model,
+                   chunk_limit: Number.isFinite(chunkLimit) ? chunkLimit : 80,
+                   project: window.IV_CURRENT_USER?.project || currentProject || localStorage.getItem('iv_project'),
+               })
+           });
+           const data = await res.json();
+           if (!res.ok || !data.success) {
+               throw new Error(data.error || 'Graph AI request failed');
+           }
+           if (result) {
+               result.value = data.answer || '';
+           }
+       } catch (e) {
+           console.error(e);
+           if (result) result.value = `Error: ${e.message || e}`;
+           alert(`Error calling graph AI: ${e.message || e}`);
+       }
+   }
+
+   function copyGraphAiAnswer() {
+       const output = document.getElementById('graph-ai-result');
+       if (!output) return;
+       output.focus();
+       output.select();
+       document.execCommand('copy');
+   }
+
+   window.openGraphAiDialog = openGraphAiDialog;
+   window.closeGraphAiDialog = closeGraphAiDialog;
+   window.runGraphAiForSelectedNode = runGraphAiForSelectedNode;
+   window.copyGraphAiAnswer = copyGraphAiAnswer;
+
    //ai
    // ---- AI Snippet Dialog (actual implementations) ----
    function openAiSnippetDialog() {
@@ -1092,7 +1263,7 @@ document.addEventListener("DOMContentLoaded", function () {
        const prompt = (document.getElementById('ai-prompt')?.value || '').trim();
        const output = document.getElementById('ai-snippet-output');
        if (!prompt) return alert('Please enter a prompt.');
-       if (output) output.value = 'Generating…';
+       if (output) output.value = 'Generatingï¿½';
        try {
        const res = await fetch('/openai-generate', {
            method: 'POST',
@@ -1101,7 +1272,7 @@ document.addEventListener("DOMContentLoaded", function () {
        });
        const data = await res.json();
        if (data.success) {
-           // Your Flask returns { success, response, code } – prefer code block if present.
+           // Your Flask returns { success, response, code } ï¿½ prefer code block if present.
            const snippet = (data.code && data.code.trim()) || (data.response || '').trim();
            output.value = snippet;
        } else {
@@ -1241,14 +1412,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
        // open dialog
        const dlg = document.getElementById('html-editor-dialog');
-       document.getElementById('html-editor-title').textContent = `HTML Editor — node ${htmlEditorNodeId}`;
+       document.getElementById('html-editor-title').textContent = `HTML Editor ï¿½ node ${htmlEditorNodeId}`;
        dlg.style.display = 'block';
        makeDialogDraggable(dlg);
 
        
 
        await ensureCodeMirror();
-       setEditorStatus('Loading…');
+       setEditorStatus('Loadingï¿½');
 
        try {
            const res = await fetch(`/get-html/${htmlEditorNodeId}`);
@@ -1283,7 +1454,7 @@ document.addEventListener("DOMContentLoaded", function () {
    async function saveHtmlFromEditor() {
        if (!htmlEditorNodeId) return alert("No node selected.");
        const content = cmEditor ? cmEditor.getValue() : '';
-       setEditorStatus('Saving…');
+       setEditorStatus('Savingï¿½');
        try {
            const form = new FormData();
            form.append('content', content);
@@ -1322,7 +1493,7 @@ document.addEventListener("DOMContentLoaded", function () {
    window.saveHtmlFromEditor = saveHtmlFromEditor;
    window.setEditorStatus = setEditorStatus;
 
-   // AI snippet helpers — only overwrite if real functions were defined
+   // AI snippet helpers ï¿½ only overwrite if real functions were defined
    if (typeof openAiSnippetDialog !== 'undefined') window.openAiSnippetDialog = openAiSnippetDialog;
    if (typeof closeAiSnippetDialog !== 'undefined') window.closeAiSnippetDialog = closeAiSnippetDialog;
    if (typeof askAiForSnippet !== 'undefined') window.askAiForSnippet = askAiForSnippet;
@@ -2514,7 +2685,7 @@ async function removeNodeCustomGraph() {
            if (!contentType.toLowerCase().includes("application/json")) {
                console.error(`Non-JSON response from ${attempt.url}:`, { status: resp.status, body: text });
                alert(`Server returned non-JSON response (status ${resp.status}). See console for details.`);
-               // If it was an error page (HTML), don't try further attempts ˜ but continue loop if you prefer
+               // If it was an error page (HTML), don't try further attempts ï¿½ but continue loop if you prefer
                // We'll stop here to avoid accidental repeated side-effects.
                finalResult = { success: false, error: `Non-JSON response (status ${resp.status}).` };
                break;

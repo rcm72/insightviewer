@@ -452,6 +452,7 @@ RETURN s, r, t
             <li onclick="openHtml_v4()">Edit html for user old version</li>
             <li onclick="openHtml_jsEditor()">Edit html for power user</li>
             <li onclick="openHtml_browser()">Open with browser</li>
+        <li onclick="openGraphAiDialog()">Ask AI about node</li>
             <li onclick="collapseNode()">Collapse</li>
             <li onclick="clearNode()">Clear node</li>
             <li onclick="removeNodeCustomGraph()">Remove node from custom graph</li>
@@ -540,6 +541,52 @@ RETURN s, r, t
     <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:8px;">
       <button onclick="insertAiSnippetIntoEditor()">Insert into editor</button>
       <button onclick="copyAiSnippet()">Copy</button>
+    </div>
+</div>
+
+<!-- Graph AI Dialog -->
+<div id="graph-ai-dialog" class="floating-dialog" style="display:none; width:720px; max-width:95vw;">
+    <div class="dialog-header">
+      <span>Ask AI about graph node</span>
+      <button onclick="closeGraphAiDialog()">X</button>
+    </div>
+    <div style="display:grid; gap:10px; padding:8px 0;">
+      <div style="display:grid; gap:4px;">
+        <label for="graph-ai-node">Selected node</label>
+        <input id="graph-ai-node" type="text" readonly style="width:100%;" placeholder="Right-click a node to fill this field">
+      </div>
+      <div style="display:grid; gap:4px;">
+        <label for="graph-ai-question">Question</label>
+        <textarea id="graph-ai-question" rows="4" style="width:100%; resize:vertical;" placeholder="What should the AI explain from this node and its neighborhood?"></textarea>
+      </div>
+      <div style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px;">
+        <div style="display:grid; gap:4px;">
+          <label for="graph-ai-depth">Traversal depth</label>
+          <input id="graph-ai-depth" type="number" min="0" max="6" value="2" style="width:100%;">
+        </div>
+        <div style="display:grid; gap:4px;">
+          <label for="graph-ai-chunk-limit">Chunk limit</label>
+          <input id="graph-ai-chunk-limit" type="number" min="1" max="300" value="80" style="width:100%;">
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px;">
+        <div style="display:grid; gap:4px;">
+          <label for="graph-ai-provider">Provider</label>
+          <select id="graph-ai-provider" style="width:100%;"></select>
+        </div>
+        <div style="display:grid; gap:4px;">
+          <label for="graph-ai-model">Model</label>
+          <select id="graph-ai-model" style="width:100%;"></select>
+        </div>
+      </div>
+      <div style="display:grid; gap:4px;">
+        <label for="graph-ai-result">Answer</label>
+        <textarea id="graph-ai-result" rows="10" readonly style="width:100%; resize:vertical;"></textarea>
+      </div>
+      <div style="display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap;">
+        <button onclick="runGraphAiForSelectedNode()">Ask AI</button>
+        <button onclick="copyGraphAiAnswer()">Copy answer</button>
+      </div>
     </div>
 </div>
 

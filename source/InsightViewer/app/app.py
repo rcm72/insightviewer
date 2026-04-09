@@ -202,6 +202,9 @@ driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USERNAME, NEO4J_PASSWORD))
 import routes.createNodeTypes as createNodeTypes
 createNodeTypes.init_driver(driver)
 
+import routes.ai_graph as ai_graph
+ai_graph.init_driver(driver)
+
 # if other route modules expose init_driver, do the same:
 # import routes.createRelationsTypes as createRelationsTypes
 # createRelationsTypes.init_driver(driver)
@@ -209,11 +212,13 @@ createNodeTypes.init_driver(driver)
 # Now import blueprints and register them
 from routes.createNodeTypes import nodes_bp, get_node_types, get_node_type_visuals, add_node_type, update_node_properties, test_post, create_name_indexes, get_custom_graphs
 from routes.createRelationsTypes import relations_bp, get_edge_types
+from routes.ai_graph import ai_graph_bp
 from routes.templates_api import bp as templates_api_bp
 
 # Register Blueprints
 app.register_blueprint(relations_bp, url_prefix="/relations")
 app.register_blueprint(nodes_bp, url_prefix="/nodes")
+app.register_blueprint(ai_graph_bp)
 app.register_blueprint(templates_api_bp, url_prefix="/api")
 
 @app.route("/")
@@ -766,10 +771,12 @@ def expand_node():
                 print("********************")
                 print("expand_node processing relationship r:", r_rel)
                 if isinstance(r_rel, Relationship) and n_node and m_node:
-                    from_id = n_node.get("id_rc")
-                    to_id   = m_node.get("id_rc")
-                    if not from_id or not to_id:
-                        print("  skip edge, missing from_id/to_id:", from_id, to_id)
+                    #from_id = n_node.get("id_rc")
+                    #to_id   = m_node.get("id_rc")
+                    start_id_rc = r_rel.start_node.get("id_rc")
+                    end_id_rc   = r_rel.end_node.get("id_rc")
+                    if not start_id_rc or not end_id_rc:
+                        print("  skip edge, missing from_id/to_id:", start_id_rc, end_id_rc)
                         continue
 
                     rel_props  = dict(r_rel)
@@ -783,8 +790,8 @@ def expand_node():
                     edge = {
                         "id": rel_id,
                         "id_rc": rel_id,
-                        "from": from_id,
-                        "to": to_id,
+                        "from": start_id_rc,
+                        "to": end_id_rc,
                         "label": r_rel.type or rel_props.get("name", ""),
                     }
                     edges_dict[rel_id] = edge
@@ -2041,8 +2048,8 @@ def validate_jwt():
 							  
 
 if __name__ == '__main__':
-    app.run(host='::', port=8081, debug=True)
-    #app.run(host='0.0.0.0', port=8081, debug=True)
+    app.run(host='::', port=5001, debug=True)
+    #app.run(host='0.0.0.0', port=5001, debug=True)
 
 
 #   sudo lsof -i :5001

@@ -40,7 +40,7 @@ services:
       context: ./source/InsightViewer  # Specify the build context
       dockerfile: Dockerfile           # Ensure this Dockerfile exists
     ports:
-      - "5001:5000"   # host:container
+      - "5001:5001"   # host:container
     volumes:
       - ./source/InsightViewer/app/static/editor_files:/app/app/static/editor_files
       - ./source/InsightViewer/app/static/images:/app/app/static/images
