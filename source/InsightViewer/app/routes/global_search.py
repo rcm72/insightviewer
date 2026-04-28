@@ -1,9 +1,24 @@
 import os
 import re
+from typing import Any
 
 import jwt
 from flask import Blueprint, jsonify, request
 
+from ai.errors import AIError, ProviderConfigError, ProviderRequestError, ProviderResponseError
+from ai.registry import ProviderRegistry
+from ai.selection import (
+    COOKIE_MODEL,
+    COOKIE_PROVIDER,
+    default_selection,
+    get_selection_from_request,
+    selection_to_json,
+    validate_selection,
+)
+from ai.types import ChatRequest, ModelSelection
+from graph.context import fetch_graph_context, format_context_for_prompt
+
+## BUILDERS
 
 JWT_SECRET = os.environ["JWT_SECRET"]
 JWT_ALG = "HS256"
@@ -51,7 +66,43 @@ TEMPLATE_REGISTRY = {
         "needs_target_type": False,
         "supports_edge_filter": True,
     },
+    "apex_app_writes_to_db_object": {
+        "id": "apex_app_writes_to_db_object",
+        "label": "APEX app write paths to DB object",
+        "description": "Show APEX pages, buttons, processes, and dynamic actions that lead to writes into the selected DB object.",
+        "needs_target_node": True,
+        "needs_target_type": False,
+        "supports_edge_filter": False,
+    },
+    "apex_app_region_writes_to_db_object": {
+        "id": "apex_app_region_writes_to_db_object",
+        "label": "APEX app write paths to DB object via Region",
+        "description": "Show APEX pages,regions that lead to writes into the selected DB object.",
+        "needs_target_node": True,
+        "needs_target_type": False,
+        "supports_edge_filter": False,
+    },    
+    "apex_source_db_access_to_db_object": {
+        "id": "apex_source_db_access_to_db_object",
+        "label": "APEX app/page DB access paths to DB object",
+        "description": "Show APEX paths from the selected app or page to the selected DB object through regions, buttons, processes, dynamic actions, and procedures.",
+        "needs_target_node": True,
+        "needs_target_type": False,
+        "supports_edge_filter": False,
+    },      
+    "filtered_paths_between_a_b": {
+        "id": "filtered_paths_between_a_b",
+        "label": "Paths between A and B by edge types",
+        "description": "Build a graph between the selected source and target nodes using only the selected relationship types.",
+        "needs_target_node": True,
+        "needs_target_type": False,
+        "supports_edge_filter": True,
+    },
+
 }
+
+
+
 
 
 def init_driver(d):
@@ -62,6 +113,57 @@ def init_driver(d):
 def _ensure_driver():
     if driver is None:
         raise RuntimeError("Neo4j driver not initialized. Call init_driver(driver) on startup.")
+
+
+def _provider_models_map(registry: ProviderRegistry) -> dict[str, list[str]]:
+    return {provider.id: provider.models for provider in registry.list_providers()}
+
+
+def _parse_selection(payload: dict[str, Any]) -> ModelSelection:
+    req_selection = get_selection_from_request(request)
+    provider = payload.get("provider") or req_selection.provider or default_selection().provider
+    model = payload.get("model") or req_selection.model or default_selection().model
+    provider = str(provider).strip().lower()
+    model = str(model).strip()
+
+    if provider not in ("openai", "ollama"):
+        raise ValueError("provider must be one of: openai, ollama")
+    if not model:
+        raise ValueError("model is required")
+
+    return ModelSelection(provider=provider, model=model)  # type: ignore[arg-type]
+
+
+def _extract_cypher_from_text(text: str) -> str:
+    if not text:
+        return ""
+
+    stripped = text.strip()
+    code_block = re.search(r"```(?:\s*cypher\s*\n)?(.*?)```", stripped, re.IGNORECASE | re.DOTALL)
+    if code_block:
+        stripped = code_block.group(1).strip()
+
+    match_start = re.search(r"\b(MATCH|OPTIONAL\s+MATCH|UNWIND|WITH|RETURN)\b", stripped, re.IGNORECASE)
+    if match_start:
+        stripped = stripped[match_start.start() :].strip()
+
+    return stripped.strip("`").strip()
+
+
+def _fetch_node_type_names(session, project):
+    cypher = """
+    MATCH (n:NodeType)
+    WHERE $project IS NULL OR n.projectName = $project OR n.projectName IS NULL
+    RETURN DISTINCT n.name AS name
+    ORDER BY name
+    LIMIT 200
+    """
+
+    rows = session.run(cypher, project=project).data()
+    if not rows and project:
+        rows = session.run(cypher, project=None).data()
+
+    return [str(row.get("name") or "").strip() for row in rows if str(row.get("name") or "").strip()]
 
 
 def validate_jwt():
@@ -152,10 +254,32 @@ def _lookup_nodes_by_type_and_name(session, node_type, name, project):
 
     return rows
 
+def _lookup_node_by_id_rc(session, id_rc, project):
+    cypher = """
+    MATCH (n {id_rc: $id_rc})
+    WHERE $project IS NULL OR n.projectName = $project OR n.projectName IS NULL
+    RETURN n.id_rc AS id_rc, n.name AS name, labels(n) AS labels, n.projectName AS project_name
+    LIMIT 1
+    """
+    rows = session.run(cypher, id_rc=id_rc, project=project).data()
+    if not rows and project:
+        rows = session.run(cypher, id_rc=id_rc, project=None).data()
+    return rows[0] if rows else None
 
 def _resolve_node_identity(session, node, field_name, project):
     if node["id_rc"]:
-        return node
+        row = _lookup_node_by_id_rc(session, node["id_rc"], project)
+        if not row:
+            raise ValueError(
+                f"Could not find {field_name} node with id_rc '{node['id_rc']}'."
+            )
+        resolved = dict(node)
+        if not resolved.get("name"):
+            resolved["name"] = str(row.get("name") or "")
+        if not resolved.get("node_type"):
+            labels = row.get("labels") or []
+            resolved["node_type"] = str(labels[0]) if labels else ""
+        return resolved
 
     if not node["node_type"] or not node["name"]:
         raise ValueError(
@@ -279,12 +403,253 @@ UNWIND rels AS r
 RETURN startNode(r) AS s, r, endNode(r) AS t
 """.strip()
 
+def _build_apex_app_writes_to_db_object(source, target, edge_types, project):
+    if not source["id_rc"]:
+        raise ValueError("source.id_rc is required")
+    if not target["id_rc"]:
+        raise ValueError("target.id_rc is required")
+
+    source_type = str(source.get("node_type") or "").strip()
+    if source_type not in ("APEXApp", "APEXPage"):
+        raise ValueError("source.node_type must be APEXApp or APEXPage for this template")
+
+    source_id = _quote_cypher_string(source["id_rc"])
+    obj_id = _quote_cypher_string(target["id_rc"])
+
+    path_filter = "TRUE"
+    if edge_types:
+        path_filter = f"ALL(rel IN relationships(p) WHERE type(rel) IN {_cypher_list(edge_types)})"
+
+    if source_type == "APEXApp":
+        start_match = f"MATCH (start:APEXApp {{id_rc: {source_id}}})"
+        start_pattern = "(start)-[:HAS_PAGE]->(page:APEXPage)"
+    else:
+        start_match = f"MATCH (start:APEXPage {{id_rc: {source_id}}})"
+        start_pattern = "(start:APEXPage)"
+
+    return f"""
+{start_match}
+MATCH (obj:ORADbObject {{id_rc: {obj_id}}})
+MATCH p =
+  {start_pattern}
+       -[:HAS_BUTTON]->(btn:APEXButton)
+       -[:CALLS_PROCEDURE]->(pr:OracleProcedure)
+       -[:INSERTS_INTO|UPDATES|DELETES_FROM|MERGES_INTO]->(obj)
+WHERE ALL(n IN nodes(p) WHERE {_project_filter('n', project)})
+  AND {path_filter}
+UNWIND relationships(p) AS r
+RETURN startNode(r) AS s, r, endNode(r) AS t
+
+UNION
+
+{start_match}
+MATCH (obj:ORADbObject {{id_rc: {obj_id}}})
+MATCH p =
+  {start_pattern}
+       -[:HAS_PROCESS]->(procNode:APEXPageProcess)
+       -[:CALLS_PROCEDURE]->(pr:OracleProcedure)
+       -[:INSERTS_INTO|UPDATES|DELETES_FROM|MERGES_INTO]->(obj)
+WHERE ALL(n IN nodes(p) WHERE {_project_filter('n', project)})
+  AND {path_filter}
+UNWIND relationships(p) AS r
+RETURN startNode(r) AS s, r, endNode(r) AS t
+
+UNION
+
+{start_match}
+MATCH (obj:ORADbObject {{id_rc: {obj_id}}})
+MATCH p =
+  {start_pattern}
+       -[:HAS_BUTTON]->(btn:APEXButton)
+       -[:TRIGGERS_DA]->(da:APEXDynamicAction)
+       -[:HAS_ACTION]->(step:APEXDynamicActionStep)
+       -[:CALLS_PROCEDURE]->(pr:OracleProcedure)
+       -[:INSERTS_INTO|UPDATES|DELETES_FROM|MERGES_INTO]->(obj)
+WHERE ALL(n IN nodes(p) WHERE {_project_filter('n', project)})
+  AND {path_filter}
+UNWIND relationships(p) AS r
+RETURN startNode(r) AS s, r, endNode(r) AS t
+
+UNION
+
+{start_match}
+MATCH (obj:ORADbObject {{id_rc: {obj_id}}})
+MATCH p =
+  {start_pattern}
+       -[:HAS_BUTTON]->(btn:APEXButton)
+       -[:TRIGGERS_DA]->(da:APEXDynamicAction)
+       -[:CALLS_PROCEDURE]->(pr:OracleProcedure)
+       -[:INSERTS_INTO|UPDATES|DELETES_FROM|MERGES_INTO]->(obj)
+WHERE ALL(n IN nodes(p) WHERE {_project_filter('n', project)})
+  AND {path_filter}
+UNWIND relationships(p) AS r
+RETURN startNode(r) AS s, r, endNode(r) AS t
+""".strip()
+
+def _build_apex_app_region_db_access_to_db_object(source, target, edge_types, project):
+    if not source["id_rc"]:
+        raise ValueError("source.id_rc is required")
+    if not target["id_rc"]:
+        raise ValueError("target.id_rc is required")
+
+    source_type = str(source.get("node_type") or "").strip()
+    if source_type not in ("APEXApp", "APEXPage"):
+        raise ValueError("source.node_type must be APEXApp or APEXPage for this template")
+
+    source_id = _quote_cypher_string(source["id_rc"])
+    obj_id = _quote_cypher_string(target["id_rc"])
+
+    path_filter = "TRUE"
+    if edge_types:
+        path_filter = f"ALL(rel IN relationships(p) WHERE type(rel) IN {_cypher_list(edge_types)})"
+
+    if source_type == "APEXApp":
+        start_match = f"MATCH (start:APEXApp {{id_rc: {source_id}}})"
+        start_pattern = "(start)-[:HAS_PAGE]->(page:APEXPage)"
+    else:
+        start_match = f"MATCH (start:APEXPage {{id_rc: {source_id}}})"
+        start_pattern = "(start:APEXPage)"
+
+    return f"""
+{start_match}
+MATCH (obj:ORADbObject {{id_rc: {obj_id}}})
+MATCH p =
+  {start_pattern}
+       -[:HAS_REGION]->(region:APEXRegion)
+       -[:SELECTS_FROM|INSERTS_INTO|UPDATES|DELETES_FROM|MERGES_INTO]->(obj)
+WHERE ALL(n IN nodes(p) WHERE {_project_filter('n', project)})
+  AND {path_filter}
+UNWIND relationships(p) AS r
+RETURN startNode(r) AS s, r, endNode(r) AS t
+""".strip()
+
+
+def _build_apex_source_db_access_to_db_object(source, target, edge_types, project):
+    if not source["id_rc"]:
+        raise ValueError("source.id_rc is required")
+    if not target["id_rc"]:
+        raise ValueError("target.id_rc is required")
+
+    source_type = str(source.get("node_type") or "").strip()
+    if source_type not in ("APEXApp", "APEXPage"):
+        raise ValueError("source.node_type must be APEXApp or APEXPage for this template")
+
+    source_id = _quote_cypher_string(source["id_rc"])
+    obj_id = _quote_cypher_string(target["id_rc"])
+
+    path_filter = "TRUE"
+    if edge_types:
+        path_filter = f"ALL(rel IN relationships(p) WHERE type(rel) IN {_cypher_list(edge_types)})"
+
+    if source_type == "APEXApp":
+        start_match = f"MATCH (start:APEXApp {{id_rc: {source_id}}})"
+        start_pattern = "(start)-[:HAS_PAGE]->(page:APEXPage)"
+    else:
+        start_match = f"MATCH (start:APEXPage {{id_rc: {source_id}}})"
+        start_pattern = "(start:APEXPage)"
+    return f"""
+{start_match}
+MATCH (obj:ORADbObject {{id_rc: {obj_id}}})
+MATCH p =
+  {start_pattern}
+       -[:HAS_BUTTON]->(btn:APEXButton)
+       -[:CALLS_PROCEDURE]->(pr:OracleProcedure)
+       -[:SELECTS_FROM|INSERTS_INTO|UPDATES|DELETES_FROM|MERGES_INTO]->(obj)
+WHERE ALL(n IN nodes(p) WHERE {_project_filter('n', project)})
+  AND {path_filter}
+UNWIND relationships(p) AS r
+RETURN startNode(r) AS s, r, endNode(r) AS t
+
+UNION
+
+{start_match}
+MATCH (obj:ORADbObject {{id_rc: {obj_id}}})
+MATCH p =
+  {start_pattern}
+       -[:HAS_PROCESS]->(procNode:APEXPageProcess)
+       -[:CALLS_PROCEDURE]->(pr:OracleProcedure)
+       -[:SELECTS_FROM|INSERTS_INTO|UPDATES|DELETES_FROM|MERGES_INTO]->(obj)
+WHERE ALL(n IN nodes(p) WHERE {_project_filter('n', project)})
+  AND {path_filter}
+UNWIND relationships(p) AS r
+RETURN startNode(r) AS s, r, endNode(r) AS t
+
+UNION
+
+{start_match}
+MATCH (obj:ORADbObject {{id_rc: {obj_id}}})
+MATCH p =
+  {start_pattern}
+       -[:HAS_BUTTON]->(btn:APEXButton)
+       -[:TRIGGERS_DA]->(da:APEXDynamicAction)
+       -[:HAS_ACTION]->(step:APEXDynamicActionStep)
+       -[:CALLS_PROCEDURE]->(pr:OracleProcedure)
+       -[:SELECTS_FROM|INSERTS_INTO|UPDATES|DELETES_FROM|MERGES_INTO]->(obj)
+WHERE ALL(n IN nodes(p) WHERE {_project_filter('n', project)})
+  AND {path_filter}
+UNWIND relationships(p) AS r
+RETURN startNode(r) AS s, r, endNode(r) AS t
+
+UNION
+
+{start_match}
+MATCH (obj:ORADbObject {{id_rc: {obj_id}}})
+MATCH p =
+  {start_pattern}
+       -[:HAS_BUTTON]->(btn:APEXButton)
+       -[:TRIGGERS_DA]->(da:APEXDynamicAction)
+       -[:CALLS_PROCEDURE]->(pr:OracleProcedure)
+       -[:SELECTS_FROM|INSERTS_INTO|UPDATES|DELETES_FROM|MERGES_INTO]->(obj)
+WHERE ALL(n IN nodes(p) WHERE {_project_filter('n', project)})
+  AND {path_filter}
+UNWIND relationships(p) AS r
+RETURN startNode(r) AS s, r, endNode(r) AS t
+
+UNION
+
+{start_match}
+MATCH (obj:ORADbObject {{id_rc: {obj_id}}})
+MATCH p =
+  {start_pattern}
+       -[:HAS_REGION]->(region:APEXRegion)
+       -[:SELECTS_FROM|INSERTS_INTO|UPDATES|DELETES_FROM|MERGES_INTO]->(obj)
+WHERE ALL(n IN nodes(p) WHERE {_project_filter('n', project)})
+  AND {path_filter}
+UNWIND relationships(p) AS r
+RETURN startNode(r) AS s, r, endNode(r) AS t
+""".strip()
+
+def _build_filtered_paths_between_a_b(source, target, edge_types, project):
+    if not source["id_rc"]:
+        raise ValueError("source.id_rc is required")
+    if not target["id_rc"]:
+        raise ValueError("target.id_rc is required")
+    if not edge_types:
+        raise ValueError("At least one edge type must be selected")
+
+    path_filter = f"ALL(rel IN relationships(p) WHERE type(rel) IN {_cypher_list(edge_types)})"
+
+    return f"""
+MATCH (a {{id_rc: {_quote_cypher_string(source['id_rc'])}}}),
+      (b {{id_rc: {_quote_cypher_string(target['id_rc'])}}})
+WHERE {_project_filter('a', project)} AND {_project_filter('b', project)}
+MATCH p = (a)-[*..8]-(b)
+WHERE ALL(n IN nodes(p) WHERE {_project_filter('n', project)})
+  AND {path_filter}
+UNWIND relationships(p) AS r
+RETURN DISTINCT startNode(r) AS s, r, endNode(r) AS t
+""".strip()
+
 
 BUILDERS = {
     "connected_to_node": _build_connected_to_node,
     "related_nodes_of_target_type": _build_related_nodes_of_target_type,
     "direct_connection_between_a_b": _build_direct_connection_between_a_b,
     "shortest_path_between_a_b": _build_shortest_path_between_a_b,
+    "apex_app_writes_to_db_object": _build_apex_app_writes_to_db_object,    
+    "apex_app_region_writes_to_db_object": _build_apex_app_region_db_access_to_db_object,
+    "apex_source_db_access_to_db_object": _build_apex_source_db_access_to_db_object,
+    "filtered_paths_between_a_b": _build_filtered_paths_between_a_b,
 }
 
 
@@ -425,3 +790,141 @@ def build_cypher():
             },
         }
     )
+
+
+@global_search_bp.post("/ai-build-cypher")
+def build_cypher_with_ai():
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    try:
+        _ensure_driver()
+        payload = request.get_json(silent=True) or {}
+
+        question = str(payload.get("question") or payload.get("natural_language") or "").strip()
+        if not question:
+            return jsonify({"success": False, "error": "question is required"}), 400
+
+        registry = ProviderRegistry()
+        provider_models = _provider_models_map(registry)
+
+        requested_selection = _parse_selection(payload)
+        model_explicitly_set = bool(str(payload.get("model") or "").strip())
+        if model_explicitly_set:
+            selection = requested_selection
+        else:
+            selection = validate_selection(requested_selection, provider_models)
+        provider = registry.get_provider(selection.provider)
+
+        project = _normalize_project(payload.get("project"), user_data["project"])
+        edge_types = _normalize_edge_types(payload.get("edge_types"))
+        source = _normalize_node_selection(payload.get("source") or {}, "source")
+        target = _normalize_node_selection(payload.get("target") or {}, "target")
+        sample_limit = max(1, min(int(payload.get("sample_limit") or 12), 20))
+
+        with driver.session() as session:
+            ctx = fetch_graph_context(session, project=project, sample_limit=sample_limit)
+            node_type_names = _fetch_node_type_names(session, project)
+
+        prompt_parts = [format_context_for_prompt(ctx).strip()]
+        if node_type_names:
+            shown = ", ".join(node_type_names[:80])
+            suffix = " ..." if len(node_type_names) > 80 else ""
+            prompt_parts.append(f"Known NodeType names:\n- {shown}{suffix}")
+
+        if source.get("id_rc") or source.get("node_type") or source.get("name"):
+            prompt_parts.append(
+                "Selected source hint:\n"
+                f"- id_rc: {source.get('id_rc') or 'N/A'}\n"
+                f"- node_type: {source.get('node_type') or 'N/A'}\n"
+                f"- name: {source.get('name') or 'N/A'}"
+            )
+
+        if target.get("id_rc") or target.get("node_type") or target.get("name"):
+            prompt_parts.append(
+                "Selected target hint:\n"
+                f"- id_rc: {target.get('id_rc') or 'N/A'}\n"
+                f"- node_type: {target.get('node_type') or 'N/A'}\n"
+                f"- name: {target.get('name') or 'N/A'}"
+            )
+
+        if edge_types:
+            prompt_parts.append(f"Preferred relationship types: {', '.join(edge_types)}")
+
+        project_instruction = (
+            f"If you match domain nodes, include project filtering such as projectName = {_quote_cypher_string(project)} OR projectName IS NULL where appropriate."
+            if project
+            else "Project scope is ALL, so do not invent a project filter."
+        )
+
+        prompt_parts.append(
+            "Output contract:\n"
+            "- Return exactly one Cypher query and nothing else.\n"
+            "- Do not use markdown fences, explanations, or comments.\n"
+            "- The query must be read-only. Never use CREATE, MERGE, DELETE, SET, REMOVE, DROP, CALL, LOAD CSV, or FOREACH.\n"
+            "- Use only labels, relationship types, and property names present in the provided context.\n"
+            "- Prefer graph-friendly results for InsightViewer. Usually return nodes and relationships, for example RETURN s, r, t.\n"
+            "- Do not return path variables directly. If you need a path, UNWIND relationships(p) AS r and RETURN startNode(r) AS s, r, endNode(r) AS t.\n"
+            f"- {project_instruction}"
+        )
+        prompt_parts.append(f"User request:\n{question}")
+
+        system_prompt = str(
+            payload.get("system")
+            or "You generate safe Neo4j Cypher queries for InsightViewer based only on provided schema context."
+        ).strip()
+        user_prompt = "\n\n".join(part for part in prompt_parts if part).strip()
+
+        resp = provider.chat(
+            ChatRequest(
+                system=system_prompt,
+                user=user_prompt,
+                model=selection.model,
+                temperature=0.0,
+                max_tokens=int(payload.get("max_tokens") or 900),
+            )
+        )
+
+        cypher = _extract_cypher_from_text(resp.text)
+        if not cypher:
+            return jsonify({"success": False, "error": "AI response did not contain a Cypher query"}), 502
+
+        if not is_safe_read_query(cypher):
+            return jsonify({"success": False, "error": "AI generated query failed read-only safety validation"}), 400
+
+        out = jsonify(
+            {
+                "success": True,
+                "provider": selection.provider,
+                "model": selection.model,
+                "selection": selection_to_json(selection),
+                "cypher": cypher,
+                "graph_context": {
+                    "project": ctx.project,
+                    "labels": ctx.labels,
+                    "relationship_types": ctx.rel_types,
+                    "sample_nodes": ctx.sample_nodes,
+                    "node_types": node_type_names,
+                },
+            }
+        )
+        out.set_cookie(COOKIE_PROVIDER, selection.provider, max_age=60 * 60 * 24 * 30, samesite="Lax")
+        out.set_cookie(COOKIE_MODEL, selection.model, max_age=60 * 60 * 24 * 30, samesite="Lax")
+        return out
+
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    except ProviderConfigError as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+    except ProviderRequestError as e:
+        return jsonify({"success": False, "error": str(e)}), 502
+    except ProviderResponseError as e:
+        return jsonify({"success": False, "error": str(e)}), 502
+    except AIError as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Unexpected error: {e}"}), 500
+
+
+

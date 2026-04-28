@@ -445,6 +445,24 @@ def get_projects():
 
 
 
+def infer_visual_node_type(labels):
+    label_list = list(labels or [])
+    if not label_list:
+        return "Unknown"
+
+    excluded = {"CustomGraph", "customGraphNode", "customGraphNodePosition"}
+
+    for label in label_list:
+        if label not in excluded and label != "NodeType":
+            return label
+
+    for label in label_list:
+        if label not in excluded:
+            return label
+
+    return label_list[0]
+
+
 @app.route("/run-cypher", methods=["POST"])
 def run_cypher():
     user_data, error_response, status_code = validate_jwt()
@@ -490,7 +508,7 @@ def run_cypher():
 
                             full_name = properties.get("name", f"Node {node_id}")
                             short_name = full_name.split(".")[-1]
-                            nodeType = next(iter(value.labels), "Unknown")
+                            nodeType = infer_visual_node_type(value.labels)
 
                             nodes[node_id] = {
                                 "id": node_id,
@@ -766,6 +784,7 @@ def expand_node():
                         "id": node_id_rc,
                         "id_rc": node_id_rc,
                         "label": node.get("name") or (list(node.labels)[0] if node.labels else "Unknown"),
+                        "nodeType": infer_visual_node_type(node.labels),
                         "labels": list(node.labels),
                         "properties": dict(node),
                         "color": node.get("color", "#97C2FC"),

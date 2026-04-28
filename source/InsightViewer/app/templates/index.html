@@ -350,52 +350,81 @@ RETURN s, r, t
         </div>
         <div style="display:grid; gap:10px; padding:8px 0;">
           <div style="display:grid; gap:4px;">
-            <label for="gs-template">Question template</label>
-            <select id="gs-template" style="width:100%;"></select>
-            <div id="gs-template-description" style="font-size:12px; color:#666;"></div>
+            <label for="gs-mode">Search mode</label>
+            <select id="gs-mode" style="width:100%;">
+              <option value="template">Template builder</option>
+              <option value="ai">AI generate Cypher</option>
+            </select>
           </div>
 
-          <div style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px;">
-            <div style="display:grid; gap:4px; position:relative;">
-              <label for="gs-source-type">Source node type</label>
-              <select id="gs-source-type" style="width:100%;"></select>
+          <div id="gs-template-panel" style="display:grid; gap:10px;">
+            <div style="display:grid; gap:4px;">
+              <label for="gs-template">Question template</label>
+              <select id="gs-template" style="width:100%;"></select>
+              <div id="gs-template-description" style="font-size:12px; color:#666;"></div>
             </div>
-            <div style="display:grid; gap:4px; position:relative;">
-              <label for="gs-source-name">Source node name</label>
-              <input id="gs-source-name" type="text" autocomplete="off" placeholder="Start typing to search nodes">
-              <div id="gs-source-suggestions" style="display:none; position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid #ccc; max-height:180px; overflow:auto; z-index:1200;"></div>
-              <div id="gs-source-selection" style="font-size:12px; color:#666;"></div>
-            </div>
-          </div>
 
-          <div id="gs-target-block" style="display:none; gap:10px;">
             <div style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px;">
               <div style="display:grid; gap:4px; position:relative;">
-                <label for="gs-target-type">Target node type</label>
-                <select id="gs-target-type" style="width:100%;"></select>
+                <label for="gs-source-type">Source node type</label>
+                <select id="gs-source-type" style="width:100%;"></select>
               </div>
-              <div id="gs-target-name-wrap" style="display:grid; gap:4px; position:relative;">
-                <label for="gs-target-name">Target node name</label>
-                <input id="gs-target-name" type="text" autocomplete="off" placeholder="Start typing to search nodes">
-                <div id="gs-target-suggestions" style="display:none; position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid #ccc; max-height:180px; overflow:auto; z-index:1200;"></div>
-                <div id="gs-target-selection" style="font-size:12px; color:#666;"></div>
+              <div style="display:grid; gap:4px; position:relative;">
+                <label for="gs-source-name">Source node name</label>
+                <input id="gs-source-name" type="text" autocomplete="off" placeholder="Start typing to search nodes">
+                <div id="gs-source-suggestions" style="display:none; position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid #ccc; max-height:180px; overflow:auto; z-index:1200;"></div>
+                <div id="gs-source-selection" style="font-size:12px; color:#666;"></div>
+              </div>
+            </div>
+
+            <div id="gs-target-block" style="display:none; gap:10px;">
+              <div style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px;">
+                <div style="display:grid; gap:4px; position:relative;">
+                  <label for="gs-target-type">Target node type</label>
+                  <select id="gs-target-type" style="width:100%;"></select>
+                </div>
+                <div id="gs-target-name-wrap" style="display:grid; gap:4px; position:relative;">
+                  <label for="gs-target-name">Target node name</label>
+                  <input id="gs-target-name" type="text" autocomplete="off" placeholder="Start typing to search nodes">
+                  <div id="gs-target-suggestions" style="display:none; position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid #ccc; max-height:180px; overflow:auto; z-index:1200;"></div>
+                  <div id="gs-target-selection" style="font-size:12px; color:#666;"></div>
+                </div>
               </div>
             </div>
           </div>
 
-          <div style="display:grid; gap:4px;">
+          <div id="gs-ai-panel" style="display:none; gap:10px;">
+            <div style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px;">
+              <div style="display:grid; gap:4px;">
+                <label for="gs-ai-provider">AI provider</label>
+                <select id="gs-ai-provider" style="width:100%;"></select>
+              </div>
+              <div style="display:grid; gap:4px;">
+                <label for="gs-ai-model">AI model</label>
+                <select id="gs-ai-model" style="width:100%;"></select>
+              </div>
+            </div>
+            <div style="display:grid; gap:4px;">
+              <label for="gs-ai-question">Describe the graph you want</label>
+              <textarea id="gs-ai-question" rows="5" placeholder="Example: Write Cypher that returns all Procedure nodes that do insert operations, with the connecting relationships."></textarea>
+              <div style="font-size:12px; color:#666;">The AI response is converted into Cypher only and inserted into the Cypher dialog for review and execution.</div>
+            </div>
+          </div>
+
+
+          <div id="gs-edge-filter-section" style="display:grid; gap:4px;">
             <label>Include edge types</label>
             <div id="gs-edge-types" style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:6px; max-height:180px; overflow:auto; border:1px solid #ddd; padding:8px;"></div>
             <div style="display:flex; gap:8px; flex-wrap:wrap;">
               <button type="button" onclick="selectAllGuidedEdgeTypes(true)">Select all</button>
               <button type="button" onclick="selectAllGuidedEdgeTypes(false)">Clear all</button>
             </div>
-          </div>
+          </div>          
 
           <div id="gs-status" style="font-size:12px; color:#666;"></div>
 
           <div style="display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap;">
-            <button onclick="buildGuidedSearchCypher()">Build Cypher</button>
+            <button id="gs-build-button" onclick="buildGuidedSearchCypher()">Build Cypher</button>
             <button onclick="closeGuidedSearchDialog()">Cancel</button>
           </div>
         </div>

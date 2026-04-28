@@ -73,3 +73,6 @@ cd C:\Work\install\neo4j\neo4j-community-5.26.20-windows\neo4j-community-5.26.20
 bin\neo4j.bat console
 
 
+# whisper (demo project)
+Converts mp3 to text 
+ whisper "10_Uvod.mp3" --language sl --task transcribe --model small

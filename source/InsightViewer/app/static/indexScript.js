@@ -21,6 +21,33 @@ var gCustomGraphName = ""; // Global variable to store the custom graph name
 var nodeIdToNameMap = new Map();
 let showProperties = false; // Global variable to control the dialog behavior
 let isManualGraph = false; // Flag to indicate if the graph is manual
+
+function resolveVisualNodeType(node, allowedNodeLabels = []) {
+   if (node && node.nodeType) {
+       return node.nodeType;
+   }
+
+   const labels = Array.isArray(node && node.labels) ? node.labels : [];
+   if (labels.length === 0) {
+       return "Default";
+   }
+
+   const allowedSet = new Set(Array.isArray(allowedNodeLabels) ? allowedNodeLabels : []);
+   const allowedMatch = labels.find(label => allowedSet.has(label));
+   if (allowedMatch) {
+       return allowedMatch;
+   }
+
+   const excludedLabels = new Set(["CustomGraph", "customGraphNode", "customGraphNodePosition"]);
+   const preferredLabel = labels.find(label => !excludedLabels.has(label) && label !== "NodeType");
+   if (preferredLabel) {
+       return preferredLabel;
+   }
+
+   const fallbackLabel = labels.find(label => !excludedLabels.has(label));
+   return fallbackLabel || labels[0] || "Default";
+}
+
 var options = {
    interaction: { 
        hover: true,
@@ -561,14 +588,14 @@ function visualizeGraph(data, allowedNodeLabels = []) {
             console.log("Node object:", node);
             console.log("Node properties:", node.properties);
 
-            const nodeType = node.nodeType || "Default"; // Assuming 'nodeType' is a property of the node
+            const nodeType = resolveVisualNodeType(node, allowedNodeLabels);
 
             // Fetch the shape and color for the nodeType
             fetchNodeVisuals(nodeType, (visuals) => {
                 if (!visuals) visuals = {};
 
                 // Decide shape and image safely: if shape requires an image but none provided, fall back
-                let shapeToUse = visuals.shape || createNodeCurrentShape || "ellipse";
+                let shapeToUse = visuals.shape || node.shape || createNodeCurrentShape || "ellipse";
                 let imageToUse = node.properties && node.properties.image ? node.properties.image : (visuals.image || undefined);
                 console.log('imageToUse 1: ', imageToUse);
 
@@ -581,7 +608,9 @@ function visualizeGraph(data, allowedNodeLabels = []) {
                 }
 
                 // Ensure a sensible default size so images are visible
-                const finalSize = (visuals.size && Number(visuals.size) > 0) ? Number(visuals.size) : 40;
+                const finalSize = (visuals.size && Number(visuals.size) > 0)
+                    ? Number(visuals.size)
+                    : ((node.size && Number(node.size) > 0) ? Number(node.size) : 40);
 
                 // Final node object builder
                 const buildNodeObj = (finalShape, finalImage) => {
@@ -589,7 +618,7 @@ function visualizeGraph(data, allowedNodeLabels = []) {
                         id: node.id,
                         label: node.label,
                         shape: finalShape,
-                        color: visuals.color || "#97C2FC",
+                        color: visuals.color || node.color || "#97C2FC",
                         image: finalImage,
                         size: finalSize,
                         properties: node.properties,

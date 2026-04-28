@@ -3,6 +3,7 @@
     templates: [],
     nodeTypes: [],
     edgeTypes: [],
+    aiProviders: null,
     sourceSelection: null,
     targetSelection: null,
     sourceTimer: null,
@@ -59,6 +60,10 @@
     );
   }
 
+  function guidedSearchMode() {
+    return byId("gs-mode")?.value || "template";
+  }
+
   function renderNodeTypeOptions() {
     const items = state.nodeTypes.map((type) => ({ value: type.name, label: type.name }));
     setSelectOptions(byId("gs-source-type"), items, "Choose source type");
@@ -104,11 +109,28 @@
     });
   }
 
+  function allowedSourceTypesForTemplate(template) {
+    if (!template) return null;
+
+    const restrictedTemplates = new Set([
+      "apex_app_writes_to_db_object",
+      "apex_app_region_writes_to_db_object",
+      "apex_source_db_access_to_db_object",
+    ]);
+
+    if (restrictedTemplates.has(template.id)) {
+      return ["APEXApp", "APEXPage"];
+    }
+
+    return null;
+  }  
+
   function selectedTemplate() {
     const templateId = byId("gs-template")?.value || "";
     return state.templates.find((template) => template.id === templateId) || null;
   }
 
+/*
   function updateTemplateUI() {
     const template = selectedTemplate();
     const description = byId("gs-template-description");
@@ -131,6 +153,145 @@
       clearSelection("target");
       const targetName = byId("gs-target-name");
       if (targetName) targetName.value = "";
+    }
+  }
+*/
+
+  function updateTemplateUI() {
+    const template = selectedTemplate();
+    const description = byId("gs-template-description");
+    const targetBlock = byId("gs-target-block");
+    const targetNameWrap = byId("gs-target-name-wrap");
+    const edgeFilterSection = byId("gs-edge-filter-section");
+    const sourceTypeSelect = byId("gs-source-type");
+
+    if (description) {
+      description.textContent = template?.description || "";
+    }
+
+    const showTargetBlock = Boolean(template && (template.needs_target_node || template.needs_target_type));
+    if (targetBlock) {
+      targetBlock.style.display = showTargetBlock ? "grid" : "none";
+    }
+    if (targetNameWrap) {
+      targetNameWrap.style.display = template?.needs_target_node ? "grid" : "none";
+    }
+
+    if (!showTargetBlock) {
+      clearSelection("target");
+      const targetName = byId("gs-target-name");
+      if (targetName) targetName.value = "";
+    }
+
+    // show / hide edge filter section
+    if (edgeFilterSection) {
+      edgeFilterSection.style.display = template?.supports_edge_filter === false ? "none" : "grid";
+    }
+
+    // restrict source node type for selected templates
+    if (sourceTypeSelect) {
+      const allowed = allowedSourceTypesForTemplate(template);
+
+      Array.from(sourceTypeSelect.options).forEach((opt) => {
+        if (!opt.value) {
+          opt.hidden = false;
+          opt.disabled = false;
+          return;
+        }
+
+        const isAllowed = !allowed || allowed.includes(opt.value);
+        opt.hidden = !isAllowed;
+        opt.disabled = !isAllowed;
+      });
+
+      if (
+        allowed &&
+        sourceTypeSelect.value &&
+        !allowed.includes(sourceTypeSelect.value)
+      ) {
+        sourceTypeSelect.value = allowed[0];
+        const input = byId("gs-source-name");
+        if (input) input.value = "";
+        clearSelection("source");
+        hideSuggestions("source");
+        fetchNodeSuggestions("source");
+      }
+    }
+  }
+
+  function syncGuidedAiModelOptions() {
+    const providerSelect = byId("gs-ai-provider");
+    const modelSelect = byId("gs-ai-model");
+    if (!providerSelect || !modelSelect || !state.aiProviders) return;
+
+    const providerId = providerSelect.value;
+    const entry = state.aiProviders.find((provider) => provider.id === providerId) || state.aiProviders[0];
+    const models = Array.isArray(entry?.models) ? entry.models : [];
+
+    setSelectOptions(
+      modelSelect,
+      models.map((model) => ({ value: model, label: model })),
+      models.length ? null : "No models available"
+    );
+
+    if (models.length) {
+      modelSelect.value = models.includes(modelSelect.value) ? modelSelect.value : models[0];
+    }
+  }
+
+  async function loadGuidedAiProviders() {
+    if (state.aiProviders) return state.aiProviders;
+
+    const providerSelect = byId("gs-ai-provider");
+    const modelSelect = byId("gs-ai-model");
+    if (providerSelect) setSelectOptions(providerSelect, [], "Loading providers...");
+    if (modelSelect) setSelectOptions(modelSelect, [], "Loading models...");
+
+    const data = await getJson("/api/ai/providers");
+    state.aiProviders = Array.isArray(data.providers) ? data.providers : [];
+
+    if (providerSelect) {
+      setSelectOptions(
+        providerSelect,
+        state.aiProviders.map((provider) => ({ value: provider.id, label: provider.label || provider.id })),
+        state.aiProviders.length ? null : "No providers available"
+      );
+      providerSelect.value = state.aiProviders[0]?.id || "";
+      providerSelect.onchange = syncGuidedAiModelOptions;
+    }
+
+    syncGuidedAiModelOptions();
+    return state.aiProviders;
+  }
+
+  function updateModeUI() {
+    const mode = guidedSearchMode();
+    const templatePanel = byId("gs-template-panel");
+    const aiPanel = byId("gs-ai-panel");
+    const buildButton = byId("gs-build-button");
+
+    if (templatePanel) {
+      templatePanel.style.display = mode === "template" ? "grid" : "none";
+    }
+    if (aiPanel) {
+      aiPanel.style.display = mode === "ai" ? "grid" : "none";
+    }
+    if (buildButton) {
+      buildButton.textContent = mode === "ai" ? "Generate Cypher" : "Build Cypher";
+    }
+
+    if (mode === "template") {
+      updateTemplateUI();
+      return;
+    }
+
+    loadGuidedAiProviders().catch((error) => {
+      setStatus(error.message || String(error), true);
+    });
+
+    const aiQuestion = byId("gs-ai-question");
+    if (aiQuestion) {
+      aiQuestion.focus();
     }
   }
 
@@ -313,7 +474,10 @@
     if (!state.edgeTypes.length) {
       await loadEdgeTypes();
     }
-    updateTemplateUI();
+    if (!state.aiProviders) {
+      await loadGuidedAiProviders();
+    }
+    updateModeUI();
 
     if (!state.nodeTypes.length) {
       setStatus("No source node types were returned from Neo4j. Check NodeType data and project filtering.", true);
@@ -323,6 +487,26 @@
   function payloadForBuild() {
     return {
       template: byId("gs-template")?.value || "",
+      project: currentProject(),
+      source: {
+        id_rc: state.sourceSelection?.id_rc || "",
+        node_type: byId("gs-source-type")?.value || "",
+        name: byId("gs-source-name")?.value.trim() || "",
+      },
+      target: {
+        id_rc: state.targetSelection?.id_rc || "",
+        node_type: byId("gs-target-type")?.value || "",
+        name: byId("gs-target-name")?.value.trim() || "",
+      },
+      edge_types: selectedEdgeTypes(),
+    };
+  }
+
+  function payloadForAiBuild() {
+    return {
+      question: byId("gs-ai-question")?.value.trim() || "",
+      provider: byId("gs-ai-provider")?.value || "",
+      model: byId("gs-ai-model")?.value || "",
       project: currentProject(),
       source: {
         id_rc: state.sourceSelection?.id_rc || "",
@@ -365,7 +549,11 @@
 
     try {
       await ensureDialogData();
-      setStatus("Choose a template and a source node.", false);
+      const aiQuestion = byId("gs-ai-question");
+      if (aiQuestion && !aiQuestion.value.trim()) {
+        aiQuestion.value = "Write Cypher that returns the graph for all procedures that do insert operations.";
+      }
+      setStatus(guidedSearchMode() === "ai" ? "Describe the graph you want in natural language." : "Choose a template and a source node.", false);
     } catch (error) {
       setStatus(error.message || String(error), true);
     }
@@ -387,12 +575,20 @@
   };
 
   window.buildGuidedSearchCypher = async function () {
-    setStatus("Building Cypher...", false);
+    const mode = guidedSearchMode();
+    const isAiMode = mode === "ai";
+    setStatus(isAiMode ? "Generating Cypher with AI..." : "Building Cypher...", false);
+
     try {
-      const data = await getJson("/api/search/build-cypher", {
+      const payload = isAiMode ? payloadForAiBuild() : payloadForBuild();
+      if (isAiMode && !payload.question) {
+        throw new Error("Please describe the graph you want.");
+      }
+
+      const data = await getJson(isAiMode ? "/api/search/ai-build-cypher" : "/api/search/build-cypher", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payloadForBuild()),
+        body: JSON.stringify(payload),
       });
 
       const textarea = byId("cypher-input");
@@ -402,7 +598,7 @@
 
       textarea.value = data.cypher || "";
       focusCypherDialog();
-      setStatus("Cypher generated and inserted into the Cypher dialog.", false);
+      setStatus(isAiMode ? "AI-generated Cypher inserted into the Cypher dialog." : "Cypher generated and inserted into the Cypher dialog.", false);
       window.closeGuidedSearchDialog();
     } catch (error) {
       setStatus(error.message || String(error), true);
@@ -410,6 +606,14 @@
   };
 
   function installHandlers() {
+    const modeSelect = byId("gs-mode");
+    if (modeSelect) {
+      modeSelect.addEventListener("change", function () {
+        updateModeUI();
+        setStatus(guidedSearchMode() === "ai" ? "Describe the graph you want in natural language." : "Choose a template and a source node.", false);
+      });
+    }
+
     const templateSelect = byId("gs-template");
     if (templateSelect) {
       templateSelect.addEventListener("change", updateTemplateUI);

@@ -114,29 +114,60 @@ def _collect_chunks_by_depth(
         if r.get("id_rc")
     ]
 
+ 
+
+    # chunks_query = f"""
+    #     UNWIND $node_ids AS nid
+    #     MATCH (s {{id_rc: nid}})
+    #     WHERE $project IS NULL OR s.projectName = $project
+    #     WITH collect(DISTINCT s) AS starts
+    #     UNWIND starts AS s
+    #     MATCH p = (s)-[*0..{depth}]-(v)
+    #     WHERE ALL(n IN nodes(p) WHERE $project IS NULL OR n.projectName = $project OR n:Chunk)
+    #     WITH collect(DISTINCT v) AS all_nodes
+    #     UNWIND all_nodes AS n
+    #     WITH DISTINCT n
+    #     OPTIONAL MATCH (n)-[:HAS_CHUNK]->(c1:Chunk)
+    #     WITH collect(DISTINCT c1) + collect(DISTINCT c2) AS cs
+    #     UNWIND cs AS c
+    #     WITH DISTINCT c
+    #     WHERE c IS NOT NULL
+    #     RETURN
+    #       c.id_rc AS id_rc,
+    #       labels(c) AS labels,
+    #       coalesce(c.text, c.content, c.body, c.chunkText, c.value, '') AS text
+    #     LIMIT $chunk_limit
+    # """
+
     chunks_query = f"""
         UNWIND $node_ids AS nid
-        MATCH (s {{id_rc: nid}})
+        MATCH (s  {{id_rc: nid}})
         WHERE $project IS NULL OR s.projectName = $project
-        WITH collect(DISTINCT s) AS starts
-        UNWIND starts AS s
-        MATCH p = (s)-[*0..{depth}]-(v)
-        WHERE ALL(n IN nodes(p) WHERE $project IS NULL OR n.projectName = $project OR n:Chunk)
-        WITH collect(DISTINCT v) AS all_nodes
-        UNWIND all_nodes AS n
-        WITH DISTINCT n
-        OPTIONAL MATCH (n)-[:HAS_CHUNK]->(c1:Chunk)
-        OPTIONAL MATCH (c2:Chunk)-[:HAS_CHUNK]->(n)
-        WITH collect(DISTINCT c1) + collect(DISTINCT c2) AS cs
-        UNWIND cs AS c
-        WITH DISTINCT c
+
+        MATCH p = (s)-[*0..{depth}]-(n)
+        WHERE ALL(x IN nodes(p) WHERE $project IS NULL OR x.projectName = $project OR x:Chunk)
+
+        WITH n, min(length(p)) AS dist
+        WITH DISTINCT n, dist
+
+        OPTIONAL MATCH (n)-[:HAS_CHUNK]->(c:Chunk)
         WHERE c IS NOT NULL
+
+        WITH c, min(dist) AS min_dist
         RETURN
-          c.id_rc AS id_rc,
-          labels(c) AS labels,
-          coalesce(c.text, c.content, c.body, c.chunkText, c.value, '') AS text
+        c.id_rc AS id_rc,
+        labels(c) AS labels,
+        coalesce(c.text, c.content, c.body, c.chunkText, c.value, '') AS text,
+        min_dist
+        ORDER BY min_dist ASC, id_rc ASC
         LIMIT $chunk_limit
-    """
+    """   
+
+    print(chunks_query)
+    print(f"{{depth}}")
+    print(f"traversal = [*0..{depth}]")    
+    print(f"chunk_limit = {chunk_limit}")
+
     chunk_rows = session.run(
         chunks_query,
         node_ids=node_ids,
@@ -290,7 +321,7 @@ def ask_graph_by_depth():
 
         node_ids = _normalize_node_ids(payload)
         depth = int(payload.get("depth") or 2)
-        depth = max(0, min(depth, 6))
+        depth = max(0, min(depth, 100))
         chunk_limit = int(payload.get("chunk_limit") or 80)
         chunk_limit = max(1, min(chunk_limit, 300))
         max_chunk_chars = int(payload.get("max_chunk_chars") or 18000)
