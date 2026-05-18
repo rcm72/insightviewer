@@ -19,23 +19,40 @@ class OpenAIProvider(AIProvider):
         if not self._api_key:
             raise ProviderConfigError("OPENAI_API_KEY not set in environment")
 
+    # Models that require max_completion_tokens instead of max_tokens
+    _MAX_COMPLETION_TOKENS_MODELS = ("o1", "o3", "o4", "gpt-5")
+
+    def _uses_max_completion_tokens(self, model: str) -> bool:
+        return any(model.startswith(prefix) for prefix in self._MAX_COMPLETION_TOKENS_MODELS)
+
+    # Reasoning models consume tokens internally before writing output.
+    # Use a much higher limit so there are tokens left for the actual response.
+    _REASONING_MIN_TOKENS = 16000
+
     def chat(self, req: ChatRequest) -> ChatResponse:
         url = f"{self._base_url}/v1/chat/completions"
+        use_new_params = self._uses_max_completion_tokens(req.model)
+        tokens_key = "max_completion_tokens" if use_new_params else "max_tokens"
+        token_limit = int(req.max_tokens)
+        if use_new_params and token_limit < self._REASONING_MIN_TOKENS:
+            token_limit = self._REASONING_MIN_TOKENS
         payload: dict[str, Any] = {
             "model": req.model,
             "messages": [
                 {"role": "system", "content": req.system},
                 {"role": "user", "content": req.user},
             ],
-            "temperature": float(req.temperature),
-            "max_tokens": int(req.max_tokens),
+            tokens_key: token_limit,
         }
+        if not use_new_params:
+            payload["temperature"] = float(req.temperature)
         headers = {
             "Authorization": f"Bearer {self._api_key}",
             "Content-Type": "application/json",
         }
+        timeout = 180 if use_new_params else 45
         try:
-            r = requests.post(url, json=payload, headers=headers, timeout=45)
+            r = requests.post(url, json=payload, headers=headers, timeout=timeout)
         except requests.RequestException as e:
             raise ProviderRequestError(f"OpenAI request failed: {e}") from e
 
@@ -51,10 +68,13 @@ class OpenAIProvider(AIProvider):
         try:
             content = body["choices"][0]["message"]["content"]
         except Exception as e:
-            raise ProviderResponseError(f"OpenAI response shape unexpected: {e}") from e
+            raise ProviderResponseError(f"OpenAI response shape unexpected: {e}. Body: {str(body)[:2000]}") from e
 
+        # Some models (o-series, gpt-5) may return None for content when reasoning
+        if content is None:
+            content = ""
         if not isinstance(content, str):
-            raise ProviderResponseError("OpenAI content not a string")
+            raise ProviderResponseError(f"OpenAI content unexpected type {type(content)}: {str(content)[:500]}")
 
         return ChatResponse(text=content, raw=body)
 

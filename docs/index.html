@@ -1,80 +1,330 @@
-<!DOCTYPE html>
-<html lang="en"> 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">  
+color: var(--text);
+      background: #f8fafc;
+      line-height: 1.6;
+    }
+
+    header {
+      background: linear-gradient(135deg, var(--bg), var(--bg-soft));
+      color: white;
+      padding: 72px 24px 64px;
+    }
+
+    .container {
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+
+    .hero {
+      max-width: 860px;
+    }
+
+    .eyebrow {
+      display: inline-block;
+      padding: 6px 12px;
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 999px;
+      font-size: 0.9rem;
+      color: #bfdbfe;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      margin: 0 0 20px;
+      font-size: clamp(2.2rem, 5vw, 4.5rem);
+      line-height: 1.05;
+      letter-spacing: -0.04em;
+    }
+
+    .lead {
+      font-size: clamp(1.15rem, 2vw, 1.35rem);
+      color: #cbd5e1;
+      max-width: 780px;
+      margin-bottom: 32px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+
+    .button {
+      display: inline-block;
+      padding: 12px 18px;
+      border-radius: 10px;
+      text-decoration: none;
+      font-weight: 650;
+    }
+
+    .button.primary {
+      background: white;
+      color: var(--bg);
+    }
+
+    .button.secondary {
+      border: 1px solid rgba(255,255,255,0.3);
+      color: white;
+    }
+
+    main {
+      padding: 56px 24px;
+    }
+
+    section {
+      margin-bottom: 56px;
+    }
+
+    h2 {
+      font-size: clamp(1.7rem, 3vw, 2.4rem);
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+      margin: 0 0 18px;
+    }
+
+    h3 {
+      margin: 0 0 8px;
+      font-size: 1.15rem;
+    }
+
+    p {
+      margin: 0 0 16px;
+    }
+
+    .intro {
+      font-size: 1.1rem;
+      max-width: 860px;
+      color: var(--muted);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 18px;
+      margin-top: 24px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+    }
+
+    .card p,
+    li {
+      color: var(--muted);
+    }
+
+    .highlight {
+      background: var(--accent-soft);
+      border-left: 4px solid var(--accent);
+      padding: 22px;
+      border-radius: 14px;
+      margin-top: 24px;
+    }
+
+    ul {
+      padding-left: 1.2rem;
+      margin: 0;
+    }
+
+    .videos {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      margin-top: 24px;
+    }
+
+    .video-frame {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #0f172a;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+
+    .video-frame iframe {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+
+    footer {
+      padding: 36px 24px;
+      border-top: 1px solid var(--line);
+      background: white;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    code {
+      background: #e2e8f0;
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+  </style>
 </head>
 <body>
-  <h1>Had Fun Building Anything Lately?</h1>
-  <p>Let me tell you why I built <strong>InsightViewer</strong>.</p>
-  <p>I’ve always loved knowledge graphs, Neo4j, and tools like Browser and Bloom. They make exploring connected data both powerful and intuitive. But there’s a catch — Bloom only works with the Enterprise edition, which is out of reach for many of us. And while Browser is great for developers, it’s not designed for end users.</p>
-  <p>So, I decided to build something that fills the gap.</p>
+  <header>
+    <div class="container hero">
+      <div class="eyebrow">Open-source knowledge graph viewer for Neo4j</div>
+      <h1>See how knowledge, systems, decisions, and code connect.</h1>
+      <p class="lead">
+        InsightViewer is a lightweight web application for exploring connected knowledge. It started as a Neo4j graph viewer, but it is becoming a practical way to capture, visualize, and use organizational context.
+      </p>
+      <div class="actions">
+        <a class="button primary" href="https://github.com/rcm72/insightviewer">View on GitHub</a>
+        <a class="button secondary" href="#videos">Watch presentations</a>
+        <a class="button secondary" href="mailto:insightviewer.project@gmail.com">Contact</a>
+      </div>
+    </div>
+  </header>
 
-  <h2>🧠 Introducing InsightViewer</h2>
-  <p><strong>InsightViewer</strong> is a lightweight, flexible visualization tool that complements Neo4j Browser and Bloom. It’s designed to make knowledge graphs more accessible, interactive, and fun to explore — without requiring an Enterprise license.</p>
-  <p>During development, I realized that knowledge graphs are everywhere. They’re not just about data — they’re about connecting ideas. Here are a few ways you can use InsightViewer:</p>
-  <ul>
-    <li>🏢 Represent business applications as knowledge graphs</li>
-    <li>💻 Map out the entire software development lifecycle</li>
-    <li>📚 Visualize and organize everything you learn</li>
-  </ul>
+  <main>
+    <div class="container">
+      <section>
+        <h2>Why InsightViewer?</h2>
+        <p class="intro">
+          Organizations do not only have data. They have applications, business rules, documents, meetings, decisions, dependencies, responsibilities, and technical implementation details. Much of this knowledge is scattered across tools and people.
+        </p>
+        <p class="intro">
+          InsightViewer helps turn that scattered knowledge into a graph that can be explored visually, extended with documentation, and used as context for people and AI systems.
+        </p>
+        <div class="highlight">
+          <strong>The key point:</strong><br />
+          Models can reason. Experts can advise. But the organization must capture and connect its own knowledge, because that knowledge provides the memory for AI models.
+        </div>
+      </section>
 
-  <h3>🌐 Beyond Nodes and Edges</h3>
-  <p>Every visualization has its limits. Sometimes you need to add a bit more context — text, visuals, or links. That’s why InsightViewer lets you attach HTML content directly to nodes. This turns each node into a dynamic container for deeper insights, unlocking endless possibilities for combining structure and storytelling.</p>
+      <section>
+        <h2>What it can represent</h2>
+        <div class="grid">
+          <div class="card">
+            <h3>Software architecture</h3>
+            <p>Visualize dependencies between applications, pages, database objects, PL/SQL packages, procedures, and technical components.</p>
+          </div>
+          <div class="card">
+            <h3>Business logic</h3>
+            <p>Connect business processes, rules, decisions, requirements, and implementation details in one navigable structure.</p>
+          </div>
+          <div class="card">
+            <h3>Meetings and decisions</h3>
+            <p>Use structured meeting templates to capture topics, tasks, people, decisions, and follow-up actions as graph data.</p>
+          </div>
+          <div class="card">
+            <h3>Migration knowledge</h3>
+            <p>Support legacy modernization by linking old systems, migration cases, target applications, documentation, and technical evidence.</p>
+          </div>
+          <div class="card">
+            <h3>Learning and research</h3>
+            <p>Build personal or team knowledge graphs from notes, concepts, sources, examples, and explanations.</p>
+          </div>
+          <div class="card">
+            <h3>AI-ready context</h3>
+            <p>Attach chunks, summaries, and documentation to graph nodes so AI can answer questions with better organizational context.</p>
+          </div>
+        </div>
+      </section>
 
-  <h2>✨ Key Features</h2>
-  <ul>
-    <li>🔍 <strong>Neo4j Integration</strong> – Connects directly to your Neo4j database for live data exploration</li>
-    <li>🕸️ <strong>Interactive Graphs</strong> – Powered by vis-network, offering smooth zoom, drag, and highlight interactions</li>
-    <li>🧩 <strong>HTML-Enhanced Nodes</strong> – Attach descriptions, images, or links to graph nodes</li>
-    <li>⚙️ <strong>Customizable Views</strong> – Adjust layout, colors, and display options to fit your workflow</li>
-    <li>🌍 <strong>Browser-Based UI</strong> – Built for accessibility; no Enterprise edition required</li>
-  </ul>
+      <section>
+        <h2>Core idea</h2>
+        <p class="intro">
+          InsightViewer is not only a graph visualization tool. It is a way to make knowledge visible, connected, and reusable.
+        </p>
+        <div class="grid">
+          <div class="card">
+            <h3>Explore the graph</h3>
+            <p>Navigate connected data interactively, expand nodes, follow dependencies, and move from overview to detail.</p>
+          </div>
+          <div class="card">
+            <h3>Add meaning to nodes</h3>
+            <p>Attach HTML content to graph nodes: explanations, images, links, templates, summaries, or business documentation.</p>
+          </div>
+          <div class="card">
+            <h3>Use templates</h3>
+            <p>Generate repeatable views and queries so users do not need to write Cypher for every common question.</p>
+          </div>
+          <div class="card">
+            <h3>Prepare for AI</h3>
+            <p>Combine graph structure, document chunks, full-text search, vector search, and generated Cypher as complementary ways to find answers.</p>
+          </div>
+        </div>
+      </section>
 
-  <h2>🧱 Tech Stack</h2>
-  <ul>
-    <li><strong>Backend:</strong> Flask (Python)</li>
-    <li><strong>Database:</strong> Neo4j</li>
-    <li><strong>Frontend:</strong> vis-network + HTML5</li>
-    <li><strong>Environment:</strong> Docker + Ubuntu</li>
-    <li><strong>Language:</strong> Python 3</li>
-  </ul>
+      <section>
+        <h2>Built for practical use</h2>
+        <p class="intro">
+          InsightViewer is designed for situations where Neo4j Browser is too technical for many users and enterprise graph visualization tools may be out of reach. It uses familiar web technologies and can be adapted to different graph models.
+        </p>
+        <div class="grid">
+          <div class="card">
+            <h3>Backend</h3>
+            <p>Flask and Python</p>
+          </div>
+          <div class="card">
+            <h3>Graph database</h3>
+            <p>Neo4j</p>
+          </div>
+          <div class="card">
+            <h3>Frontend</h3>
+            <p>vis-network, HTML, JavaScript</p>
+          </div>
+          <div class="card">
+            <h3>Deployment</h3>
+            <p>Docker-friendly and suitable for local, internal, or demo environments.</p>
+          </div>
+        </div>
+      </section>
 
-  <h2>💡 Why I Built It</h2>
-  <p>InsightViewer started as a side project — a way to combine my curiosity for knowledge graphs with my need for a more approachable visualization tool. Over time, it evolved into a platform where I can see ideas connect, whether they’re about business logic, learning materials, or code architecture.</p>
+      <section id="videos">
+        <h2>Presentations</h2>
+        <p class="intro">
+          These presentations show the idea behind InsightViewer and how it can be used to connect technical and business knowledge.
+        </p>
+        <div class="videos">
+          <div class="card">
+            <h3>English version</h3>
+            <div class="video-frame">
+              <iframe src="https://www.youtube.com/embed/k67HcXQbyIU" title="InsightViewer English presentation" allowfullscreen></iframe>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Slovene version</h3>
+            <div class="video-frame">
+              <iframe src="https://www.youtube.com/embed/ZX6LQoN2bG4" title="InsightViewer Slovene presentation" allowfullscreen></iframe>
+            </div>
+          </div>
+        </div>
+      </section>
 
-  <h2>🎬 Enough Talk. Let’s View the Insight and Have Fun.</h2>
-  <p>Clone it, run it, and start exploring your data the visual way.</p>
-    <p><a href="https://youtu.be/3pGsi4NpQdQ" target="_blank" rel="noopener">First look</a></p>      
-    <p><a href="https://youtu.be/rw-kBwVPSpA" target="_blank" rel="noopener">Organize your work</a></p>         
-    <!-- Embed YouTube video -->
-    <div class="video-container" style="position:relative;padding-bottom:56.25%;height:0; overflow:hidden;max-width:25%;margin:1rem 0;">
-      <iframe src="https://www.youtube.com/embed/3pGsi4NpQdQ"
-              title="InsightViewer demo"
-              style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowfullscreen>
-      </iframe>
-  </div>
+      <section>
+        <h2>Contact</h2>
+        <p class="intro">
+          For questions, feedback, or collaboration ideas, contact <a href="mailto:insightviewer.project@gmail.com">insightviewer.project@gmail.com</a>.
+        </p>
+      </section>
 
+      <section>
+        <h2>License</h2>
+        <p class="intro">
+          InsightViewer is licensed under the GNU Affero General Public License v3.0 or later. You are free to use, modify, and share it, but if you make it available to others over a network, you must also make your modified source code available to those users.
+        </p>
+        <p class="intro">
+          It also uses Neo4j Community Edition, vis-network, and CKEditor 5 Community.
+        </p>
+      </section>
+    </div>
+  </main>
 
-    <!-- Embed YouTube video -->
-    <div class="video-container" style="position:relative;padding-bottom:56.25%;height:0; overflow:hidden;max-width:25%;margin:1rem 0;">
-      <iframe width="560" height="315" src="https://www.youtube.com/embed/rw-kBwVPSpA?si=mjUi2vMGjLNmbU5W" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-  </div> 
-
-  <h2>License</h2>
-    <p>InsightViewer is licensed under the [GNU Affero General Public License v3.0 or later](LICENSE).
-    </p>
-    <p>
-    This means you are free to use, modify, and share it — but if you make it available <br>
-    to others over a network (for example, as a hosted web service), you must also <br>
-    make your modified source code available to those users. <br> 
-    <br>
-    It also uses: <br>
-    - Neo4j Community Edition (GPLv3) <br>
-    - vis-network (MIT/Apache-2.0) <br>
-    - CKEditor 5 Community (GPL-2.0+) <br>	
-    </p>  
+  <footer>
+    <div class="container">
+      InsightViewer — an open-source experiment in connected knowledge, graph visualization, and AI-ready organizational memory. Contact: insightviewer.project@gmail.com.
+    </div>
+  </footer>
 </body>
 </html>

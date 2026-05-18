@@ -671,6 +671,7 @@ function visualizeGraph(data, allowedNodeLabels = []) {
     data.edges.forEach(edge => {
         if (!existingEdgeIds.has(edge.id)) {
             edges.add(edge);
+            existingEdgeIds.add(edge.id); // keep set current within this batch
         } else {
             console.warn(`Skipping duplicate edge with id: ${edge.id}`);
         }

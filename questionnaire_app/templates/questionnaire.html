@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ survey_name }}</title>
+  <style>
+    :root {
+      --bg: #f0f4ff;
+      --panel: #ffffff;
+      --text: #18202a;
+      --muted: #5d6875;
+      --border: #c7d2f0;
+      --accent: #4f46e5;
+      --accent-dark: #3730a3;
+      --accent2: #0ea5e9;
+      --accent3: #8b5cf6;
+      --danger: #b42318;
+      --ok-border: #6ee7b7;
+      --ok-bg: #ecfdf5;
+      --ok-text: #065f46;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #e0e7ff 0%, #f0f4ff 40%, #fce7f3 100%);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.45;
+    }
+
+    main {
+      width: min(760px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 36px 0;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 20px 48px rgba(79, 70, 229, 0.12);
+    }
+
+    .panel-header {
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #0ea5e9 100%);
+      margin: -32px -32px 28px;
+      padding: 28px 32px 24px;
+      border-radius: 16px 16px 0 0;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.65rem, 3vw, 2.15rem);
+      line-height: 1.15;
+      color: #fff;
+    }
+
+    .intro {
+      margin: 0;
+      color: rgba(255,255,255,0.85);
+    }
+
+    .scale-note {
+      margin: 0 0 24px;
+      padding: 12px 14px;
+      border: 1px solid #c7d2f0;
+      border-left: 4px solid var(--accent2);
+      border-radius: 8px;
+      background: #f0f9ff;
+      color: #0369a1;
+      font-size: 0.94rem;
+    }
+
+    .field {
+      margin: 0 0 24px;
+      padding-bottom: 22px;
+      border-bottom: 1px solid #edf0f5;
+    }
+
+    .field:last-of-type { border-bottom: 0; }
+
+    label, legend {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 650;
+    }
+
+    .hint {
+      display: block;
+      margin: -2px 0 10px;
+      color: var(--muted);
+      font-size: 0.92rem;
+      font-weight: 400;
+    }
+
+    select, textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--text);
+      font: inherit;
+    }
+
+    select { min-height: 44px; padding: 8px 10px; }
+    textarea { min-height: 96px; padding: 10px 12px; resize: vertical; }
+
+    select:focus, textarea:focus {
+      outline: 2px solid rgba(79, 70, 229, 0.3);
+      border-color: var(--accent);
+    }
+
+    fieldset { border: 0; padding: 0; margin: 0; }
+
+    /* Rating buttons: gradient colour per score */
+    .rating {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(44px, 1fr));
+      gap: 8px;
+      max-width: 390px;
+    }
+
+    .rating input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .rating span {
+      display: grid;
+      min-height: 44px;
+      place-items: center;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 1.1rem;
+      background: #fff;
+      color: var(--muted);
+      transition: 140ms ease-in-out;
+    }
+
+    .rating label:nth-child(1) input:checked + span { background: #ef4444; border-color: #ef4444; color: #fff; }
+    .rating label:nth-child(2) input:checked + span { background: #f97316; border-color: #f97316; color: #fff; }
+    .rating label:nth-child(3) input:checked + span { background: #eab308; border-color: #eab308; color: #fff; }
+    .rating label:nth-child(4) input:checked + span { background: #22c55e; border-color: #22c55e; color: #fff; }
+    .rating label:nth-child(5) input:checked + span { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+
+    .rating label:hover span { border-color: var(--accent); color: var(--accent); }
+
+    .hidden-field {
+      position: absolute;
+      left: -9999px;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: 0;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      color: #fff;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 650;
+      padding: 11px 24px;
+      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
+      transition: 140ms ease-in-out;
+    }
+
+    button:hover {
+      background: linear-gradient(135deg, #3730a3, #6d28d9);
+      box-shadow: 0 6px 18px rgba(79, 70, 229, 0.45);
+    }
+
+    button:disabled { cursor: not-allowed; opacity: 0.65; }
+
+    .status { min-height: 1.4em; color: var(--muted); }
+    .status.error { color: var(--danger); }
+
+    .thanks {
+      display: none;
+      padding: 24px;
+      border: 1px solid var(--ok-border);
+      border-radius: 12px;
+      background: var(--ok-bg);
+      color: var(--ok-text);
+      font-size: 1.05rem;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.12);
+    }
+
+    /* Checkbox group: accent stripe on checked items */
+    .checkbox-group { display: grid; grid-template-columns: 1fr; gap: 8px; }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 42px;
+      padding: 8px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 400;
+      background: #fff;
+      transition: 120ms ease-in-out;
+    }
+
+    .checkbox-label:has(input:checked) {
+      border-color: var(--accent);
+      background: #eef2ff;
+      color: var(--accent-dark);
+      font-weight: 600;
+    }
+
+    .checkbox-label:hover { border-color: var(--accent); background: #f5f3ff; }
+
+    .checkbox-label input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      accent-color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    @media (min-width: 680px) {
+      .checkbox-group.two-columns { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="panel" id="questionnaire-panel">
+      <div class="panel-header">
+        <h1>{{ survey_name }}</h1>
+        <p class="intro">Please answer these short questions after the presentation.</p>
+      </div>
+      <p class="scale-note">For rating questions, 1 means low agreement and 5 means high agreement. The live graph will show each question and its average score.</p>
+
+      <form id="questionnaire-form">
+        <div class="hidden-field" aria-hidden="true">
+          <label for="website">Website</label>
+          <input id="website" name="website" tabindex="-1" autocomplete="off">
+        </div>
+
+        {% for question in questions %}
+          <div class="field">
+            {% if question.type == "select" %}
+              <label for="{{ question.id }}">{{ question.label }}</label>
+              <select id="{{ question.id }}" name="{{ question.id }}" {% if question.required %}required{% endif %}>
+                <option value="">Choose one</option>
+                {% for option in question.options %}
+                  <option value="{{ option }}">{{ option }}</option>
+                {% endfor %}
+              </select>
+            {% elif question.type == "rating" %}
+              <fieldset>
+                <legend>{{ question.label }}</legend>
+                {% if question.scale_hint %}<span class="hint">{{ question.scale_hint }}</span>{% endif %}
+                <div class="rating">
+                  {% for value in range(1, 6) %}
+                    <label>
+                      <input type="radio" name="{{ question.id }}" value="{{ value }}" {% if question.required %}required{% endif %}>
+                      <span>{{ value }}</span>
+                    </label>
+                  {% endfor %}
+                </div>
+              </fieldset>
+            {% elif question.type == "multi_select" %}
+              <fieldset>
+                <legend>{{ question.label }}</legend>
+                <div class="checkbox-group two-columns">
+                  {% for option in question.options %}
+                    <label class="checkbox-label">
+                      <input type="checkbox" name="{{ question.id }}" value="{{ option }}">
+                      <span>{{ option }}</span>
+                    </label>
+                  {% endfor %}
+                </div>
+              </fieldset>
+            {% else %}
+              <label for="{{ question.id }}">{{ question.label }}</label>
+              <textarea id="{{ question.id }}" name="{{ question.id }}" maxlength="{{ question.max_length or 500 }}" {% if question.required %}required{% endif %}></textarea>
+            {% endif %}
+          </div>
+        {% endfor %}
+
+        <div class="actions">
+          <button type="submit" id="submit-button">Submit</button>
+          <span class="status" id="status" role="status"></span>
+        </div>
+      </form>
+    </section>
+
+    <section class="thanks" id="thanks">
+      <strong>Thank you.</strong> Your response has been saved. The conference graph can now be refreshed.
+    </section>
+  </main>
+
+  <script>
+    const form = document.getElementById("questionnaire-form");
+    const statusEl = document.getElementById("status");
+    const submitButton = document.getElementById("submit-button");
+    const panel = document.getElementById("questionnaire-panel");
+    const thanks = document.getElementById("thanks");
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      statusEl.textContent = "";
+      statusEl.classList.remove("error");
+      submitButton.disabled = true;
+
+      const formData = new FormData(form);
+      const raw = {};
+      for (const [key, value] of formData.entries()) {
+        if (key === "website") continue;
+        if (raw[key] === undefined) raw[key] = [value];
+        else raw[key].push(value);
+      }
+
+      const answers = {};
+      for (const [key, vals] of Object.entries(raw)) {
+        answers[key] = vals.join(", ");
+      }
+
+      try {
+        const response = await fetch("/submit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ website: formData.get("website") || "", answers }),
+        });
+        const payload = await response.json();
+        if (!response.ok || !payload.success) {
+          throw new Error((payload.errors || [payload.error || "Could not save response."]).join(" "));
+        }
+        panel.style.display = "none";
+        thanks.style.display = "block";
+      } catch (error) {
+        statusEl.textContent = error.message || "Could not save response.";
+        statusEl.classList.add("error");
+        submitButton.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

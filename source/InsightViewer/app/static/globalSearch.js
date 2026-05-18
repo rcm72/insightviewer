@@ -29,7 +29,14 @@
     const response = await fetch(url, options);
     const data = await response.json();
     if (!response.ok || data.success === false) {
-      throw new Error(data.error || `Request failed: ${response.status}`);
+      let msg = data.error || `Request failed: ${response.status}`;
+      if (data.raw_ai_response) {
+        msg += "\n\nRaw AI response:\n" + data.raw_ai_response;
+      }
+      if (data.raw_ai_body) {
+        msg += "\n\nRaw API body:\n" + JSON.stringify(data.raw_ai_body, null, 2);
+      }
+      throw new Error(msg);
     }
     return data;
   }

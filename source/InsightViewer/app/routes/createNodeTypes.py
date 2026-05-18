@@ -538,6 +538,12 @@ def get_nodes_by_type():
         RETURN id(n) AS id, n.name AS name, properties(n) AS properties, labels(n) AS labels
         LIMIT 1000
         """
+        def _serialize(v):
+            """Convert Neo4j non-JSON-serializable types to strings."""
+            if v is None or isinstance(v, (bool, int, float, str)):
+                return v
+            return str(v)
+
         with driver.session() as session:
             result = session.run(query, nodeType=node_type)
             nodes_list = []
@@ -546,7 +552,7 @@ def get_nodes_by_type():
                 nodes_list.append({
                     "id": record["id"],
                     "label": record["name"] if record["name"] is not None else f"{node_type}_{record['id']}",
-                    "properties": dict(rec_props),
+                    "properties": {k: _serialize(v) for k, v in rec_props.items()},
                     "labels": record["labels"] if record["labels"] is not None else []
                 })
         return jsonify({"success": True, "nodes": nodes_list})

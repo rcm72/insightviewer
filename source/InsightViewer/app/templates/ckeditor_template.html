@@ -83,7 +83,7 @@ Copyright (c) 2025 Robert Čmrlec
             }
         </style>
     </head>    
-<body>
+<body data-node-id="{{ node_id | default('') | e }}">
 
 <h1>CKEditor 5  Classic Editor</h1>
 
@@ -98,6 +98,8 @@ Copyright (c) 2025 Robert Čmrlec
 
 <script src="{{ url_for('static', filename='ckeditor/build/ckeditor.js') }}"></script>
 <script>
+    const IV_NODE_ID = document.body.dataset.nodeId || null;
+
     let editorInstance;
 
     class MyUploadAdapter {
@@ -311,6 +313,12 @@ Copyright (c) 2025 Robert Čmrlec
                         classes: true,
                         styles: true
                     },
+                    { name: 'section', attributes: true, classes: true, styles: true },
+                    { name: 'div',     attributes: true, classes: true, styles: true },
+                    { name: 'header',  attributes: true, classes: true, styles: true },
+                    { name: 'footer',  attributes: true, classes: true, styles: true },
+                    { name: 'main',    attributes: true, classes: true, styles: true },
+                    { name: 'nav',     attributes: true, classes: true, styles: true },
                     { name: 'table', attributes: true, classes: true, styles: true },
                     { name: 'a', attributes: ['target','rel'] },
                     { name: 'tr', attributes: true, classes: true, styles: true },
@@ -471,11 +479,47 @@ Copyright (c) 2025 Robert Čmrlec
         return true;
     }
 
-    function generateGraph() {
-        // simulate long process, then show alert
-        setTimeout(() => {
-            alert("Graph generation complete.");
-        }, 3000);
+    async function generateGraph() {
+        try {
+            const html = window.editorInstance ? window.editorInstance.getData() : '';
+
+            if (!html || html.trim().length === 0) {
+                alert("No meeting content found.");
+                return;
+            }
+
+            const response = await fetch('/graph/generate-meeting-graph', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    html: html,
+                    projectName: localStorage.getItem('iv_project') || 'WS_CMRLECR',
+                    sourceType: 'CKEDITOR_MEETING',
+                    nodeId: IV_NODE_ID || null
+                })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok || !result.ok) {
+                console.error(result);
+                alert("Graph generation failed: " + (result.error || "Unknown error"));
+                return;
+            }
+
+            alert(
+                "Graph generation complete.\n\n" +
+                "Meeting: " + result.meetingTitle + "\n" +
+                "Attendees: " + result.attendeesCount + "\n" +
+                "Tasks: " + result.tasksCount
+            );
+
+        } catch (err) {
+            console.error(err);
+            alert("Graph generation failed: " + err.message);
+        }
     }
 </script>
 

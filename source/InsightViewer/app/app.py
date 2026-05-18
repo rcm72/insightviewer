@@ -1,7 +1,6 @@
-   
 # -*- coding: utf-8 -*-
 # SPDX-License-Identifier: AGPL-3.0-or-later
-# Copyright (c) 2025 Robert �mrlec
+# Copyright (c) 2025 Robert Čmrlec
 
 # app.py
 # pkill -f code-server 
@@ -14,7 +13,7 @@
 
 # CREATE CONSTRAINT cgn_name IF NOT EXISTS
 # FOR (n:CustomGraphNode) REQUIRE n.name IS UNIQUE;
-# curl -X POST "http://192.168.1.6:5000/openai-cypher" -H "Content-Type: application/json" -d "{\"query\":\" poi��i najkraj�o pot med nodom tipa table in nodom tipa package \",\"task\":\"explain\",\"execute\":false}"   
+# curl -X POST "http://192.168.1.6:5000/openai-cypher" -H "Content-Type: application/json" -d "{\"query\":\" poii najkrajo pot med nodom tipa table in nodom tipa package \",\"task\":\"explain\",\"execute\":false}"   
 # git remote set-url origin https://github.com/rcm72/insightviewer.git
 # test¸
 # git commit -m "message"
@@ -36,7 +35,7 @@ from neo4j.graph import Node, Relationship  # Import for type checking
 import requests 
 import re 
 from html import unescape
-from neo4j.time import Date as Neo4jDate
+import neo4j.time as _neo4j_time
 from dotenv import load_dotenv
 import sys
 import os
@@ -96,6 +95,8 @@ class CustomJSONProvider(DefaultJSONProvider):
     def default(self, obj):
         if isinstance(obj, (datetime, date)):
             return obj.isoformat()
+        if type(obj).__module__.startswith('neo4j'):
+            return obj.isoformat() if hasattr(obj, 'isoformat') else str(obj)
         return super().default(obj)
 
 app = Flask(__name__)
@@ -208,6 +209,9 @@ ai_graph.init_driver(driver)
 import routes.global_search as global_search
 global_search.init_driver(driver)
 
+import routes.meeting_graph as meeting_graph
+meeting_graph.init_driver(driver)
+
 # if other route modules expose init_driver, do the same:
 # import routes.createRelationsTypes as createRelationsTypes
 # createRelationsTypes.init_driver(driver)
@@ -218,6 +222,7 @@ from routes.createRelationsTypes import relations_bp, get_edge_types
 from routes.ai_graph import ai_graph_bp
 from routes.global_search import global_search_bp
 from routes.templates_api import bp as templates_api_bp
+from routes.meeting_graph import meeting_graph_bp
 
 # Register Blueprints
 app.register_blueprint(relations_bp, url_prefix="/relations")
@@ -225,6 +230,7 @@ app.register_blueprint(nodes_bp, url_prefix="/nodes")
 app.register_blueprint(ai_graph_bp)
 app.register_blueprint(global_search_bp)
 app.register_blueprint(templates_api_bp, url_prefix="/api")
+app.register_blueprint(meeting_graph_bp)
 
 @app.route("/")
 def root():
@@ -385,8 +391,10 @@ def convert_dates(obj):
     Recursively convert datetime/date/neo4j.time.Date to ISO strings
     in nested dict/list structures.
     """
-    if isinstance(obj, (datetime, date, Neo4jDate)):
+    if isinstance(obj, (datetime, date)):
         return obj.isoformat()
+    if type(obj).__module__.startswith('neo4j'):
+        return obj.isoformat() if hasattr(obj, 'isoformat') else str(obj)
     if isinstance(obj, dict):
         return {k: convert_dates(v) for k, v in obj.items()}
     if isinstance(obj, list):
@@ -537,7 +545,7 @@ def run_cypher():
 
                         start_id = start_props.get("id_rc", str(value.start_node.id))
                         end_id   = end_props.get("id_rc", str(value.end_node.id))
-                        rel_id   = rel_props.get("id_rc", str(value.id))
+                        rel_id   = rel_props.get("id_rc") or str(value.id)
 
                         edge = {
                             "id": rel_id,
@@ -738,6 +746,7 @@ def expand_node():
         AND NOT 'customGraphNodePosition' IN labels(n)
         AND NOT 'customGraphNodePosition' IN labels(m)
         """ + edge_type_filter + """
+        WITH DISTINCT r, startNode(r) AS n, endNode(r) AS m
         RETURN n, r, m
         """
         query1 = """
@@ -780,10 +789,11 @@ def expand_node():
                     if not node_id_rc or node_id_rc in nodes_dict:
                         continue
 
+                    _full_name = node.get("name") or (list(node.labels)[0] if node.labels else "Unknown")
                     nodes_dict[node_id_rc] = {
                         "id": node_id_rc,
                         "id_rc": node_id_rc,
-                        "label": node.get("name") or (list(node.labels)[0] if node.labels else "Unknown"),
+                        "label": _full_name.split(".")[-1] if _full_name else _full_name,
                         "nodeType": infer_visual_node_type(node.labels),
                         "labels": list(node.labels),
                         "properties": dict(node),
@@ -1036,6 +1046,7 @@ td:not([style*="dotted"]):not([style*="dashed"]):not([style*="double"]):not([sty
         # CKEditor now gets only the fragment (no nested <html>, <head>, etc)
         return render_template('ckeditor_template.html',
                                content=content,
+                               node_id=node_id,
                                ckeditor_config={"extraPlugins": "mathjax"})
     except Exception as e:
         print(f"Error in edit_node: {e}")
@@ -1311,7 +1322,7 @@ def load_custom_graph(customLoadGraphName):
                     "y": y,
                     "size": size,
                     "labels": origNodeLabels,  # Include all labels
-                    "properties": convert_neo4j_id(origNode)  # Convert properties
+                    "properties": convert_dates(convert_neo4j_id(origNode))  # Convert properties
                 }
                 print("Node added:", nodes[origNode_id])
 
@@ -1345,11 +1356,11 @@ def load_custom_graph(customLoadGraphName):
 
                     # Process relationship
                     rel_props = dict(relationship)
-                    rel_id = rel_props.get("id_rc") or f"{relationship.start_node.id}-{relationship.end_node.id}-{relationship.type}"
+                    rel_id = rel_props.get("id_rc") or str(relationship.id)
                     start_props = dict(relationship.start_node)
                     end_props = dict(relationship.end_node)
                     edge = {
-                        "id": rel_id,  # Unique edge ID (prefer id_rc)
+                        "id": rel_id,
                         "from": start_props.get("id_rc", str(relationship.start_node.id)),
                         "to": end_props.get("id_rc", str(relationship.end_node.id)),
                         "type": relationship.type,
@@ -1361,7 +1372,8 @@ def load_custom_graph(customLoadGraphName):
 
             print("Load graph completed")
             print("list(nodes.values()):", list(nodes.values()))
-            return jsonify({"success": True, "nodes": list(nodes.values()), "edges": edges})
+            payload = {"success": True, "nodes": list(nodes.values()), "edges": edges}
+            return jsonify(convert_dates(payload))
 
     except Exception as e:
         app.logger.exception("Error in loadCustomGraph")  # Logs file:line + stack

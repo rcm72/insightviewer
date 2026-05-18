@@ -139,13 +139,19 @@ def _extract_cypher_from_text(text: str) -> str:
         return ""
 
     stripped = text.strip()
-    code_block = re.search(r"```(?:\s*cypher\s*\n)?(.*?)```", stripped, re.IGNORECASE | re.DOTALL)
+
+    # Strip reasoning/thinking blocks produced by some models (e.g. o1, gpt-5)
+    stripped = re.sub(r"<think>.*?</think>", "", stripped, flags=re.IGNORECASE | re.DOTALL).strip()
+    stripped = re.sub(r"<thinking>.*?</thinking>", "", stripped, flags=re.IGNORECASE | re.DOTALL).strip()
+
+    # Match any code fence regardless of language specifier (cypher, sql, plaintext, none, ...)
+    code_block = re.search(r"```[a-zA-Z]*\s*\n?(.*?)```", stripped, re.IGNORECASE | re.DOTALL)
     if code_block:
         stripped = code_block.group(1).strip()
 
     match_start = re.search(r"\b(MATCH|OPTIONAL\s+MATCH|UNWIND|WITH|RETURN)\b", stripped, re.IGNORECASE)
     if match_start:
-        stripped = stripped[match_start.start() :].strip()
+        stripped = stripped[match_start.start():].strip()
 
     return stripped.strip("`").strip()
 
@@ -871,7 +877,7 @@ def build_cypher_with_ai():
         prompt_parts.append(f"User request:\n{question}")
 
         system_prompt = str(
-            payload.get("system")
+            payload.get("system") 
             or "You generate safe Neo4j Cypher queries for InsightViewer based only on provided schema context."
         ).strip()
         user_prompt = "\n\n".join(part for part in prompt_parts if part).strip()
@@ -888,7 +894,13 @@ def build_cypher_with_ai():
 
         cypher = _extract_cypher_from_text(resp.text)
         if not cypher:
-            return jsonify({"success": False, "error": "AI response did not contain a Cypher query"}), 502
+            import json as _json
+            return jsonify({
+                "success": False,
+                "error": "AI response did not contain a Cypher query.",
+                "raw_ai_response": resp.text or "",
+                "raw_ai_body": resp.raw,
+            }), 502
 
         if not is_safe_read_query(cypher):
             return jsonify({"success": False, "error": "AI generated query failed read-only safety validation"}), 400
