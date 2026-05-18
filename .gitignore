@@ -75,3 +75,6 @@ wget-log*
 quiz_results.csv
 test*.txt
 *.map
+
+# documentation (local only)
+*.md
