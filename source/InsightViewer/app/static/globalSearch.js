@@ -4,6 +4,8 @@
     nodeTypes: [],
     edgeTypes: [],
     aiProviders: null,
+    globalScopeNodeId: "",
+    globalScopeNodeLabel: "",
     sourceSelection: null,
     targetSelection: null,
     sourceTimer: null,
@@ -75,6 +77,7 @@
     const items = state.nodeTypes.map((type) => ({ value: type.name, label: type.name }));
     setSelectOptions(byId("gs-source-type"), items, "Choose source type");
     setSelectOptions(byId("gs-target-type"), items, "Choose target type");
+    setSelectOptions(byId("gs-global-node-type"), items, "Any node type");
 
     const sourceSelect = byId("gs-source-type");
     const targetSelect = byId("gs-target-type");
@@ -275,6 +278,7 @@
     const mode = guidedSearchMode();
     const templatePanel = byId("gs-template-panel");
     const aiPanel = byId("gs-ai-panel");
+    const neo4jGlobalPanel = byId("gs-neo4j-global-panel");
     const buildButton = byId("gs-build-button");
 
     if (templatePanel) {
@@ -282,6 +286,9 @@
     }
     if (aiPanel) {
       aiPanel.style.display = mode === "ai" ? "grid" : "none";
+    }
+    if (neo4jGlobalPanel) {
+      neo4jGlobalPanel.style.display = mode === "neo4j-global" ? "grid" : "none";
     }
     if (buildButton) {
       buildButton.textContent = mode === "ai" ? "Generate Cypher" : "Build Cypher";
@@ -292,6 +299,15 @@
       return;
     }
 
+    if (mode === "neo4j-global") {
+      updateGlobalScopeUI();
+      const globalQuestion = byId("gs-global-query");
+      if (globalQuestion) {
+        globalQuestion.focus();
+      }
+      return;
+    }
+
     loadGuidedAiProviders().catch((error) => {
       setStatus(error.message || String(error), true);
     });
@@ -299,6 +315,21 @@
     const aiQuestion = byId("gs-ai-question");
     if (aiQuestion) {
       aiQuestion.focus();
+    }
+  }
+
+  function updateGlobalScopeUI() {
+    const wrap = byId("gs-global-scope-wrap");
+    const label = byId("gs-global-scope-label");
+    if (!wrap || !label) return;
+
+    if (state.globalScopeNodeId) {
+      wrap.style.display = "grid";
+      const shownLabel = state.globalScopeNodeLabel || state.globalScopeNodeId;
+      label.textContent = `${shownLabel} (${state.globalScopeNodeId})`;
+    } else {
+      wrap.style.display = "none";
+      label.textContent = "";
     }
   }
 
@@ -481,9 +512,6 @@
     if (!state.edgeTypes.length) {
       await loadEdgeTypes();
     }
-    if (!state.aiProviders) {
-      await loadGuidedAiProviders();
-    }
     updateModeUI();
 
     if (!state.nodeTypes.length) {
@@ -529,6 +557,35 @@
     };
   }
 
+  function payloadForNeo4jGlobalBuild() {
+    return {
+      query: byId("gs-global-query")?.value.trim() || "",
+      index_name: byId("gs-global-index")?.value.trim() || "iv_global_search_idx",
+      limit: Number(byId("gs-global-limit")?.value || 24),
+      node_type: byId("gs-global-node-type")?.value || "",
+      scope_node_id_rc: state.globalScopeNodeId || "",
+      scope_hops: Number(byId("gs-global-scope-hops")?.value || 1),
+      project: currentProject(),
+      edge_types: selectedEdgeTypes(),
+    };
+  }
+
+  async function checkGlobalIndexStatus(indexName) {
+    const params = new URLSearchParams({ index_name: indexName });
+    return getJson(`/api/search/fulltext-index-status?${params.toString()}`);
+  }
+
+  async function ensureGlobalIndex(indexName) {
+    return getJson("/api/search/fulltext-index-ensure", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        index_name: indexName,
+        properties: ["name", "id_rc"],
+      }),
+    });
+  }
+
   function focusCypherDialog() {
     if (typeof window.openCypherDialog === "function") {
       window.openCypherDialog();
@@ -545,7 +602,18 @@
     }
   }
 
-  window.openGuidedSearchDialog = async function () {
+  window.openGuidedSearchDialog = async function (options) {
+    const cfg = options && typeof options === "object" ? options : {};
+
+    if (cfg.scopeNodeId) {
+      state.globalScopeNodeId = String(cfg.scopeNodeId).trim();
+      state.globalScopeNodeLabel = String(cfg.scopeNodeLabel || cfg.scopeNodeId).trim();
+    }
+    if (cfg.clearScope) {
+      state.globalScopeNodeId = "";
+      state.globalScopeNodeLabel = "";
+    }
+
     const dialog = byId("guided-search-dialog");
     if (!dialog) return;
     dialog.style.display = "block";
@@ -556,11 +624,47 @@
 
     try {
       await ensureDialogData();
+      const modeSelect = byId("gs-mode");
+      if (modeSelect && cfg.mode) {
+        modeSelect.value = cfg.mode;
+      }
+
+      const globalIndex = byId("gs-global-index");
+      if (globalIndex && !globalIndex.value.trim()) {
+        globalIndex.value = "iv_global_search_idx";
+      }
+
+      const globalQuery = byId("gs-global-query");
+      if (globalQuery && cfg.query && !globalQuery.value.trim()) {
+        globalQuery.value = String(cfg.query);
+      }
+
+      const globalNodeType = byId("gs-global-node-type");
+      if (globalNodeType && state.nodeTypes.length) {
+        const existing = Array.from(globalNodeType.options).map((opt) => opt.value);
+        if (existing.length <= 1) {
+          setSelectOptions(
+            globalNodeType,
+            state.nodeTypes.map((type) => ({ value: type.name, label: type.name })),
+            "Any node type"
+          );
+        }
+      }
+
       const aiQuestion = byId("gs-ai-question");
       if (aiQuestion && !aiQuestion.value.trim()) {
         aiQuestion.value = "Write Cypher that returns the graph for all procedures that do insert operations.";
       }
-      setStatus(guidedSearchMode() === "ai" ? "Describe the graph you want in natural language." : "Choose a template and a source node.", false);
+
+      updateModeUI();
+      const mode = guidedSearchMode();
+      if (mode === "ai") {
+        setStatus("Describe the graph you want in natural language.", false);
+      } else if (mode === "neo4j-global") {
+        setStatus(state.globalScopeNodeId ? "Neo4j global search scoped to selected node." : "Neo4j global search across the whole project.", false);
+      } else {
+        setStatus("Choose a template and a source node.", false);
+      }
     } catch (error) {
       setStatus(error.message || String(error), true);
     }
@@ -581,18 +685,65 @@
     });
   };
 
+  window.clearGuidedGlobalScope = function () {
+    state.globalScopeNodeId = "";
+    state.globalScopeNodeLabel = "";
+    updateGlobalScopeUI();
+    setStatus("Neo4j global search scope cleared. Searching globally.", false);
+  };
+
+  window.checkGuidedGlobalIndex = async function () {
+    const indexName = byId("gs-global-index")?.value.trim() || "iv_global_search_idx";
+    try {
+      const data = await checkGlobalIndexStatus(indexName);
+      if (!data.exists) {
+        setStatus(`Index '${indexName}' does not exist yet. Use Create index.`, true);
+        return;
+      }
+      setStatus(`Index '${indexName}' is available (state: ${data.state || "UNKNOWN"}).`, false);
+    } catch (error) {
+      setStatus(error.message || String(error), true);
+    }
+  };
+
+  window.ensureGuidedGlobalIndex = async function () {
+    const indexName = byId("gs-global-index")?.value.trim() || "iv_global_search_idx";
+    try {
+      const data = await ensureGlobalIndex(indexName);
+      const action = data.created ? "created" : "verified";
+      setStatus(`Index '${indexName}' ${action} (state: ${data.state || "UNKNOWN"}).`, false);
+    } catch (error) {
+      setStatus(error.message || String(error), true);
+    }
+  };
+
   window.buildGuidedSearchCypher = async function () {
     const mode = guidedSearchMode();
     const isAiMode = mode === "ai";
-    setStatus(isAiMode ? "Generating Cypher with AI..." : "Building Cypher...", false);
+    const isNeo4jGlobalMode = mode === "neo4j-global";
+    setStatus(
+      isAiMode
+        ? "Generating Cypher with AI..."
+        : isNeo4jGlobalMode
+          ? "Building Cypher from Neo4j global search..."
+          : "Building Cypher...",
+      false
+    );
 
     try {
-      const payload = isAiMode ? payloadForAiBuild() : payloadForBuild();
+      const payload = isAiMode ? payloadForAiBuild() : (isNeo4jGlobalMode ? payloadForNeo4jGlobalBuild() : payloadForBuild());
       if (isAiMode && !payload.question) {
         throw new Error("Please describe the graph you want.");
       }
+      if (isNeo4jGlobalMode && !payload.query) {
+        throw new Error("Please enter global search text.");
+      }
 
-      const data = await getJson(isAiMode ? "/api/search/ai-build-cypher" : "/api/search/build-cypher", {
+      const endpoint = isAiMode
+        ? "/api/search/ai-build-cypher"
+        : (isNeo4jGlobalMode ? "/api/search/neo4j-global-build-cypher" : "/api/search/build-cypher");
+
+      const data = await getJson(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -605,7 +756,14 @@
 
       textarea.value = data.cypher || "";
       focusCypherDialog();
-      setStatus(isAiMode ? "AI-generated Cypher inserted into the Cypher dialog." : "Cypher generated and inserted into the Cypher dialog.", false);
+      if (isAiMode) {
+        setStatus("AI-generated Cypher inserted into the Cypher dialog.", false);
+      } else if (isNeo4jGlobalMode) {
+        const hitCount = Number(data.meta?.hit_count || 0);
+        setStatus(`Neo4j global search Cypher inserted (${hitCount} matched nodes).`, false);
+      } else {
+        setStatus("Cypher generated and inserted into the Cypher dialog.", false);
+      }
       window.closeGuidedSearchDialog();
     } catch (error) {
       setStatus(error.message || String(error), true);
@@ -617,8 +775,24 @@
     if (modeSelect) {
       modeSelect.addEventListener("change", function () {
         updateModeUI();
-        setStatus(guidedSearchMode() === "ai" ? "Describe the graph you want in natural language." : "Choose a template and a source node.", false);
+        const mode = guidedSearchMode();
+        if (mode === "ai") {
+          setStatus("Describe the graph you want in natural language.", false);
+        } else if (mode === "neo4j-global") {
+          setStatus(state.globalScopeNodeId ? "Neo4j global search scoped to selected node." : "Neo4j global search across the whole project.", false);
+        } else {
+          setStatus("Choose a template and a source node.", false);
+        }
       });
+    }
+
+    const globalNodeTypeSelect = byId("gs-global-node-type");
+    if (globalNodeTypeSelect) {
+      setSelectOptions(
+        globalNodeTypeSelect,
+        state.nodeTypes.map((type) => ({ value: type.name, label: type.name })),
+        "Any node type"
+      );
     }
 
     const templateSelect = byId("gs-template");

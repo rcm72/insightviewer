@@ -4,6 +4,7 @@ from typing import Any
 
 import jwt
 from flask import Blueprint, jsonify, request
+from neo4j.exceptions import ClientError, CypherSyntaxError
 
 from ai.errors import AIError, ProviderConfigError, ProviderRequestError, ProviderResponseError
 from ai.registry import ProviderRegistry
@@ -233,6 +234,77 @@ def _normalize_edge_types(value):
     return out
 
 
+def _validate_identifier(identifier, field_name):
+    value = str(identifier or "").strip()
+    if not value:
+        raise ValueError(f"{field_name} is required")
+    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", value):
+        raise ValueError(f"{field_name} must match [A-Za-z_][A-Za-z0-9_]*")
+    return value
+
+
+def _normalize_fulltext_properties(value):
+    if value is None:
+        return ["name", "id_rc"]
+    if not isinstance(value, list):
+        raise ValueError("properties must be a list")
+
+    props = []
+    seen = set()
+    for item in value:
+        prop = _validate_identifier(item, "property")
+        if prop in seen:
+            continue
+        seen.add(prop)
+        props.append(prop)
+
+    if not props:
+        raise ValueError("properties must contain at least one property name")
+    return props
+
+
+def _normalize_fulltext_labels(value):
+    if value is None:
+        return None
+    if not isinstance(value, list):
+        raise ValueError("labels must be a list")
+
+    labels = []
+    seen = set()
+    for item in value:
+        label = str(item or "").strip()
+        if not label or label in seen:
+            continue
+        seen.add(label)
+        labels.append(label)
+
+    if not labels:
+        raise ValueError("labels must contain at least one label name")
+    return labels
+
+
+def _quote_cypher_identifier(value):
+    return "`" + str(value).replace("`", "``") + "`"
+
+
+def _fetch_all_node_labels(session):
+    rows = session.run("CALL db.labels() YIELD label RETURN label ORDER BY label").data()
+    return [str(row.get("label") or "").strip() for row in rows if str(row.get("label") or "").strip()]
+
+
+def _read_fulltext_index_info(session, index_name):
+    rows = session.run(
+        """
+        SHOW INDEXES YIELD name, type, state, labelsOrTypes, properties
+        WHERE type = 'FULLTEXT' AND name = $index_name
+        RETURN name, type, state, labelsOrTypes AS labels, properties
+        LIMIT 1
+        """,
+        index_name=index_name,
+    ).data()
+    return rows[0] if rows else None
+
+
 def _lookup_nodes_by_type_and_name(session, node_type, name, project):
     cypher = """
     MATCH (n)
@@ -329,6 +401,83 @@ def _project_filter(alias, project):
         return "TRUE"
     quoted = _quote_cypher_string(project)
     return f"({alias}.projectName = {quoted} OR {alias}.projectName IS NULL)"
+
+
+def _build_fulltext_graph_cypher(hit_ids, project, edge_types):
+    if not hit_ids:
+        return ""
+
+    edge_filter = "TRUE"
+    if edge_types:
+        edge_filter = f"(r IS NULL OR type(r) IN {_cypher_list(edge_types)})"
+
+    return f"""
+MATCH (h)
+WHERE h.id_rc IN {_cypher_list(hit_ids)}
+  AND {_project_filter('h', project)}
+OPTIONAL MATCH (h)-[r]-(n)
+WHERE {_project_filter('n', project)}
+  AND {edge_filter}
+RETURN DISTINCT h AS s, r, n AS t
+""".strip()
+
+
+def _build_scoped_fulltext_graph_cypher(hit_ids, scope_node_id_rc, scope_hops, project, edge_types):
+    if not hit_ids:
+        return ""
+
+    edge_filter = "TRUE"
+    if edge_types:
+        edge_filter = f"(r IS NULL OR type(r) IN {_cypher_list(edge_types)})"
+
+    scope_hops = max(1, min(int(scope_hops or 1), 2))
+
+    return f"""
+MATCH (scope {{id_rc: {_quote_cypher_string(scope_node_id_rc)}}})
+WHERE {_project_filter('scope', project)}
+MATCH p = (scope)-[*..{scope_hops}]-(h)
+WHERE h.id_rc IN {_cypher_list(hit_ids)}
+  AND ALL(n1 IN nodes(p) WHERE {_project_filter('n1', project)})
+WITH DISTINCT h
+OPTIONAL MATCH (h)-[r]-(n)
+WHERE {_project_filter('n', project)}
+  AND {edge_filter}
+RETURN DISTINCT h AS s, r, n AS t
+""".strip()
+
+
+def _fulltext_hits(session, *, index_name, query_text, node_type, project, limit):
+    cypher = """
+    CALL db.index.fulltext.queryNodes($index_name, $query_text) YIELD node, score
+    WHERE node.id_rc IS NOT NULL
+      AND coalesce(node.name, '') <> ''
+      AND ($node_type = '' OR $node_type IN labels(node))
+      AND ($project IS NULL OR node.projectName = $project OR node.projectName IS NULL)
+    RETURN node.id_rc AS id_rc, node.name AS name, labels(node) AS labels, score
+    ORDER BY score DESC, node.name
+    LIMIT $limit
+    """
+
+    rows = session.run(
+        cypher,
+        index_name=index_name,
+        query_text=query_text,
+        node_type=node_type,
+        project=project,
+        limit=limit,
+    ).data()
+
+    if not rows and project:
+        rows = session.run(
+            cypher,
+            index_name=index_name,
+            query_text=query_text,
+            node_type=node_type,
+            project=None,
+            limit=limit,
+        ).data()
+
+    return rows
 
 
 def _build_connected_to_node(source, target, edge_types, project):
@@ -754,6 +903,85 @@ def list_edge_types():
     return jsonify({"success": True, "edge_types": edge_types})
 
 
+@global_search_bp.get("/fulltext-index-status")
+def fulltext_index_status():
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    _ensure_driver()
+    try:
+        index_name = _validate_identifier(request.args.get("index_name") or "iv_global_search_idx", "index_name")
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+
+    try:
+        with driver.session() as session:
+            index_info = _read_fulltext_index_info(session, index_name)
+    except (CypherSyntaxError, ClientError) as e:
+        return jsonify({"success": False, "error": f"Failed to inspect indexes: {e}"}), 400
+
+    return jsonify(
+        {
+            "success": True,
+            "index_name": index_name,
+            "exists": bool(index_info),
+            "state": index_info.get("state") if index_info else None,
+            "labels": index_info.get("labels") if index_info else None,
+            "properties": index_info.get("properties") if index_info else None,
+        }
+    )
+
+
+@global_search_bp.post("/fulltext-index-ensure")
+def fulltext_index_ensure():
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    _ensure_driver()
+    payload = request.get_json(silent=True) or {}
+
+    try:
+        index_name = _validate_identifier(payload.get("index_name") or "iv_global_search_idx", "index_name")
+        properties = _normalize_fulltext_properties(payload.get("properties"))
+        requested_labels = _normalize_fulltext_labels(payload.get("labels"))
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+
+    try:
+        with driver.session() as session:
+            labels = requested_labels or _fetch_all_node_labels(session)
+            if not labels:
+                return jsonify({"success": False, "error": "Could not discover any labels for fulltext index creation."}), 400
+
+            labels_pattern = "|".join(_quote_cypher_identifier(label) for label in labels)
+            property_clause = ", ".join(f"n.{_quote_cypher_identifier(name)}" for name in properties)
+            create_cypher = (
+                f"CREATE FULLTEXT INDEX {_quote_cypher_identifier(index_name)} IF NOT EXISTS "
+                f"FOR (n:{labels_pattern}) ON EACH [{property_clause}]"
+            )
+
+            before = _read_fulltext_index_info(session, index_name)
+            session.run(create_cypher).consume()
+            after = _read_fulltext_index_info(session, index_name)
+    except (CypherSyntaxError, ClientError) as e:
+        return jsonify({"success": False, "error": f"Failed to create/verify fulltext index: {e}"}), 400
+
+    return jsonify(
+        {
+            "success": True,
+            "index_name": index_name,
+            "created": before is None and after is not None,
+            "exists": after is not None,
+            "state": after.get("state") if after else None,
+            "labels": after.get("labels") if after else None,
+            "properties": after.get("properties") if after else properties,
+            "used_labels": labels,
+        }
+    )
+
+
 @global_search_bp.post("/build-cypher")
 def build_cypher():
     user_data, error_response, status_code = validate_jwt()
@@ -793,6 +1021,111 @@ def build_cypher():
                 "edge_types": edge_types,
                 "source": source,
                 "target": target,
+            },
+        }
+    )
+
+
+@global_search_bp.post("/neo4j-global-build-cypher")
+def build_cypher_from_neo4j_global_search():
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    _ensure_driver()
+    payload = request.get_json(silent=True) or {}
+
+    query_text = str(payload.get("query") or "").strip()
+    if not query_text:
+        return jsonify({"success": False, "error": "query is required"}), 400
+
+    index_name = str(payload.get("index_name") or "iv_global_search_idx").strip()
+    if not index_name:
+        return jsonify({"success": False, "error": "index_name is required"}), 400
+
+    node_type = str(payload.get("node_type") or "").strip()
+    scope_node_id_rc = str(payload.get("scope_node_id_rc") or "").strip()
+    project = _normalize_project(payload.get("project"), user_data["project"])
+    edge_types = _normalize_edge_types(payload.get("edge_types"))
+
+    try:
+        limit = max(1, min(int(payload.get("limit") or 24), 80))
+    except ValueError:
+        return jsonify({"success": False, "error": "limit must be an integer"}), 400
+
+    try:
+        scope_hops = max(1, min(int(payload.get("scope_hops") or 1), 2))
+    except ValueError:
+        return jsonify({"success": False, "error": "scope_hops must be an integer"}), 400
+
+    try:
+        with driver.session() as session:
+            rows = _fulltext_hits(
+                session,
+                index_name=index_name,
+                query_text=query_text,
+                node_type=node_type,
+                project=project,
+                limit=limit,
+            )
+    except (CypherSyntaxError, ClientError) as e:
+        message = str(e)
+        if "db.index.fulltext.queryNodes" in message or "Unknown procedure" in message or "There is no such fulltext schema index" in message:
+            return jsonify(
+                {
+                    "success": False,
+                    "error": (
+                        f"Neo4j fulltext index '{index_name}' is not available. "
+                        "Create it first, for example: "
+                        f"CREATE FULLTEXT INDEX {index_name} IF NOT EXISTS FOR (n:YourLabel) ON EACH [n.name, n.id_rc]"
+                    ),
+                }
+            ), 400
+        return jsonify({"success": False, "error": f"Neo4j fulltext query failed: {message}"}), 400
+
+    hits = [
+        {
+            "id_rc": row.get("id_rc"),
+            "name": row.get("name"),
+            "labels": row.get("labels") or [],
+            "score": row.get("score"),
+        }
+        for row in rows
+        if row.get("id_rc") and row.get("name")
+    ]
+
+    hit_ids = [str(item["id_rc"]) for item in hits]
+    if not hit_ids:
+        return jsonify(
+            {
+                "success": False,
+                "error": "No matching nodes found for the requested query.",
+                "items": [],
+            }
+        ), 404
+
+    if scope_node_id_rc:
+        cypher = _build_scoped_fulltext_graph_cypher(hit_ids, scope_node_id_rc, scope_hops, project, edge_types)
+    else:
+        cypher = _build_fulltext_graph_cypher(hit_ids, project, edge_types)
+
+    if not is_safe_read_query(cypher):
+        return jsonify({"success": False, "error": "Generated query failed read-only safety validation"}), 400
+
+    return jsonify(
+        {
+            "success": True,
+            "cypher": cypher,
+            "items": hits,
+            "meta": {
+                "query": query_text,
+                "index_name": index_name,
+                "node_type": node_type,
+                "scope_node_id_rc": scope_node_id_rc,
+                "scope_hops": scope_hops,
+                "project": project,
+                "edge_types": edge_types,
+                "hit_count": len(hit_ids),
             },
         }
     )

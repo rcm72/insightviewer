@@ -23,6 +23,20 @@ ai_graph_bp = Blueprint("ai_graph", __name__, url_prefix="/api/ai")
 driver = None
 
 
+def _fetch_node_type_names(session, project):
+    cypher = """
+    MATCH (n:NodeType)
+    WHERE $project IS NULL OR n.projectName = $project OR n.projectName IS NULL
+    RETURN DISTINCT n.name AS name
+    ORDER BY name
+    LIMIT 200
+    """
+    rows = session.run(cypher, project=project).data()
+    if not rows and project:
+        rows = session.run(cypher, project=None).data()
+    return [str(row.get("name") or "").strip() for row in rows if str(row.get("name") or "").strip()]
+
+
 def init_driver(d) -> None:
     global driver
     driver = d
@@ -82,7 +96,7 @@ def _collect_chunks_by_depth(
     project: str | None,
     chunk_limit: int,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    depth = max(0, min(int(depth), 6))
+    depth = max(0, int(depth))
 
     visited_query = f"""
         UNWIND $node_ids AS nid
@@ -248,20 +262,34 @@ def ask_graph():
 
         with driver.session() as session:
             ctx = fetch_graph_context(session, project=project, sample_limit=sample_limit)
+            node_type_names = _fetch_node_type_names(session, project)
 
-        context_block = format_context_for_prompt(ctx)
+        prompt_parts = [format_context_for_prompt(ctx).strip()]
+        if node_type_names:
+            shown = ", ".join(node_type_names[:80])
+            suffix = " ..." if len(node_type_names) > 80 else ""
+            prompt_parts.append(f"Known NodeType names:\n- {shown}{suffix}")
+
+        prompt_parts.append(
+            "Instructions:\n"
+            "- Base your answer on graph context when possible.\n"
+            "- When writing Cypher that traverses paths, always use this exact RETURN pattern:\n"
+            "    MATCH p = (a)-[*1..N]-(b)\n"
+            "    UNWIND relationships(p) AS r\n"
+            "    RETURN DISTINCT startNode(r) AS s, r AS rel, endNode(r) AS t\n"
+            "  Rules: (1) return the relationship object r itself (aliased, e.g. AS rel) — NEVER type(r) or any scalar in place of r;\n"
+            "  (2) do NOT add extra scalar columns such as type(r) AS relationshipType;\n"
+            "  (3) do NOT RETURN p directly.\n"
+            "- If context is insufficient, say what additional graph data is needed."
+        )
+        prompt_parts.append(f"User question:\n{question}")
+
         system_prompt = str(
             payload.get("system")
             or "You are a Neo4j graph assistant. Use only known graph context, state uncertainty when needed."
         ).strip()
 
-        user_prompt = (
-            f"{context_block}\n"
-            "Instructions:\n"
-            "- Base your answer on graph context when possible.\n"
-            "- If context is insufficient, say what additional graph data is needed.\n\n"
-            f"User question:\n{question}"
-        )
+        user_prompt = "\n\n".join(part for part in prompt_parts if part).strip()
 
         temperature = float(payload.get("temperature") or 0.2)
         max_tokens = int(payload.get("max_tokens") or 1200)
@@ -287,6 +315,7 @@ def ask_graph():
                     "labels": ctx.labels,
                     "relationship_types": ctx.rel_types,
                     "sample_nodes": ctx.sample_nodes,
+                    "node_types": node_type_names,
                 },
                 "answer": resp.text,
             }
@@ -338,12 +367,18 @@ def ask_graph_by_depth():
             )
 
         if not chunks:
+            suggestion = (
+                f"No text chunks were found within traversal depth {depth}. "
+                f"Visited {len(visited_nodes)} node(s) — none had attached chunks. "
+                f"Try increasing the traversal depth (currently {depth}) to reach more nodes, "
+                "or verify that the selected nodes have neighbours with HAS_CHUNK relationships."
+            )
             return jsonify(
                 {
                     "success": True,
                     "provider": None,
                     "model": None,
-                    "answer": "No chunks found for selected nodes/depth.",
+                    "answer": suggestion,
                     "retrieval": {
                         "project": project,
                         "input_node_ids": node_ids,
@@ -366,16 +401,29 @@ def ask_graph_by_depth():
             selection = validate_selection(requested_selection, provider_models)
         provider = registry.get_provider(selection.provider)
 
+        with driver.session() as session:
+            ctx = fetch_graph_context(session, project=project, sample_limit=8)
+            node_type_names = _fetch_node_type_names(session, project)
+
+        schema_parts = [format_context_for_prompt(ctx).strip()]
+        if node_type_names:
+            shown = ", ".join(node_type_names[:80])
+            suffix = " ..." if len(node_type_names) > 80 else ""
+            schema_parts.append(f"Known NodeType names:\n- {shown}{suffix}")
+        schema_block = "\n\n".join(schema_parts)
+
         chunks_block = _chunks_to_prompt(chunks, max_chars=max_chunk_chars)
         system_prompt = str(
             payload.get("system")
             or (
-                "You are a graph-grounded assistant. Answer ONLY from provided chunk evidence. "
-                "If evidence is missing, clearly state what is missing."
+                "You are a knowledgeable assistant. Prefer the provided chunk evidence when answering, "
+                "but you may also use your general knowledge to complement or clarify when the chunks "
+                "are insufficient. Always indicate when you are drawing on general knowledge."
             )
         ).strip()
 
         user_prompt = (
+            f"{schema_block}\n\n"
             "Retrieved evidence from graph traversal.\n"
             f"- project: {project or 'ALL'}\n"
             f"- start_node_ids: {', '.join(node_ids)}\n"
@@ -385,10 +433,21 @@ def ask_graph_by_depth():
             "Evidence chunks:\n"
             f"{chunks_block}\n\n"
             "Task instructions:\n"
-            "- Answer based on evidence chunks.\n"
-            "- If uncertain, say so and mention which chunk IDs are relevant.\n"
-            "- Prefer concise and factual answers.\n\n"
-            f"User question:\n{question}"
+            "- Prefer the evidence chunks when answering; use your general knowledge to fill gaps when chunks are insufficient.\n"
+            "- Use only label names and relationship types from the graph context above.\n"
+            "- Do NOT add projectName filters to any Cypher query you write.\n"
+            "- When writing Cypher that traverses paths, always use this exact RETURN pattern:\n"
+            "    MATCH p = (a)-[*1..N]-(b)\n"
+            "    UNWIND relationships(p) AS r\n"
+            "    RETURN DISTINCT startNode(r) AS s, r AS rel, endNode(r) AS t\n"
+            "  Rules: (1) return the relationship object r itself (aliased, e.g. AS rel) — NEVER type(r) or any scalar in place of r;\n"
+            "  (2) do NOT add extra scalar columns such as type(r) AS relationshipType;\n"
+            "  (3) do NOT RETURN p directly.\n"
+            "- If uncertain, say so and mention which chunk ID_RC are relevant.\n"
+            "- If you can't answer suggest increasing the depth or chunk size.\n"
+            "- Prefer concise and factual answers.\n"
+            + (f"- {str(payload.get('extra_instructions')).strip()}\n" if payload.get("extra_instructions") else "")
+            + f"\nUser question:\n{question}"
         )
 
         temperature = float(payload.get("temperature") or 0.2)
