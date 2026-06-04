@@ -85,6 +85,8 @@ Copyright (c) 2025 Robert Čmrlec
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/hint/show-hint.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/hint/xml-hint.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/hint/html-hint.min.js"></script>
+    <!-- Markdown rendering for AI answer dialog -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
 
     <script>
     /*
@@ -652,7 +654,7 @@ RETURN s, r, t
       <div style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px;">
         <div style="display:grid; gap:4px;">
           <label for="graph-ai-depth">Traversal depth</label>
-          <input id="graph-ai-depth" type="number" min="0" max="6" value="2" style="width:100%;">
+          <input id="graph-ai-depth" type="number" min="0" max="20" value="2" style="width:100%;">
         </div>
         <div style="display:grid; gap:4px;">
           <label for="graph-ai-chunk-limit">Chunk limit</label>
@@ -671,7 +673,7 @@ RETURN s, r, t
       </div>
       <div style="display:grid; gap:4px;">
         <label for="graph-ai-result">Answer</label>
-        <textarea id="graph-ai-result" rows="10" readonly style="width:100%; resize:vertical;"></textarea>
+        <div id="graph-ai-result" style="width:100%; min-height:200px; max-height:420px; overflow-y:auto; padding:8px; border:1px solid #ccc; border-radius:4px; background:#fafafa; box-sizing:border-box; font-size:14px; line-height:1.5;"></div>
       </div>
       <div style="display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap;">
         <button onclick="runGraphAiForSelectedNode()">Ask AI</button>

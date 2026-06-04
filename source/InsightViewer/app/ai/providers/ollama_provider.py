@@ -12,9 +12,17 @@ from .base import AIProvider
 class OllamaProvider(AIProvider):
     id = "ollama"
 
-    def __init__(self, base_url: str | None, auth_token: str | None = None):
+    def __init__(
+        self,
+        base_url: str | None,
+        auth_token: str | None = None,
+        timeout: int = 60,
+        think: bool | None = None,
+    ):
         self._base_url = (base_url or "").rstrip("/")
         self._auth = auth_token
+        self._timeout = max(1, int(timeout))
+        self._think = think
         if not self._base_url:
             raise ProviderConfigError("OLLAMA.BASE not configured")
 
@@ -35,10 +43,20 @@ class OllamaProvider(AIProvider):
                 "temperature": float(req.temperature),
             },
         }
+        if self._think is not None:
+            payload["think"] = self._think
         try:
-            r = requests.post(url, json=payload, headers=self._headers(), timeout=60)
+            r = requests.post(url, json=payload, headers=self._headers(), timeout=self._timeout)
         except requests.RequestException as e:
             raise ProviderRequestError(f"Ollama request failed: {e}") from e
+
+        # If model doesn't support thinking, retry without the think flag.
+        if r.status_code == 400 and "does not support thinking" in r.text and "think" in payload:
+            payload.pop("think")
+            try:
+                r = requests.post(url, json=payload, headers=self._headers(), timeout=self._timeout)
+            except requests.RequestException as e:
+                raise ProviderRequestError(f"Ollama request failed: {e}") from e
 
         if not r.ok:
             raise ProviderRequestError(f"Ollama HTTP {r.status_code}: {r.text[:5000]}")
@@ -69,7 +87,7 @@ class OllamaProvider(AIProvider):
             url = f"{self._base_url}{ep}"
             for payload in payloads:
                 try:
-                    r = requests.post(url, json=payload, headers=self._headers(), timeout=60)
+                    r = requests.post(url, json=payload, headers=self._headers(), timeout=self._timeout)
                 except requests.RequestException as e:
                     last_err = str(e)
                     continue

@@ -28,7 +28,7 @@ MAX_CONTENT_LENGTH = 512 * 1024 * 1024
 ALLOWED_EXTENSIONS: set[str] = {
     "csv", "json", "txt", "xlsx", "xls", "tsv",
     "png", "jpg", "jpeg", "gif", "svg",
-    "zip", "gz", "tar", "parquet", "pptx", "docx", "pkg", "sql", "mp3"
+    "pdf", "pptx", "docx", "pkg", "sql", "mp3"
 }
 
 uploader_bp = Blueprint("uploader", __name__)

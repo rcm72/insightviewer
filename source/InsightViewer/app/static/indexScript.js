@@ -968,6 +968,14 @@ document.addEventListener("DOMContentLoaded", function () {
            return;
        }
        const cypherQuery = textarea.value.trim();
+
+       // Block write operations — read-only queries only
+       const writePattern = /\b(CREATE|MERGE|DELETE|SET|REMOVE|DROP|FOREACH|LOAD\s+CSV|USING\s+PERIODIC\s+COMMIT)\b/i;
+       if (writePattern.test(cypherQuery)) {
+           alert("Write operations are not allowed.\nRemove CREATE, MERGE, DELETE, SET, REMOVE, DROP, FOREACH, or LOAD CSV from the query.");
+           return;
+       }
+
        const clearGraph = document.getElementById("clear-graph-checkbox") && document.getElementById("clear-graph-checkbox").checked;
 
        // If checkbox requests clearing, do it immediately (same behavior as before)
@@ -1187,9 +1195,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
        if (nodeField) nodeField.value = `${nodeLabel} (${nodeId})`;
        if (question && !question.value.trim()) {
-           question.value = `Explain this node and the chunks connected within depth 2.`;
+           question.value = `Explain what this application is all about. Prepare cypher which shows the relationships between APEXApp and tabels and tables are not directly connected to APEXApp`;
        }
-       if (result) result.value = '';
+       if (result) result.innerHTML = '';
 
        dlg.style.display = 'block';
        makeDialogDraggable(dlg);
@@ -1198,7 +1206,7 @@ document.addEventListener("DOMContentLoaded", function () {
            await loadGraphAiProviders();
        } catch (e) {
            console.error(e);
-           if (result) result.value = `Error loading providers: ${e.message || e}`;
+           if (result) result.textContent = `Error loading providers: ${e.message || e}`;
        }
 
        const promptEl = document.getElementById('graph-ai-question');
@@ -1228,7 +1236,7 @@ document.addEventListener("DOMContentLoaded", function () {
            return;
        }
 
-       if (result) result.value = 'Thinking...';
+       if (result) result.textContent = 'Thinking...';
 
        try {
            const res = await fetch('/api/ai/graph/ask-by-depth', {
@@ -1249,11 +1257,14 @@ document.addEventListener("DOMContentLoaded", function () {
                throw new Error(data.error || 'Graph AI request failed');
            }
            if (result) {
-               result.value = data.answer || '';
+               result._rawMarkdown = data.answer || '';
+               result.innerHTML = (typeof marked !== 'undefined')
+                   ? marked.parse(data.answer || '')
+                   : (data.answer || '').replace(/\n/g, '<br>');
            }
        } catch (e) {
            console.error(e);
-           if (result) result.value = `Error: ${e.message || e}`;
+           if (result) result.textContent = `Error: ${e.message || e}`;
            alert(`Error calling graph AI: ${e.message || e}`);
        }
    }
@@ -1261,9 +1272,17 @@ document.addEventListener("DOMContentLoaded", function () {
    function copyGraphAiAnswer() {
        const output = document.getElementById('graph-ai-result');
        if (!output) return;
-       output.focus();
-       output.select();
-       document.execCommand('copy');
+       const text = output._rawMarkdown || output.textContent || '';
+       if (navigator.clipboard) {
+           navigator.clipboard.writeText(text);
+       } else {
+           const ta = document.createElement('textarea');
+           ta.value = text;
+           document.body.appendChild(ta);
+           ta.select();
+           document.execCommand('copy');
+           document.body.removeChild(ta);
+       }
    }
 
    window.openGraphAiDialog = openGraphAiDialog;
