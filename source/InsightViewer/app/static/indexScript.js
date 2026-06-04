@@ -1213,6 +1213,27 @@ document.addEventListener("DOMContentLoaded", function () {
        if (promptEl) promptEl.focus();
    }
 
+   function openNodeScopedNeo4jSearch() {
+       const nodeId = getSelectedGraphNodeId();
+       if (!nodeId) {
+           alert('Right-click a node first.');
+           return;
+       }
+
+       const nodeLabel = nodeIdToNameMap.get(nodeId) || nodeId;
+       if (typeof window.openGuidedSearchDialog !== 'function') {
+           alert('Guided Search is not available.');
+           return;
+       }
+
+       window.openGuidedSearchDialog({
+           mode: 'neo4j-global',
+           scopeNodeId: String(nodeId),
+           scopeNodeLabel: String(nodeLabel),
+           query: String(nodeLabel || ''),
+       });
+   }
+
    function closeGraphAiDialog() {
        const dlg = document.getElementById('graph-ai-dialog');
        if (dlg) dlg.style.display = 'none';
@@ -1286,6 +1307,7 @@ document.addEventListener("DOMContentLoaded", function () {
    }
 
    window.openGraphAiDialog = openGraphAiDialog;
+    window.openNodeScopedNeo4jSearch = openNodeScopedNeo4jSearch;
    window.closeGraphAiDialog = closeGraphAiDialog;
    window.runGraphAiForSelectedNode = runGraphAiForSelectedNode;
    window.copyGraphAiAnswer = copyGraphAiAnswer;
