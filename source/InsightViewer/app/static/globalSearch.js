@@ -741,7 +741,7 @@
 
       const endpoint = isAiMode
         ? "/api/search/ai-build-cypher"
-        : (isNeo4jGlobalMode ? "/api/search/neo4j-global-build-cypher" : "/api/search/build-cypher");
+        : (isNeo4jGlobalMode ? "/api/retrieval/query-cypher" : "/api/search/build-cypher");
 
       const data = await getJson(endpoint, {
         method: "POST",

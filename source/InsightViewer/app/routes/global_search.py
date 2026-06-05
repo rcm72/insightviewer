@@ -18,6 +18,7 @@ from ai.selection import (
 )
 from ai.types import ChatRequest, ModelSelection
 from graph.context import fetch_graph_context, format_context_for_prompt
+from routes.retrieval import build_fulltext_error_response, build_query_cypher_response
 
 ## BUILDERS
 
@@ -1035,100 +1036,16 @@ def build_cypher_from_neo4j_global_search():
     _ensure_driver()
     payload = request.get_json(silent=True) or {}
 
-    query_text = str(payload.get("query") or "").strip()
-    if not query_text:
-        return jsonify({"success": False, "error": "query is required"}), 400
-
-    index_name = str(payload.get("index_name") or "iv_global_search_idx").strip()
-    if not index_name:
-        return jsonify({"success": False, "error": "index_name is required"}), 400
-
-    node_type = str(payload.get("node_type") or "").strip()
-    scope_node_id_rc = str(payload.get("scope_node_id_rc") or "").strip()
-    project = _normalize_project(payload.get("project"), user_data["project"])
-    edge_types = _normalize_edge_types(payload.get("edge_types"))
-
-    try:
-        limit = max(1, min(int(payload.get("limit") or 24), 80))
-    except ValueError:
-        return jsonify({"success": False, "error": "limit must be an integer"}), 400
-
-    try:
-        scope_hops = max(1, min(int(payload.get("scope_hops") or 1), 2))
-    except ValueError:
-        return jsonify({"success": False, "error": "scope_hops must be an integer"}), 400
-
     try:
         with driver.session() as session:
-            rows = _fulltext_hits(
-                session,
-                index_name=index_name,
-                query_text=query_text,
-                node_type=node_type,
-                project=project,
-                limit=limit,
-            )
+            result = build_query_cypher_response(session, payload, user_data["project"])
     except (CypherSyntaxError, ClientError) as e:
-        message = str(e)
-        if "db.index.fulltext.queryNodes" in message or "Unknown procedure" in message or "There is no such fulltext schema index" in message:
-            return jsonify(
-                {
-                    "success": False,
-                    "error": (
-                        f"Neo4j fulltext index '{index_name}' is not available. "
-                        "Create it first, for example: "
-                        f"CREATE FULLTEXT INDEX {index_name} IF NOT EXISTS FOR (n:YourLabel) ON EACH [n.name, n.id_rc]"
-                    ),
-                }
-            ), 400
-        return jsonify({"success": False, "error": f"Neo4j fulltext query failed: {message}"}), 400
+        body, status = build_fulltext_error_response(payload, e)
+        return jsonify(body), status
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
 
-    hits = [
-        {
-            "id_rc": row.get("id_rc"),
-            "name": row.get("name"),
-            "labels": row.get("labels") or [],
-            "score": row.get("score"),
-        }
-        for row in rows
-        if row.get("id_rc") and row.get("name")
-    ]
-
-    hit_ids = [str(item["id_rc"]) for item in hits]
-    if not hit_ids:
-        return jsonify(
-            {
-                "success": False,
-                "error": "No matching nodes found for the requested query.",
-                "items": [],
-            }
-        ), 404
-
-    if scope_node_id_rc:
-        cypher = _build_scoped_fulltext_graph_cypher(hit_ids, scope_node_id_rc, scope_hops, project, edge_types)
-    else:
-        cypher = _build_fulltext_graph_cypher(hit_ids, project, edge_types)
-
-    if not is_safe_read_query(cypher):
-        return jsonify({"success": False, "error": "Generated query failed read-only safety validation"}), 400
-
-    return jsonify(
-        {
-            "success": True,
-            "cypher": cypher,
-            "items": hits,
-            "meta": {
-                "query": query_text,
-                "index_name": index_name,
-                "node_type": node_type,
-                "scope_node_id_rc": scope_node_id_rc,
-                "scope_hops": scope_hops,
-                "project": project,
-                "edge_types": edge_types,
-                "hit_count": len(hit_ids),
-            },
-        }
-    )
+    return jsonify(result["body"]), result["status_code"]
 
 
 @global_search_bp.post("/ai-build-cypher")

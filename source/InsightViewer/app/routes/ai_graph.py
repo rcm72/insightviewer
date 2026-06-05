@@ -16,6 +16,7 @@ from ai.selection import (
 )
 from ai.types import ChatRequest, ModelSelection
 from graph.context import fetch_graph_context, format_context_for_prompt
+from routes.retrieval import build_chunks_by_depth_response
 
 
 ai_graph_bp = Blueprint("ai_graph", __name__, url_prefix="/api/ai")
@@ -64,141 +65,6 @@ def _parse_selection(payload: dict[str, Any]) -> ModelSelection:
         raise ValueError("model is required")
 
     return ModelSelection(provider=provider, model=model)  # type: ignore[arg-type]
-
-
-def _normalize_node_ids(payload: dict[str, Any]) -> list[str]:
-    raw = payload.get("node_ids")
-    if not isinstance(raw, list):
-        raise ValueError("node_ids must be a list of id_rc strings")
-    out: list[str] = []
-    for x in raw:
-        s = str(x or "").strip()
-        if s:
-            out.append(s)
-    # preserve order, remove duplicates
-    unique: list[str] = []
-    seen: set[str] = set()
-    for s in out:
-        if s not in seen:
-            seen.add(s)
-            unique.append(s)
-    if not unique:
-        raise ValueError("node_ids must not be empty")
-    if len(unique) > 50:
-        raise ValueError("node_ids supports at most 50 entries")
-    return unique
-
-
-def _collect_chunks_by_depth(
-    session,
-    node_ids: list[str],
-    depth: int,
-    project: str | None,
-    chunk_limit: int,
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    depth = max(0, int(depth))
-
-    visited_query = f"""
-        UNWIND $node_ids AS nid
-        MATCH (s {{id_rc: nid}})
-        WHERE $project IS NULL OR s.projectName = $project
-        WITH collect(DISTINCT s) AS starts
-        UNWIND starts AS s
-        MATCH p = (s)-[*0..{depth}]-(v)
-        WHERE ALL(n IN nodes(p) WHERE $project IS NULL OR n.projectName = $project OR n:Chunk)
-        WITH collect(DISTINCT v) AS all_nodes
-        UNWIND all_nodes AS n
-        WITH DISTINCT n
-        RETURN n.id_rc AS id_rc, labels(n) AS labels, n.name AS name
-        LIMIT 2000
-    """
-    rows = session.run(
-        visited_query,
-        node_ids=node_ids,
-        project=project,
-    ).data()
-
-    visited_nodes = [
-        {
-            "id_rc": r.get("id_rc"),
-            "labels": r.get("labels") or [],
-            "name": r.get("name"),
-        }
-        for r in rows
-        if r.get("id_rc")
-    ]
-
- 
-
-    # chunks_query = f"""
-    #     UNWIND $node_ids AS nid
-    #     MATCH (s {{id_rc: nid}})
-    #     WHERE $project IS NULL OR s.projectName = $project
-    #     WITH collect(DISTINCT s) AS starts
-    #     UNWIND starts AS s
-    #     MATCH p = (s)-[*0..{depth}]-(v)
-    #     WHERE ALL(n IN nodes(p) WHERE $project IS NULL OR n.projectName = $project OR n:Chunk)
-    #     WITH collect(DISTINCT v) AS all_nodes
-    #     UNWIND all_nodes AS n
-    #     WITH DISTINCT n
-    #     OPTIONAL MATCH (n)-[:HAS_CHUNK]->(c1:Chunk)
-    #     WITH collect(DISTINCT c1) + collect(DISTINCT c2) AS cs
-    #     UNWIND cs AS c
-    #     WITH DISTINCT c
-    #     WHERE c IS NOT NULL
-    #     RETURN
-    #       c.id_rc AS id_rc,
-    #       labels(c) AS labels,
-    #       coalesce(c.text, c.content, c.body, c.chunkText, c.value, '') AS text
-    #     LIMIT $chunk_limit
-    # """
-
-    chunks_query = f"""
-        UNWIND $node_ids AS nid
-        MATCH (s  {{id_rc: nid}})
-        WHERE $project IS NULL OR s.projectName = $project
-
-        MATCH p = (s)-[*0..{depth}]-(n)
-        WHERE ALL(x IN nodes(p) WHERE $project IS NULL OR x.projectName = $project OR x:Chunk)
-
-        WITH n, min(length(p)) AS dist
-        WITH DISTINCT n, dist
-
-        OPTIONAL MATCH (n)-[:HAS_CHUNK]->(c:Chunk)
-        WHERE c IS NOT NULL
-
-        WITH c, min(dist) AS min_dist
-        RETURN
-        c.id_rc AS id_rc,
-        labels(c) AS labels,
-        coalesce(c.text, c.content, c.body, c.chunkText, c.value, '') AS text,
-        min_dist
-        ORDER BY min_dist ASC, id_rc ASC
-        LIMIT $chunk_limit
-    """   
-
-    print(chunks_query)
-    print(f"{{depth}}")
-    print(f"traversal = [*0..{depth}]")    
-    print(f"chunk_limit = {chunk_limit}")
-
-    chunk_rows = session.run(
-        chunks_query,
-        node_ids=node_ids,
-        project=project,
-        chunk_limit=int(chunk_limit),
-    ).data()
-
-    chunks = [
-        {
-            "id_rc": r.get("id_rc"),
-            "labels": r.get("labels") or ["Chunk"],
-            "text": str(r.get("text") or "").strip(),
-        }
-        for r in chunk_rows
-        if str(r.get("text") or "").strip()
-    ]
-    return visited_nodes, chunks
 
 
 def _chunks_to_prompt(chunks: list[dict[str, Any]], max_chars: int) -> str:
@@ -348,23 +214,20 @@ def ask_graph_by_depth():
         if not question:
             return jsonify({"success": False, "error": "question is required"}), 400
 
-        node_ids = _normalize_node_ids(payload)
-        depth = int(payload.get("depth") or 2)
-        depth = max(0, min(depth, 100))
-        chunk_limit = int(payload.get("chunk_limit") or 80)
-        chunk_limit = max(1, min(chunk_limit, 300))
         max_chunk_chars = int(payload.get("max_chunk_chars") or 18000)
         max_chunk_chars = max(2000, min(max_chunk_chars, 60000))
-        project = (str(payload.get("project") or "").strip() or None)
+        if "project" not in payload or not str(payload.get("project") or "").strip():
+            payload["project"] = None
 
         with driver.session() as session:
-            visited_nodes, chunks = _collect_chunks_by_depth(
-                session=session,
-                node_ids=node_ids,
-                depth=depth,
-                project=project,
-                chunk_limit=chunk_limit,
-            )
+            retrieval_result = build_chunks_by_depth_response(session, payload)
+
+        retrieval = retrieval_result["body"]["retrieval"]
+        node_ids = retrieval["input_node_ids"]
+        depth = retrieval["depth"]
+        project = retrieval["project"]
+        visited_nodes = retrieval["visited_nodes"]
+        chunks = retrieval["chunks"]
 
         if not chunks:
             suggestion = (

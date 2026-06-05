@@ -209,6 +209,9 @@ ai_graph.init_driver(driver)
 import routes.global_search as global_search
 global_search.init_driver(driver)
 
+import routes.retrieval as retrieval
+retrieval.init_driver(driver)
+
 import routes.meeting_graph as meeting_graph
 meeting_graph.init_driver(driver)
 
@@ -221,6 +224,7 @@ from routes.createNodeTypes import nodes_bp, get_node_types, get_node_type_visua
 from routes.createRelationsTypes import relations_bp, get_edge_types
 from routes.ai_graph import ai_graph_bp
 from routes.global_search import global_search_bp
+from routes.retrieval import retrieval_bp
 from routes.templates_api import bp as templates_api_bp
 from routes.meeting_graph import meeting_graph_bp
 
@@ -229,6 +233,7 @@ app.register_blueprint(relations_bp, url_prefix="/relations")
 app.register_blueprint(nodes_bp, url_prefix="/nodes")
 app.register_blueprint(ai_graph_bp)
 app.register_blueprint(global_search_bp)
+app.register_blueprint(retrieval_bp)
 app.register_blueprint(templates_api_bp, url_prefix="/api")
 app.register_blueprint(meeting_graph_bp)
 
