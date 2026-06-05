@@ -6,7 +6,7 @@ from typing import Any
 import requests
 
 from ..errors import ProviderConfigError, ProviderRequestError, ProviderResponseError
-from ..types import ChatRequest, ChatResponse
+from ..types import ChatRequest, ChatResponse, EmbedRequest, EmbedResponse
 from .base import AIProvider
 
 
@@ -77,4 +77,37 @@ class OpenAIProvider(AIProvider):
             raise ProviderResponseError(f"OpenAI content unexpected type {type(content)}: {str(content)[:500]}")
 
         return ChatResponse(text=content, raw=body)
+
+    def embed(self, req: EmbedRequest) -> EmbedResponse:
+        url = f"{self._base_url}/v1/embeddings"
+        payload: dict[str, Any] = {
+            "model": req.model,
+            "input": req.text,
+        }
+        headers = {
+            "Authorization": f"Bearer {self._api_key}",
+            "Content-Type": "application/json",
+        }
+        try:
+            r = requests.post(url, json=payload, headers=headers, timeout=45)
+        except requests.RequestException as e:
+            raise ProviderRequestError(f"OpenAI embedding request failed: {e}") from e
+
+        if not r.ok:
+            raise ProviderRequestError(f"OpenAI embeddings HTTP {r.status_code}: {r.text[:5000]}")
+
+        try:
+            body = r.json()
+        except Exception as e:
+            raise ProviderResponseError(f"OpenAI embeddings JSON parse failed: {e}") from e
+
+        try:
+            emb = body["data"][0]["embedding"]
+        except Exception as e:
+            raise ProviderResponseError(f"OpenAI embeddings response shape unexpected: {e}. Body: {str(body)[:2000]}") from e
+
+        if not isinstance(emb, list) or not emb:
+            raise ProviderResponseError("OpenAI embeddings missing vector data")
+
+        return EmbedResponse(embedding=[float(x) for x in emb], raw=body)
 
