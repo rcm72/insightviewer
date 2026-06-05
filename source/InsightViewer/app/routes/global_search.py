@@ -1035,6 +1035,7 @@ def build_cypher_from_neo4j_global_search():
 
     _ensure_driver()
     payload = request.get_json(silent=True) or {}
+    payload.setdefault("entry_point", "global-search-neo4j")
 
     try:
         with driver.session() as session:

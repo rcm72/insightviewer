@@ -54,6 +54,14 @@ def _normalize_project(project_value, user_project):
     return project
 
 
+def _telemetry_payload(*, entry_point: str, strategy_used: str, anchor_node_id: str | None) -> dict[str, Any]:
+    return {
+        "entry_point": entry_point,
+        "strategy_used": strategy_used,
+        "anchor_node_id": anchor_node_id or None,
+    }
+
+
 def normalize_node_ids(payload: dict[str, Any]) -> list[str]:
     raw = payload.get("node_ids")
     if not isinstance(raw, list):
@@ -162,6 +170,11 @@ def retrieve_chunks_by_depth(session, payload: dict[str, Any]) -> dict[str, Any]
         "chunk_limit": chunk_limit,
         "visited_nodes": visited_nodes,
         "chunks": chunks,
+        "telemetry": _telemetry_payload(
+            entry_point=str(payload.get("entry_point") or "unknown"),
+            strategy_used="depth_chunks",
+            anchor_node_id=(node_ids[0] if node_ids else None),
+        ),
     }
 
 
@@ -183,6 +196,7 @@ def build_chunks_by_depth_response(session, payload: dict[str, Any]) -> dict[str
                 "chunks_count": len(chunks),
                 "visited_nodes": visited_nodes[:200],
                 "chunks": chunks,
+                "telemetry": retrieval["telemetry"],
             },
         },
     }
@@ -398,6 +412,11 @@ def retrieve_nodes_for_query(session, payload, user_project):
             "project": normalized["project"],
             "hit_count": len(hit_ids),
         },
+        "telemetry": _telemetry_payload(
+            entry_point=str(payload.get("entry_point") or "unknown"),
+            strategy_used="fulltext_query",
+            anchor_node_id=(normalized["scope_node_id_rc"] or None),
+        ),
     }
 
 
@@ -446,6 +465,10 @@ def build_query_cypher_response(session, payload, user_project):
                 **meta,
                 "edge_types": edge_types,
             },
+            "telemetry": {
+                **retrieval["telemetry"],
+                "strategy_used": "fulltext_to_cypher",
+            },
         },
     }
 
@@ -458,6 +481,7 @@ def retrieval_query():
 
     _ensure_driver()
     payload = request.get_json(silent=True) or {}
+    payload.setdefault("entry_point", "retrieval-query")
 
     try:
         with driver.session() as session:
@@ -479,6 +503,7 @@ def retrieval_chunks_by_depth():
 
     _ensure_driver()
     payload = request.get_json(silent=True) or {}
+    payload.setdefault("entry_point", "retrieval-chunks-by-depth")
     if "project" not in payload or not str(payload.get("project") or "").strip():
         payload["project"] = user_data["project"]
 
@@ -501,6 +526,7 @@ def retrieval_query_cypher():
 
     _ensure_driver()
     payload = request.get_json(silent=True) or {}
+    payload.setdefault("entry_point", "retrieval-query-cypher")
 
     try:
         with driver.session() as session:

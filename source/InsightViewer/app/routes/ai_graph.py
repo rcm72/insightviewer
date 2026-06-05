@@ -209,6 +209,7 @@ def ask_graph_by_depth():
     try:
         _ensure_driver()
         payload = request.get_json(silent=True) or {}
+        payload.setdefault("entry_point", "ai-ask-depth")
 
         question = str(payload.get("question") or "").strip()
         if not question:
