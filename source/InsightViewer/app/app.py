@@ -275,31 +275,6 @@ def about_app():
 
     return render_template("about.html")
 
-@app.route("/quiz_rag")
-def quiz_rag():
-    # Validate JWT and extract user data
-    user_data, error_response, status_code = validate_jwt()
-    if error_response:
-        return error_response, status_code
-
-    # Extract user data from JWT
-    uid = user_data["uid"]
-    project = user_data["project"]        
-    return render_template("quiz_rag.html")
-
-# --- NEW: quiz page route ---
-@app.route("/ask_vector")
-def ask_vector_page():
-    # Validate JWT and extract user data
-    user_data, error_response, status_code = validate_jwt()
-    if error_response:
-        return error_response, status_code
-
-    # Extract user data from JWT
-    uid = user_data["uid"]
-    project = user_data["project"]        
-    return render_template("ask_vector.html")
-
 # --- NEW: quiz_ui page route ---
 @app.route("/quiz_ui")
 def quiz_ui_page():
@@ -434,7 +409,7 @@ def quiz_page():
     # Extract user data from JWT
     uid = user_data["uid"]
     project = user_data["project"]        
-    return render_template("quiz_rag_egipt.html")
+    return render_template("quiz_ui.html")
 
 @app.get("/api/projects")
 def get_projects():     
