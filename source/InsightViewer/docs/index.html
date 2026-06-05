@@ -328,6 +328,22 @@
       </section>
 
       <section>
+        <h2>Operations Quick Checks</h2>
+        <p class="intro">
+          Before deployment, run the smoke script to validate retrieval endpoints, compatibility wrappers, auth/validation behavior, and quiz page availability.
+        </p>
+        <div class="card">
+          <h3>Smoke</h3>
+          <pre><code>cd /home/robert/insightViewer
+source/InsightViewer/scripts/smoke_retrieval_and_quiz.sh http://127.0.0.1:5001 "&lt;JWT_TOKEN&gt;"</code></pre>
+          <h3>Smoke + Retrieval Perf</h3>
+          <pre><code>cd /home/robert/insightViewer
+PERF_MAX_MS=20000 source/InsightViewer/scripts/smoke_retrieval_and_quiz.sh http://127.0.0.1:5001 "&lt;JWT_TOKEN&gt;" --perf</code></pre>
+          <p>Expected result: <strong>Summary: pass=... fail=0</strong>.</p>
+        </div>
+      </section>
+
+      <section>
         <h2>Contact</h2>
         <p class="intro">
           For questions, feedback, or collaboration ideas, contact <a href="mailto:insightviewer.project@gmail.com">insightviewer.project@gmail.com</a>.
