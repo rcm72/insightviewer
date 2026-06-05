@@ -565,6 +565,11 @@
       node_type: byId("gs-global-node-type")?.value || "",
       scope_node_id_rc: state.globalScopeNodeId || "",
       scope_hops: Number(byId("gs-global-scope-hops")?.value || 1),
+      retrieval_mode: byId("gs-global-retrieval-mode")?.value || "auto",
+      vector_index_name: byId("gs-global-vector-index")?.value.trim() || "chunk_embedding_index",
+      vector_k: Number(byId("gs-global-vector-k")?.value || 40),
+      provider: byId("gs-global-embed-provider")?.value || "ollama",
+      embedding_model: byId("gs-global-embed-model")?.value.trim() || "mxbai-embed-large:latest",
       project: currentProject(),
       edge_types: selectedEdgeTypes(),
     };
@@ -749,6 +754,13 @@
         body: JSON.stringify(payload),
       });
 
+      const strategyEl = byId("gs-retrieval-strategy");
+      if (strategyEl) {
+        const strategy = data?.telemetry?.strategy_used || "n/a";
+        const modeUsed = data?.meta?.retrieval_mode || "n/a";
+        strategyEl.textContent = `Retrieval strategy: ${strategy} (mode: ${modeUsed})`;
+      }
+
       const textarea = byId("cypher-input");
       if (!textarea) {
         throw new Error("Cypher dialog textarea not found");
@@ -760,7 +772,8 @@
         setStatus("AI-generated Cypher inserted into the Cypher dialog.", false);
       } else if (isNeo4jGlobalMode) {
         const hitCount = Number(data.meta?.hit_count || 0);
-        setStatus(`Neo4j global search Cypher inserted (${hitCount} matched nodes).`, false);
+        const strategy = data?.telemetry?.strategy_used || "unknown";
+        setStatus(`Neo4j global search Cypher inserted (${hitCount} matched nodes, strategy: ${strategy}).`, false);
       } else {
         setStatus("Cypher generated and inserted into the Cypher dialog.", false);
       }

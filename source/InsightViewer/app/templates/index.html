@@ -453,6 +453,41 @@ RETURN s, r, t
                 <input id="gs-global-scope-hops" type="number" min="1" max="2" value="1">
               </div>
             </div>
+
+            <div style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px;">
+              <div style="display:grid; gap:4px;">
+                <label for="gs-global-retrieval-mode">Retrieval mode</label>
+                <select id="gs-global-retrieval-mode" style="width:100%;">
+                  <option value="auto" selected>Auto (vector then fulltext fallback)</option>
+                  <option value="vector">Vector only</option>
+                  <option value="fulltext">Fulltext only</option>
+                </select>
+              </div>
+              <div style="display:grid; gap:4px;">
+                <label for="gs-global-vector-index">Vector index name</label>
+                <input id="gs-global-vector-index" type="text" value="chunk_embedding_index" placeholder="chunk_embedding_index">
+              </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap:10px;">
+              <div style="display:grid; gap:4px;">
+                <label for="gs-global-vector-k">Vector candidate count</label>
+                <input id="gs-global-vector-k" type="number" min="1" max="200" value="40">
+              </div>
+              <div style="display:grid; gap:4px;">
+                <label for="gs-global-embed-provider">Embedding provider</label>
+                <select id="gs-global-embed-provider" style="width:100%;">
+                  <option value="ollama" selected>ollama</option>
+                  <option value="openai">openai</option>
+                </select>
+              </div>
+              <div style="display:grid; gap:4px;">
+                <label for="gs-global-embed-model">Embedding model</label>
+                <input id="gs-global-embed-model" type="text" value="mxbai-embed-large:latest" placeholder="mxbai-embed-large:latest">
+              </div>
+            </div>
+
+            <div id="gs-retrieval-strategy" style="font-size:12px; color:#666;"></div>
           </div>
 
 
