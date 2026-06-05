@@ -26,6 +26,11 @@ cypher-shell -a "$NEO4J_URI" -u "$NEO4J_USER" -p "$NEO4J_PASSWORD" \
 /home/robert/insightViewer/source/InsightViewer/scripts/vector_upgrade/run_vector_upgrade_docker_auth.sh \
   --provider ollama --model mxbai-embed-large:latest --batch-size 100
 
+5) One-command run + DB/app validation (single PASS/FAIL)
+/home/robert/insightViewer/source/InsightViewer/scripts/vector_upgrade/run_upgrade_validate.sh \
+  --jwt <jwt_token> \
+  -- --provider ollama --model mxbai-embed-large:latest --batch-size 100
+
 Optional:
 - choose non-default container name: export NEO4J_CONTAINER=my-neo4j
 - override URI if needed: export NEO4J_URI=bolt://192.168.1.16:7687
@@ -49,3 +54,6 @@ cd /home/robert/insightViewer/source/InsightViewer
 
 Expected smoke result:
 - Summary: pass=13 fail=0
+
+Expected validator result:
+- OVERALL: PASS
