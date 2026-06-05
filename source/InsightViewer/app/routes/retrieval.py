@@ -6,6 +6,9 @@ import jwt
 from flask import Blueprint, current_app, jsonify, request
 from neo4j.exceptions import ClientError, CypherSyntaxError
 
+from ai.registry import ProviderRegistry
+from ai.types import EmbedRequest
+
 JWT_SECRET = os.environ["JWT_SECRET"]
 JWT_ALG = "HS256"
 
@@ -267,6 +270,38 @@ def _normalize_fulltext_request(payload, user_project):
     }
 
 
+def _normalize_retrieval_mode(payload: dict[str, Any]) -> dict[str, Any]:
+    mode = str(payload.get("retrieval_mode") or "auto").strip().lower()
+    if mode not in {"auto", "vector", "fulltext"}:
+        raise ValueError("retrieval_mode must be one of: auto, vector, fulltext")
+
+    vector_index_name = str(payload.get("vector_index_name") or "chunk_embedding_index").strip()
+    if not vector_index_name:
+        raise ValueError("vector_index_name is required")
+
+    provider = str(payload.get("provider") or "ollama").strip().lower()
+    if provider not in {"ollama", "openai"}:
+        raise ValueError("provider must be one of: ollama, openai")
+
+    model_default = "mxbai-embed-large:latest" if provider == "ollama" else "text-embedding-3-large"
+    model = str(payload.get("embedding_model") or payload.get("model") or model_default).strip()
+    if not model:
+        raise ValueError("embedding_model is required")
+
+    try:
+        vector_k = max(1, min(int(payload.get("vector_k") or 40), 200))
+    except ValueError:
+        raise ValueError("vector_k must be an integer")
+
+    return {
+        "mode": mode,
+        "vector_index_name": vector_index_name,
+        "provider": provider,
+        "embedding_model": model,
+        "vector_k": vector_k,
+    }
+
+
 def _normalize_edge_types(value):
     if value is None:
         return []
@@ -383,17 +418,110 @@ def _fulltext_hits(session, *, index_name, query_text, node_type, project, limit
     return rows
 
 
+def _vector_hits(
+        session,
+        *,
+        vector_index_name: str,
+        query_text: str,
+        provider: str,
+        embedding_model: str,
+        node_type: str,
+        project: str | None,
+        vector_k: int,
+        limit: int,
+):
+        registry = ProviderRegistry()
+        embed_provider = registry.get_provider(provider)
+        qvec = embed_provider.embed(EmbedRequest(text=query_text, model=embedding_model)).embedding
+
+        cypher = """
+        CALL db.index.vector.queryNodes($vector_index_name, $vector_k, $qvec) YIELD node, score
+        WHERE ($project IS NULL OR node.projectName = $project OR node.projectName IS NULL)
+        OPTIONAL MATCH (owner)-[:HAS_CHUNK]->(node)
+        WHERE owner.id_rc IS NOT NULL
+            AND ($node_type = '' OR $node_type IN labels(owner))
+            AND ($project IS NULL OR owner.projectName = $project OR owner.projectName IS NULL)
+        WITH coalesce(owner, node) AS hit, max(score) AS score
+        WHERE hit.id_rc IS NOT NULL
+        RETURN
+            hit.id_rc AS id_rc,
+            coalesce(
+                hit.name,
+                hit.title,
+                hit.heading,
+                hit.number,
+                toString(hit.order),
+                substring(coalesce(hit.text, hit.content, hit.body, hit.chunkText, hit.value, ''), 0, 120)
+            ) AS name,
+            labels(hit) AS labels,
+            score
+        ORDER BY score DESC, name
+        LIMIT $limit
+        """
+
+        rows = session.run(
+                cypher,
+                vector_index_name=vector_index_name,
+                vector_k=vector_k,
+                qvec=qvec,
+                node_type=node_type,
+                project=project,
+                limit=limit,
+        ).data()
+
+        if not rows and project:
+                rows = session.run(
+                        cypher,
+                        vector_index_name=vector_index_name,
+                        vector_k=vector_k,
+                        qvec=qvec,
+                        node_type=node_type,
+                        project=None,
+                        limit=limit,
+                ).data()
+
+        return rows
+
+
 def retrieve_nodes_for_query(session, payload, user_project):
     normalized = _normalize_fulltext_request(payload, user_project)
+    retrieval_mode = _normalize_retrieval_mode(payload)
 
-    rows = _fulltext_hits(
-        session,
-        index_name=normalized["index_name"],
-        query_text=normalized["query"],
-        node_type=normalized["node_type"],
-        project=normalized["project"],
-        limit=normalized["limit"],
-    )
+    rows = []
+    strategy_used = "fulltext_query"
+    vector_error = None
+
+    if retrieval_mode["mode"] in {"auto", "vector"}:
+        try:
+            rows = _vector_hits(
+                session,
+                vector_index_name=retrieval_mode["vector_index_name"],
+                query_text=normalized["query"],
+                provider=retrieval_mode["provider"],
+                embedding_model=retrieval_mode["embedding_model"],
+                node_type=normalized["node_type"],
+                project=normalized["project"],
+                vector_k=retrieval_mode["vector_k"],
+                limit=normalized["limit"],
+            )
+            strategy_used = "vector_query"
+        except Exception as e:
+            vector_error = str(e)
+            rows = []
+
+    if not rows and retrieval_mode["mode"] in {"auto", "fulltext"}:
+        rows = _fulltext_hits(
+            session,
+            index_name=normalized["index_name"],
+            query_text=normalized["query"],
+            node_type=normalized["node_type"],
+            project=normalized["project"],
+            limit=normalized["limit"],
+        )
+        strategy_used = "fulltext_query"
+
+    if retrieval_mode["mode"] == "vector" and vector_error and not rows:
+        raise ValueError(f"Vector retrieval failed: {vector_error}")
 
     items = [
         {
@@ -414,15 +542,18 @@ def retrieve_nodes_for_query(session, payload, user_project):
         "meta": {
             "query": normalized["query"],
             "index_name": normalized["index_name"],
+            "vector_index_name": retrieval_mode["vector_index_name"],
+            "retrieval_mode": retrieval_mode["mode"],
             "node_type": normalized["node_type"],
             "scope_node_id_rc": normalized["scope_node_id_rc"],
             "scope_hops": normalized["scope_hops"],
             "project": normalized["project"],
             "hit_count": len(hit_ids),
+            "vector_error": vector_error,
         },
         "telemetry": _telemetry_payload(
             entry_point=str(payload.get("entry_point") or "unknown"),
-            strategy_used="fulltext_query",
+            strategy_used=strategy_used,
             anchor_node_id=(normalized["scope_node_id_rc"] or None),
         ),
     }
