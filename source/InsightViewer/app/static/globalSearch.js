@@ -758,7 +758,11 @@
       if (strategyEl) {
         const strategy = data?.telemetry?.strategy_used || "n/a";
         const modeUsed = data?.meta?.retrieval_mode || "n/a";
-        strategyEl.textContent = `Retrieval strategy: ${strategy} (mode: ${modeUsed})`;
+        const fallbackUsed = Boolean(data?.telemetry?.fallback_used);
+        const fallbackReason = data?.telemetry?.fallback_reason || "n/a";
+        strategyEl.textContent = fallbackUsed
+          ? `Retrieval strategy: ${strategy} (mode: ${modeUsed}, fallback: vector -> fulltext, reason: ${fallbackReason})`
+          : `Retrieval strategy: ${strategy} (mode: ${modeUsed})`;
       }
 
       const textarea = byId("cypher-input");
@@ -773,7 +777,10 @@
       } else if (isNeo4jGlobalMode) {
         const hitCount = Number(data.meta?.hit_count || 0);
         const strategy = data?.telemetry?.strategy_used || "unknown";
-        setStatus(`Neo4j global search Cypher inserted (${hitCount} matched nodes, strategy: ${strategy}).`, false);
+        const fallbackUsed = Boolean(data?.telemetry?.fallback_used);
+        const fallbackReason = data?.telemetry?.fallback_reason || "n/a";
+        const fallbackText = fallbackUsed ? `, fallback: vector->fulltext (${fallbackReason})` : "";
+        setStatus(`Neo4j global search Cypher inserted (${hitCount} matched nodes, strategy: ${strategy}${fallbackText}).`, false);
       } else {
         setStatus("Cypher generated and inserted into the Cypher dialog.", false);
       }

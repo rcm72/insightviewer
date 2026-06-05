@@ -490,6 +490,10 @@ def retrieve_nodes_for_query(session, payload, user_project):
     rows = []
     strategy_used = "fulltext_query"
     vector_error = None
+    fallback_used = False
+    fallback_from = None
+    fallback_to = None
+    fallback_reason = None
 
     if retrieval_mode["mode"] in {"auto", "vector"}:
         try:
@@ -510,6 +514,11 @@ def retrieve_nodes_for_query(session, payload, user_project):
             rows = []
 
     if not rows and retrieval_mode["mode"] in {"auto", "fulltext"}:
+        if retrieval_mode["mode"] == "auto":
+            fallback_used = True
+            fallback_from = "vector"
+            fallback_to = "fulltext"
+            fallback_reason = vector_error or "vector_no_hits"
         rows = _fulltext_hits(
             session,
             index_name=normalized["index_name"],
@@ -550,12 +559,22 @@ def retrieve_nodes_for_query(session, payload, user_project):
             "project": normalized["project"],
             "hit_count": len(hit_ids),
             "vector_error": vector_error,
+            "fallback_used": fallback_used,
+            "fallback_from": fallback_from,
+            "fallback_to": fallback_to,
+            "fallback_reason": fallback_reason,
         },
-        "telemetry": _telemetry_payload(
-            entry_point=str(payload.get("entry_point") or "unknown"),
-            strategy_used=strategy_used,
-            anchor_node_id=(normalized["scope_node_id_rc"] or None),
-        ),
+        "telemetry": {
+            **_telemetry_payload(
+                entry_point=str(payload.get("entry_point") or "unknown"),
+                strategy_used=strategy_used,
+                anchor_node_id=(normalized["scope_node_id_rc"] or None),
+            ),
+            "fallback_used": fallback_used,
+            "fallback_from": fallback_from,
+            "fallback_to": fallback_to,
+            "fallback_reason": fallback_reason,
+        },
     }
 
 

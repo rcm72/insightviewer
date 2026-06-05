@@ -199,6 +199,13 @@ class RetrievalContractTests(unittest.TestCase):
         self.assertEqual(result["telemetry"]["strategy_used"], "fulltext_query")
         self.assertEqual(result["items"][0]["id_rc"], "node-ft-1")
         self.assertIn("vector temporarily unavailable", str(result["meta"].get("vector_error") or ""))
+        self.assertTrue(result["meta"].get("fallback_used"))
+        self.assertEqual(result["meta"].get("fallback_from"), "vector")
+        self.assertEqual(result["meta"].get("fallback_to"), "fulltext")
+        self.assertIn("vector temporarily unavailable", str(result["meta"].get("fallback_reason") or ""))
+        self.assertTrue(result["telemetry"].get("fallback_used"))
+        self.assertEqual(result["telemetry"].get("fallback_from"), "vector")
+        self.assertEqual(result["telemetry"].get("fallback_to"), "fulltext")
 
     def test_vector_mode_returns_400_when_vector_fails(self):
         original_vector_hits = retrieval._vector_hits
