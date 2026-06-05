@@ -10,6 +10,10 @@ from flask import Flask
 
 os.environ.setdefault("JWT_SECRET", "test-secret")
 
+APP_ROOT = Path("/home/robert/insightViewer/source/InsightViewer/app")
+if str(APP_ROOT) not in sys.path:
+    sys.path.insert(0, str(APP_ROOT))
+
 RETRIEVAL_PATH = Path("/home/robert/insightViewer/source/InsightViewer/app/routes/retrieval.py")
 spec = importlib.util.spec_from_file_location("retrieval_under_test", RETRIEVAL_PATH)
 retrieval = importlib.util.module_from_spec(spec)
@@ -95,7 +99,11 @@ class RetrievalContractTests(unittest.TestCase):
     def test_query_cypher_contract(self):
         response = self.client.post(
             "/api/retrieval/query-cypher",
-            json={"query": "test", "index_name": "iv_global_search_idx"},
+            json={
+                "query": "test",
+                "index_name": "iv_global_search_idx",
+                "retrieval_mode": "fulltext",
+            },
         )
         self.assertEqual(response.status_code, 200)
         body = response.get_json()
@@ -134,11 +142,13 @@ class RetrievalContractTests(unittest.TestCase):
         payload_retrieval = {
             "query": "test",
             "index_name": "iv_global_search_idx",
+            "retrieval_mode": "fulltext",
             "entry_point": "retrieval-query-cypher",
         }
         payload_legacy = {
             "query": "test",
             "index_name": "iv_global_search_idx",
+            "retrieval_mode": "fulltext",
             "entry_point": "global-search-neo4j",
         }
 
@@ -151,6 +161,67 @@ class RetrievalContractTests(unittest.TestCase):
         self.assertEqual(retrieval_result["body"]["cypher"], legacy_result["body"]["cypher"])
         self.assertEqual(retrieval_result["body"]["items"], legacy_result["body"]["items"])
         self.assertEqual(retrieval_result["body"]["meta"], legacy_result["body"]["meta"])
+
+    def test_auto_mode_falls_back_to_fulltext_when_vector_fails(self):
+        original_vector_hits = retrieval._vector_hits
+        original_fulltext_hits = retrieval._fulltext_hits
+
+        def _boom(*args, **kwargs):
+            raise RuntimeError("vector temporarily unavailable")
+
+        def _ok(*args, **kwargs):
+            return [
+                {
+                    "id_rc": "node-ft-1",
+                    "name": "fallback node",
+                    "labels": ["Department"],
+                    "score": 0.42,
+                }
+            ]
+
+        retrieval._vector_hits = _boom
+        retrieval._fulltext_hits = _ok
+        try:
+            with _FakeSession() as session:
+                result = retrieval.retrieve_nodes_for_query(
+                    session,
+                    {
+                        "query": "test",
+                        "index_name": "iv_global_search_idx",
+                        "retrieval_mode": "auto",
+                    },
+                    "TestProject",
+                )
+        finally:
+            retrieval._vector_hits = original_vector_hits
+            retrieval._fulltext_hits = original_fulltext_hits
+
+        self.assertEqual(result["telemetry"]["strategy_used"], "fulltext_query")
+        self.assertEqual(result["items"][0]["id_rc"], "node-ft-1")
+        self.assertIn("vector temporarily unavailable", str(result["meta"].get("vector_error") or ""))
+
+    def test_vector_mode_returns_400_when_vector_fails(self):
+        original_vector_hits = retrieval._vector_hits
+
+        def _boom(*args, **kwargs):
+            raise RuntimeError("vector hard-fail")
+
+        retrieval._vector_hits = _boom
+        try:
+            response = self.client.post(
+                "/api/retrieval/query",
+                json={
+                    "query": "test",
+                    "index_name": "iv_global_search_idx",
+                    "retrieval_mode": "vector",
+                },
+            )
+        finally:
+            retrieval._vector_hits = original_vector_hits
+
+        self.assertEqual(response.status_code, 400)
+        body = response.get_json()
+        self.assertIn("Vector retrieval failed", body.get("error", ""))
 
 
 if __name__ == "__main__":
