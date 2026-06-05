@@ -3,7 +3,7 @@ import re
 from typing import Any
 
 import jwt
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, current_app, jsonify, request
 from neo4j.exceptions import ClientError, CypherSyntaxError
 
 JWT_SECRET = os.environ["JWT_SECRET"]
@@ -60,6 +60,14 @@ def _telemetry_payload(*, entry_point: str, strategy_used: str, anchor_node_id: 
         "strategy_used": strategy_used,
         "anchor_node_id": anchor_node_id or None,
     }
+
+
+def _log_telemetry(payload: dict[str, Any]) -> None:
+    # Best-effort logging for operational visibility; never break request flow.
+    try:
+        current_app.logger.info("retrieval_telemetry=%s", payload)
+    except Exception:
+        pass
 
 
 def normalize_node_ids(payload: dict[str, Any]) -> list[str]:
@@ -492,6 +500,9 @@ def retrieval_query():
         body, status = build_fulltext_error_response(payload, e)
         return jsonify(body), status
 
+    if isinstance(result.get("telemetry"), dict):
+        _log_telemetry(result["telemetry"])
+
     return jsonify({"success": True, **result})
 
 
@@ -515,6 +526,10 @@ def retrieval_chunks_by_depth():
     except (CypherSyntaxError, ClientError) as e:
         return jsonify({"success": False, "error": f"Neo4j depth retrieval failed: {e}"}), 400
 
+    telemetry = ((result.get("body") or {}).get("retrieval") or {}).get("telemetry")
+    if isinstance(telemetry, dict):
+        _log_telemetry(telemetry)
+
     return jsonify(result["body"]), result["status_code"]
 
 
@@ -536,5 +551,9 @@ def retrieval_query_cypher():
     except (CypherSyntaxError, ClientError) as e:
         body, status = build_fulltext_error_response(payload, e)
         return jsonify(body), status
+
+    telemetry = (result.get("body") or {}).get("telemetry")
+    if isinstance(telemetry, dict):
+        _log_telemetry(telemetry)
 
     return jsonify(result["body"]), result["status_code"]
