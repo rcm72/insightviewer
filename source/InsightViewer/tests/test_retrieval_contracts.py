@@ -230,6 +230,55 @@ class RetrievalContractTests(unittest.TestCase):
         body = response.get_json()
         self.assertIn("Vector retrieval failed", body.get("error", ""))
 
+    def test_auto_mode_provider_timeout_falls_back_to_fulltext(self):
+        original_vector_hits = retrieval._vector_hits
+        original_fulltext_hits = retrieval._fulltext_hits
+
+        def _timeout(*args, **kwargs):
+            raise TimeoutError("provider timeout")
+
+        def _ok(*args, **kwargs):
+            return [
+                {
+                    "id_rc": "node-ft-timeout",
+                    "name": "timeout fallback node",
+                    "labels": ["Department"],
+                    "score": 0.11,
+                }
+            ]
+
+        retrieval._vector_hits = _timeout
+        retrieval._fulltext_hits = _ok
+        try:
+            with _FakeSession() as session:
+                result = retrieval.retrieve_nodes_for_query(
+                    session,
+                    {
+                        "query": "test",
+                        "index_name": "iv_global_search_idx",
+                        "retrieval_mode": "auto",
+                    },
+                    "TestProject",
+                )
+        finally:
+            retrieval._vector_hits = original_vector_hits
+            retrieval._fulltext_hits = original_fulltext_hits
+
+        self.assertEqual(result["telemetry"]["strategy_used"], "fulltext_query")
+        self.assertTrue(result["telemetry"].get("fallback_used"))
+        self.assertIn("provider timeout", str(result["telemetry"].get("fallback_reason") or ""))
+        self.assertEqual(result["items"][0]["id_rc"], "node-ft-timeout")
+
+    def test_fulltext_error_mapping_index_missing(self):
+        body, status = retrieval.build_fulltext_error_response(
+            {"index_name": "iv_global_search_idx"},
+            "There is no such fulltext schema index: iv_global_search_idx",
+        )
+        self.assertEqual(status, 400)
+        self.assertFalse(body.get("success", True))
+        self.assertIn("iv_global_search_idx", body.get("error", ""))
+        self.assertIn("CREATE FULLTEXT INDEX", body.get("error", ""))
+
 
 if __name__ == "__main__":
     unittest.main()
