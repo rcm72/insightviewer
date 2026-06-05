@@ -1,0 +1,38 @@
+Vector Upgrade Checklist (Other Test Databases)
+
+Goal
+- Create required vector/fulltext indexes and backfill missing Chunk.embedding values.
+
+Prerequisites
+- Docker container for Neo4j is running.
+- Neo4j container has correct NEO4J_AUTH for the target database.
+- Ollama endpoint/model is reachable from this host.
+
+1) Select target database/container
+- If container name is not "neo4j", set:
+  export NEO4J_CONTAINER=<your_container_name>
+- If Bolt is not localhost:7687, set:
+  export NEO4J_URI=bolt://<host>:7687
+
+2) Run upgrade (recommended one-command path)
+/home/robert/insightViewer/source/InsightViewer/scripts/vector_upgrade/run_vector_upgrade_docker_auth.sh \
+  --provider ollama --model mxbai-embed-large:latest --batch-size 100
+
+3) Verify embeddings exist
+Run in Neo4j Browser:
+MATCH (c:Chunk)
+RETURN count(c) AS total, count(c.embedding) AS withEmbedding;
+
+4) Optional project-only run
+/home/robert/insightViewer/source/InsightViewer/scripts/vector_upgrade/run_vector_upgrade_docker_auth.sh \
+  --provider ollama --model mxbai-embed-large:latest --batch-size 100 --project <PROJECT_NAME>
+
+5) Troubleshooting
+- "client is unauthorized": container credentials do not match target DB; update NEO4J_AUTH / env and restart container.
+- "cypher-shell not found": wrapper already falls back to docker exec; ensure Docker is installed and container is running.
+- Ollama 404 or intermittent embed errors: verify OLLAMA BASE, model availability, and network reachability.
+
+Expected success output
+- [1/2] Creating constraints/indexes...
+- [2/2] Backfilling embeddings...
+- Vector upgrade complete.
