@@ -27,6 +27,32 @@
     el.style.color = isError ? "#b00020" : "#666";
   }
 
+  function prettyMode(mode) {
+    if (mode === "auto") return "Smart";
+    if (mode === "vector") return "Semantic";
+    if (mode === "fulltext") return "Keyword";
+    return mode || "Unknown";
+  }
+
+  function prettyStrategy(strategy) {
+    if (strategy === "vector_query") return "Semantic search";
+    if (strategy === "fulltext_query") return "Keyword search";
+    return strategy || "Unknown";
+  }
+
+  function updateSearchMethodHelp() {
+    const mode = byId("gs-global-retrieval-mode")?.value || "auto";
+    const help = byId("gs-search-method-help");
+    if (!help) return;
+    if (mode === "auto") {
+      help.textContent = "Smart search tries semantic results first, then keyword fallback if needed.";
+    } else if (mode === "vector") {
+      help.textContent = "Semantic search only. If semantic retrieval fails, no keyword fallback is used.";
+    } else {
+      help.textContent = "Keyword search only. Uses the fulltext index path.";
+    }
+  }
+
   async function getJson(url, options) {
     const response = await fetch(url, options);
     const data = await response.json();
@@ -756,13 +782,13 @@
 
       const strategyEl = byId("gs-retrieval-strategy");
       if (strategyEl) {
-        const strategy = data?.telemetry?.strategy_used || "n/a";
-        const modeUsed = data?.meta?.retrieval_mode || "n/a";
+        const strategy = prettyStrategy(data?.telemetry?.strategy_used || "n/a");
+        const modeUsed = prettyMode(data?.meta?.retrieval_mode || "n/a");
         const fallbackUsed = Boolean(data?.telemetry?.fallback_used);
         const fallbackReason = data?.telemetry?.fallback_reason || "n/a";
         strategyEl.textContent = fallbackUsed
-          ? `Retrieval strategy: ${strategy} (mode: ${modeUsed}, fallback: vector -> fulltext, reason: ${fallbackReason})`
-          : `Retrieval strategy: ${strategy} (mode: ${modeUsed})`;
+          ? `Used: ${strategy} (mode: ${modeUsed}). Fallback was used (Semantic -> Keyword): ${fallbackReason}.`
+          : `Used: ${strategy} (mode: ${modeUsed}).`;
       }
 
       const textarea = byId("cypher-input");
@@ -776,11 +802,11 @@
         setStatus("AI-generated Cypher inserted into the Cypher dialog.", false);
       } else if (isNeo4jGlobalMode) {
         const hitCount = Number(data.meta?.hit_count || 0);
-        const strategy = data?.telemetry?.strategy_used || "unknown";
+        const strategy = prettyStrategy(data?.telemetry?.strategy_used || "unknown");
         const fallbackUsed = Boolean(data?.telemetry?.fallback_used);
         const fallbackReason = data?.telemetry?.fallback_reason || "n/a";
-        const fallbackText = fallbackUsed ? `, fallback: vector->fulltext (${fallbackReason})` : "";
-        setStatus(`Neo4j global search Cypher inserted (${hitCount} matched nodes, strategy: ${strategy}${fallbackText}).`, false);
+        const fallbackText = fallbackUsed ? `, fallback used (${fallbackReason})` : "";
+        setStatus(`Search results inserted (${hitCount} matched nodes, method: ${strategy}${fallbackText}).`, false);
       } else {
         setStatus("Cypher generated and inserted into the Cypher dialog.", false);
       }
@@ -813,6 +839,12 @@
         state.nodeTypes.map((type) => ({ value: type.name, label: type.name })),
         "Any node type"
       );
+    }
+
+    const retrievalModeSelect = byId("gs-global-retrieval-mode");
+    if (retrievalModeSelect) {
+      retrievalModeSelect.addEventListener("change", updateSearchMethodHelp);
+      updateSearchMethodHelp();
     }
 
     const templateSelect = byId("gs-template");

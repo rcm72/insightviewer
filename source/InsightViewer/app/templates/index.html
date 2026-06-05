@@ -353,7 +353,7 @@ RETURN s, r, t
         <div style="display:grid; gap:10px; padding:8px 0;">
           <div style="display:grid; gap:4px;">
             <label for="gs-mode">Search mode</label>
-            <select id="gs-mode" style="width:100%;">
+            <select id="gs-mode" style="width:100%; background:#eef5ff; color:#0f3d75; border:1px solid #8fb5e6;">
               <option value="template">Template builder</option>
               <option value="ai">AI generate Cypher</option>
               <option value="neo4j-global">Neo4j global search</option>
@@ -363,18 +363,18 @@ RETURN s, r, t
           <div id="gs-template-panel" style="display:grid; gap:10px;">
             <div style="display:grid; gap:4px;">
               <label for="gs-template">Question template</label>
-              <select id="gs-template" style="width:100%;"></select>
+              <select id="gs-template" style="width:100%; background:#eef5ff; color:#0f3d75; border:1px solid #8fb5e6;"></select>
               <div id="gs-template-description" style="font-size:12px; color:#666;"></div>
             </div>
 
             <div style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px;">
               <div style="display:grid; gap:4px; position:relative;">
                 <label for="gs-source-type">Source node type</label>
-                <select id="gs-source-type" style="width:100%;"></select>
+                <select id="gs-source-type" style="width:100%; height:32px; box-sizing:border-box; padding:4px 8px; background:#eef5ff; color:#0f3d75; border:1px solid #8fb5e6;"></select>
               </div>
               <div style="display:grid; gap:4px; position:relative;">
                 <label for="gs-source-name">Source node name</label>
-                <input id="gs-source-name" type="text" autocomplete="off" placeholder="Start typing to search nodes">
+                <input id="gs-source-name" type="text" autocomplete="off" placeholder="Start typing to search nodes" style="height:32px; box-sizing:border-box; padding:4px 8px; background:#effaf0; color:#1d4d2a; border:1px solid #8fcd99;">
                 <div id="gs-source-suggestions" style="display:none; position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid #ccc; max-height:180px; overflow:auto; z-index:1200;"></div>
                 <div id="gs-source-selection" style="font-size:12px; color:#666;"></div>
               </div>
@@ -384,11 +384,11 @@ RETURN s, r, t
               <div style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px;">
                 <div style="display:grid; gap:4px; position:relative;">
                   <label for="gs-target-type">Target node type</label>
-                  <select id="gs-target-type" style="width:100%;"></select>
+                  <select id="gs-target-type" style="width:100%; background:#eef5ff; color:#0f3d75; border:1px solid #8fb5e6;"></select>
                 </div>
                 <div id="gs-target-name-wrap" style="display:grid; gap:4px; position:relative;">
                   <label for="gs-target-name">Target node name</label>
-                  <input id="gs-target-name" type="text" autocomplete="off" placeholder="Start typing to search nodes">
+                  <input id="gs-target-name" type="text" autocomplete="off" placeholder="Start typing to search nodes" style="background:#effaf0; color:#1d4d2a; border:1px solid #8fcd99;">
                   <div id="gs-target-suggestions" style="display:none; position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid #ccc; max-height:180px; overflow:auto; z-index:1200;"></div>
                   <div id="gs-target-selection" style="font-size:12px; color:#666;"></div>
                 </div>
@@ -400,11 +400,11 @@ RETURN s, r, t
             <div style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px;">
               <div style="display:grid; gap:4px;">
                 <label for="gs-ai-provider">AI provider</label>
-                <select id="gs-ai-provider" style="width:100%;"></select>
+                <select id="gs-ai-provider" style="width:100%; background:#eef5ff; color:#0f3d75; border:1px solid #8fb5e6;"></select>
               </div>
               <div style="display:grid; gap:4px;">
                 <label for="gs-ai-model">AI model</label>
-                <select id="gs-ai-model" style="width:100%;"></select>
+                <select id="gs-ai-model" style="width:100%; background:#eef5ff; color:#0f3d75; border:1px solid #8fb5e6;"></select>
               </div>
             </div>
             <div style="display:grid; gap:4px;">
@@ -416,8 +416,8 @@ RETURN s, r, t
 
           <div id="gs-neo4j-global-panel" style="display:none; gap:10px;">
             <div style="display:grid; gap:4px;">
-              <label for="gs-global-query">Global search text</label>
-              <input id="gs-global-query" type="text" placeholder="Example: apex process update customer">
+              <label for="gs-global-query">Search text</label>
+              <input id="gs-global-query" type="text" placeholder="Example: apex process update customer" style="background:#effaf0; color:#1d4d2a; border:1px solid #8fcd99;">
             </div>
 
             <div id="gs-global-scope-wrap" style="display:none; gap:4px;">
@@ -428,18 +428,19 @@ RETURN s, r, t
               </div>
             </div>
 
-            <div style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px;">
+            <div style="display:grid; gap:10px;">
               <div style="display:grid; gap:4px;">
                 <label for="gs-global-node-type">Node type filter</label>
-                <select id="gs-global-node-type" style="width:100%;"></select>
+                <select id="gs-global-node-type" style="width:100%; background:#eef5ff; color:#0f3d75; border:1px solid #8fb5e6;"></select>
               </div>
               <div style="display:grid; gap:4px;">
-                <label for="gs-global-index">Fulltext index name</label>
-                <input id="gs-global-index" type="text" value="iv_global_search_idx" placeholder="iv_global_search_idx">
-                <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                  <button type="button" onclick="checkGuidedGlobalIndex()">Check index</button>
-                  <button type="button" onclick="ensureGuidedGlobalIndex()">Create index</button>
-                </div>
+                <label for="gs-global-retrieval-mode">Search method</label>
+                <select id="gs-global-retrieval-mode" style="width:100%; background:#eef5ff; color:#0f3d75; border:1px solid #8fb5e6;">
+                  <option value="auto" selected style="color:#0f3d75; background:#eef5ff;">Smart (semantic + keyword fallback)</option>
+                  <option value="vector" style="color:#1f4f8f; background:#eef5ff;">Semantic only</option>
+                  <option value="fulltext" style="color:#2f5fa1; background:#eef5ff;">Keyword only</option>
+                </select>
+                <div id="gs-search-method-help" style="font-size:12px; color:#666;">Smart search tries semantic results first, then keyword fallback if needed.</div>
               </div>
             </div>
 
@@ -447,45 +448,52 @@ RETURN s, r, t
               <div style="display:grid; gap:4px;">
                 <label for="gs-global-limit">Max matched nodes</label>
                 <input id="gs-global-limit" type="number" min="1" max="80" value="24">
+                <div style="font-size:12px; color:#666;">Upper limit for how many best-matching nodes are returned before graph expansion.</div>
               </div>
               <div style="display:grid; gap:4px;">
-                <label for="gs-global-scope-hops">Scope distance (if scoped)</label>
+                <label for="gs-global-scope-hops">Scope distance</label>
                 <input id="gs-global-scope-hops" type="number" min="1" max="2" value="1">
+                <div style="font-size:12px; color:#666;">How many relationship hops from the scoped node are allowed (1 = neighbors, 2 = neighbors of neighbors).</div>
               </div>
             </div>
 
-            <div style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px;">
-              <div style="display:grid; gap:4px;">
-                <label for="gs-global-retrieval-mode">Retrieval mode</label>
-                <select id="gs-global-retrieval-mode" style="width:100%;">
-                  <option value="auto" selected>Auto (vector then fulltext fallback)</option>
-                  <option value="vector">Vector only</option>
-                  <option value="fulltext">Fulltext only</option>
-                </select>
-              </div>
-              <div style="display:grid; gap:4px;">
-                <label for="gs-global-vector-index">Vector index name</label>
-                <input id="gs-global-vector-index" type="text" value="chunk_embedding_index" placeholder="chunk_embedding_index">
-              </div>
-            </div>
+            <details id="gs-global-advanced" style="border:1px solid #ddd; padding:8px; border-radius:6px;">
+              <summary style="cursor:pointer; font-weight:600;">Advanced options</summary>
+              <div style="display:grid; gap:10px; margin-top:10px;">
+                <div style="display:grid; gap:10px;">
+                  <div style="display:grid; gap:4px;">
+                    <label for="gs-global-index">Keyword index name</label>
+                    <input id="gs-global-index" type="text" value="iv_global_search_idx" placeholder="iv_global_search_idx" style="background:#effaf0; color:#1d4d2a; border:1px solid #8fcd99;">
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                      <button type="button" onclick="checkGuidedGlobalIndex()">Check index</button>
+                      <button type="button" onclick="ensureGuidedGlobalIndex()">Create index</button>
+                    </div>
+                  </div>
+                  <div style="display:grid; gap:4px;">
+                    <label for="gs-global-vector-index">Vector index name</label>
+                    <input id="gs-global-vector-index" type="text" value="chunk_embedding_index" placeholder="chunk_embedding_index" style="background:#effaf0; color:#1d4d2a; border:1px solid #8fcd99;">
+                  </div>
+                </div>
 
-            <div style="display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap:10px;">
-              <div style="display:grid; gap:4px;">
-                <label for="gs-global-vector-k">Vector candidate count</label>
-                <input id="gs-global-vector-k" type="number" min="1" max="200" value="40">
+                <div style="display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap:10px;">
+                  <div style="display:grid; gap:4px;">
+                    <label for="gs-global-vector-k">Vector candidate count</label>
+                    <input id="gs-global-vector-k" type="number" min="1" max="200" value="40">
+                  </div>
+                  <div style="display:grid; gap:4px;">
+                    <label for="gs-global-embed-provider">Embedding provider</label>
+                    <select id="gs-global-embed-provider" style="width:100%; background:#eef5ff; color:#0f3d75; border:1px solid #8fb5e6;">
+                      <option value="ollama" selected>ollama</option>
+                      <option value="openai">openai</option>
+                    </select>
+                  </div>
+                  <div style="display:grid; gap:4px;">
+                    <label for="gs-global-embed-model">Embedding model</label>
+                    <input id="gs-global-embed-model" type="text" value="mxbai-embed-large:latest" placeholder="mxbai-embed-large:latest" style="background:#effaf0; color:#1d4d2a; border:1px solid #8fcd99;">
+                  </div>
+                </div>
               </div>
-              <div style="display:grid; gap:4px;">
-                <label for="gs-global-embed-provider">Embedding provider</label>
-                <select id="gs-global-embed-provider" style="width:100%;">
-                  <option value="ollama" selected>ollama</option>
-                  <option value="openai">openai</option>
-                </select>
-              </div>
-              <div style="display:grid; gap:4px;">
-                <label for="gs-global-embed-model">Embedding model</label>
-                <input id="gs-global-embed-model" type="text" value="mxbai-embed-large:latest" placeholder="mxbai-embed-large:latest">
-              </div>
-            </div>
+            </details>
 
             <div id="gs-retrieval-strategy" style="font-size:12px; color:#666;"></div>
           </div>
