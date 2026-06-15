@@ -913,6 +913,16 @@
         hideSuggestions("target");
       }
     });
+
+    // Open Guided Search automatically once per tab to avoid a seemingly blank startup screen.
+    const autoOpenKey = "iv_guided_search_auto_opened";
+    const hasDialog = !!byId("guided-search-dialog");
+    if (hasDialog && !sessionStorage.getItem(autoOpenKey)) {
+      sessionStorage.setItem(autoOpenKey, "1");
+      setTimeout(() => {
+        window.openGuidedSearchDialog({ mode: "neo4j-global" });
+      }, 150);
+    }
   }
 
   document.addEventListener("DOMContentLoaded", installHandlers);

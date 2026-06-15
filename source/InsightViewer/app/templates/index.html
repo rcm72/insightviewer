@@ -184,6 +184,7 @@ Copyright (c) 2025 Robert Čmrlec
         <ul>
             <li>Let's make some graphs
                 <ul>
+                <li onclick="openGuidedSearchDialog({ mode: 'neo4j-global' })">Global search</li>
                     <li onclick="openCypherDialog()">Explore with cypher</li>   
 
                     <li >Custom graphs
@@ -452,7 +453,7 @@ RETURN s, r, t
               </div>
               <div style="display:grid; gap:4px;">
                 <label for="gs-global-scope-hops">Scope distance</label>
-                <input id="gs-global-scope-hops" type="number" min="1" max="2" value="1">
+                <input id="gs-global-scope-hops" type="number" min="1" value="1">
                 <div style="font-size:12px; color:#666;">How many relationship hops from the scoped node are allowed (1 = neighbors, 2 = neighbors of neighbors).</div>
               </div>
             </div>

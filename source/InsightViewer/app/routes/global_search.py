@@ -431,7 +431,7 @@ def _build_scoped_fulltext_graph_cypher(hit_ids, scope_node_id_rc, scope_hops, p
     if edge_types:
         edge_filter = f"(r IS NULL OR type(r) IN {_cypher_list(edge_types)})"
 
-    scope_hops = max(1, min(int(scope_hops or 1), 2))
+    scope_hops = max(1, int(scope_hops or 1))
 
     return f"""
 MATCH (scope {{id_rc: {_quote_cypher_string(scope_node_id_rc)}}})
