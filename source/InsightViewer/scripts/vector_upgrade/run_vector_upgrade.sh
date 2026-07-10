@@ -6,17 +6,32 @@ VENV_PY="$ROOT/.venv/bin/python"
 CYPHER_FILE="$ROOT/source/InsightViewer/scripts/vector_upgrade/01_create_vector_indexes.cypher"
 BACKFILL_PY="$ROOT/source/InsightViewer/scripts/vector_upgrade/02_backfill_chunk_embeddings.py"
 
-if [[ -z "${NEO4J_URI:-}" || -z "${NEO4J_USER:-}" || -z "${NEO4J_PASSWORD:-}" ]]; then
-  echo "Set NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD first."
+if [[ -z "${NEO4J_URI:-}" ]]; then
+  echo "Set NEO4J_URI first."
   exit 2
+fi
+
+USE_AUTH=0
+if [[ -n "${NEO4J_USER:-}" && -n "${NEO4J_PASSWORD:-}" ]]; then
+  USE_AUTH=1
+elif [[ -n "${NEO4J_USER:-}" || -n "${NEO4J_PASSWORD:-}" ]]; then
+  echo "NEO4J_USER/NEO4J_PASSWORD are incomplete; using no-auth connection."
 fi
 
 echo "[1/2] Creating constraints/indexes..."
 if command -v cypher-shell >/dev/null 2>&1; then
-  cypher-shell -a "$NEO4J_URI" -u "$NEO4J_USER" -p "$NEO4J_PASSWORD" -f "$CYPHER_FILE"
+  if [[ "$USE_AUTH" -eq 1 ]]; then
+    cypher-shell -a "$NEO4J_URI" -u "$NEO4J_USER" -p "$NEO4J_PASSWORD" -f "$CYPHER_FILE"
+  else
+    cypher-shell -a "$NEO4J_URI" -f "$CYPHER_FILE"
+  fi
 elif command -v docker >/dev/null 2>&1 && docker ps --format '{{.Names}}' | grep -qx 'neo4j'; then
   # Fallback for hosts without cypher-shell: run cypher-shell inside Neo4j container.
-  docker exec -i neo4j cypher-shell -a "bolt://localhost:7687" -u "$NEO4J_USER" -p "$NEO4J_PASSWORD" < "$CYPHER_FILE"
+  if [[ "$USE_AUTH" -eq 1 ]]; then
+    docker exec -i neo4j cypher-shell -a "bolt://localhost:7687" -u "$NEO4J_USER" -p "$NEO4J_PASSWORD" < "$CYPHER_FILE"
+  else
+    docker exec -i neo4j cypher-shell -a "bolt://localhost:7687" < "$CYPHER_FILE"
+  fi
 else
   echo "cypher-shell not found and no running 'neo4j' container detected."
   echo "Install Neo4j shell tools or run $CYPHER_FILE manually in Neo4j Browser."

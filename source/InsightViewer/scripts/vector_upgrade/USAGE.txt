@@ -1,14 +1,16 @@
 Vector upgrade toolkit for other TEST Neo4j databases
 
 Prerequisites:
-- export NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD
+- export NEO4J_URI
+- optional auth: export NEO4J_USER, NEO4J_PASSWORD
+- if env vars are unset, backfill script reads [NEO4J] URI/USERNAME/PASSWORD from config_private.ini or config.ini
 - project venv exists at /home/robert/insightViewer/.venv
 - for embeddings provider:
   - ollama: set OLLAMA BASE/MODEL in source/InsightViewer/config.ini (or config_private.ini)
   - openai: set OPENAI_API_KEY and choose --provider openai --model text-embedding-3-large
 
 1) Create indexes/constraints only
-cypher-shell -a "$NEO4J_URI" -u "$NEO4J_USER" -p "$NEO4J_PASSWORD" \
+cypher-shell -a "$NEO4J_URI" [-u "$NEO4J_USER" -p "$NEO4J_PASSWORD"] \
   -f /home/robert/insightViewer/source/InsightViewer/scripts/vector_upgrade/01_create_vector_indexes.cypher
 
 2) Backfill embeddings only
