@@ -772,7 +772,7 @@ def get_custom_graphs():
 
     _ensure_driver()
     """Fetch custom graphs from Neo4j."""
-    query = "MATCH (s:CustomGraph) ORDER BY s.name RETURN s"
+    query = "MATCH (s:CustomGraph) where s.projectname=$projectName  ORDER BY s.name RETURN s"
     with driver.session() as session:
         result = session.run(query)
         graphs = []

@@ -298,7 +298,49 @@ def parse_meeting_html(html: str) -> dict:
     }
 
 
-def write_meeting_graph(tx, project_name: str, html: str, parsed: dict, node_id: str = None):
+def extract_template_type_from_html(html: str) -> str | None:
+    """
+    Fallback source for template type when it is not provided in request JSON.
+
+    Supported markers inside HTML:
+    - <meta name="templateType" content="...">
+    - <body data-template-type="...">
+    - Any element with data-template-type="..."
+    """
+    if not html or not html.strip():
+        return None
+
+    soup = BeautifulSoup(html, "html.parser")
+
+    meta = soup.find("meta", attrs={"name": "templateType"})
+    if meta:
+        value = clean_text(meta.get("content", ""))
+        if value:
+            return value
+
+    body = soup.find("body")
+    if body:
+        value = clean_text(body.get("data-template-type", ""))
+        if value:
+            return value
+
+    any_node = soup.find(attrs={"data-template-type": True})
+    if any_node:
+        value = clean_text(any_node.get("data-template-type", ""))
+        if value:
+            return value
+
+    return None
+
+
+def write_meeting_graph(
+    tx,
+    project_name: str,
+    html: str,
+    parsed: dict,
+    node_id: str = None,
+    template_type: str = "CKEDITOR_MEETING"
+):
     tx.run("""
         MERGE (m:Meeting {id_rc: $meetingId})
         SET m.name = $projectName + '.Meeting.' + $title,
@@ -313,7 +355,7 @@ def write_meeting_graph(tx, project_name: str, html: str, parsed: dict, node_id:
             doc.html = $html,
             doc.language = $language,
             doc.projectName = $projectName,
-            doc.sourceType = 'CKEDITOR_MEETING',
+            doc.sourceType = $templateType,
             doc.createdAt = datetime()
 
         MERGE (m)-[:DOCUMENTED_BY]->(doc)
@@ -323,7 +365,8 @@ def write_meeting_graph(tx, project_name: str, html: str, parsed: dict, node_id:
         "documentId": parsed["documentId"],
         "title": parsed["title"],
         "language": parsed["language"],
-        "html": html
+        "html": html,
+        "templateType": template_type
     })
 
     for attendee in parsed["attendees"]:
@@ -331,7 +374,8 @@ def write_meeting_graph(tx, project_name: str, html: str, parsed: dict, node_id:
             MATCH (m:Meeting {id_rc: $meetingId})
 
             MERGE (person:Person {name: $personName})
-            SET person.projectName = $projectName
+            SET person.id_rc = coalesce(person.id_rc, randomUUID()),
+                person.projectName = $projectName
 
             MERGE (m)-[:HAS_ATTENDEE]->(person)
 
@@ -414,7 +458,8 @@ def write_meeting_graph(tx, project_name: str, html: str, parsed: dict, node_id:
             WHERE $ownerName IS NOT NULL AND $ownerName <> ''
 
             MERGE (person:Person {name: $ownerName})
-            SET person.projectName = $projectName
+            SET person.id_rc = coalesce(person.id_rc, randomUUID()),
+                person.projectName = $projectName
 
             MERGE (t)-[:ASSIGNED_TO]->(person)
         """, {
@@ -470,6 +515,9 @@ def generate_meeting_graph():
         html = data.get("html", "")
         project_name = data.get("projectName", "WS_CMRLECR")
         node_id = data.get("nodeId", None)
+        template_type = clean_text(data.get("templateType", ""))
+        if not template_type:
+            template_type = extract_template_type_from_html(html) or "CKEDITOR_MEETING"
 
         if not html.strip():
             return jsonify({
@@ -481,7 +529,7 @@ def generate_meeting_graph():
 
         _ensure_driver()
         with driver.session() as session:
-            session.execute_write(write_meeting_graph, project_name, html, parsed, node_id)
+            session.execute_write(write_meeting_graph, project_name, html, parsed, node_id, template_type)
 
         return jsonify({
             "ok": True,

@@ -110,7 +110,9 @@ def create_nodetype_relationships():
     WHERE NOT a:NodeType AND NOT b:NodeType
     WITH DISTINCT head(labels(a)) AS sourceType, type(r) AS relType, head(labels(b)) AS targetType
     MERGE (nt1:NodeType {name: sourceType})
+    SET nt1.id_rc = coalesce(nt1.id_rc, randomUUID())
     MERGE (nt2:NodeType {name: targetType})
+    SET nt2.id_rc = coalesce(nt2.id_rc, randomUUID())
     WITH nt1, nt2, relType
     CALL apoc.create.relationship(nt1, relType, {}, nt2) YIELD rel
     RETURN COUNT(rel) AS created_rels;

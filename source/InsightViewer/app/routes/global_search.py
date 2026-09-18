@@ -1,3 +1,6 @@
+#global_search.py
+
+
 import os
 import re
 from typing import Any
@@ -945,13 +948,45 @@ def fulltext_index_ensure():
 
     try:
         index_name = _validate_identifier(payload.get("index_name") or "iv_global_search_idx", "index_name")
-        properties = _normalize_fulltext_properties(payload.get("properties"))
-        requested_labels = _normalize_fulltext_labels(payload.get("labels"))
+        raw_properties = payload.get("properties", None)
+        raw_labels = payload.get("labels", None)
+
+        DEFAULT_LABELS = [
+            "DocumentHTML",
+            "Chunk",
+            "MeetingNote",
+            "Task",
+            "Meeting",
+            "Person",
+            "Project",
+        ]
+        REQUIRED_PROPERTIES = [
+            "name",
+            "id_rc",
+            "title",
+            "text",
+            "html",
+            "description",
+            "projectName",
+        ]
+
+        # Always enforce required searchable fields, even if caller sends a shorter list.
+        caller_properties = _normalize_fulltext_properties(raw_properties) if raw_properties is not None else []
+        properties = []
+        seen_props = set()
+        for prop in caller_properties + REQUIRED_PROPERTIES:
+            if prop in seen_props:
+                continue
+            seen_props.add(prop)
+            properties.append(prop)
+
+        requested_labels = _normalize_fulltext_labels(raw_labels) if raw_labels is not None else DEFAULT_LABELS
     except ValueError as e:
         return jsonify({"success": False, "error": str(e)}), 400
 
     try:
         with driver.session() as session:
+            # decide labels to use (requested or discovered)
             labels = requested_labels or _fetch_all_node_labels(session)
             if not labels:
                 return jsonify({"success": False, "error": "Could not discover any labels for fulltext index creation."}), 400
@@ -964,7 +999,23 @@ def fulltext_index_ensure():
             )
 
             before = _read_fulltext_index_info(session, index_name)
-            session.run(create_cypher).consume()
+
+            # If an index exists but its labels/properties don't match what we want, drop and recreate it.
+            dropped_and_recreated = False
+            if before:
+                existing_labels = [str(l) for l in (before.get("labels") or [])]
+                existing_props = [str(p) for p in (before.get("properties") or [])]
+
+                # Normalize for comparison
+                if set(existing_labels) != set(labels) or set(existing_props) != set(properties):
+                    # Drop existing index then recreate with desired labels/properties
+                    session.run(f"DROP INDEX {_quote_cypher_identifier(index_name)} IF EXISTS").consume()
+                    session.run(create_cypher).consume()
+                    dropped_and_recreated = True
+            else:
+                # create if not present (safe due to IF NOT EXISTS)
+                session.run(create_cypher).consume()
+
             after = _read_fulltext_index_info(session, index_name)
     except (CypherSyntaxError, ClientError) as e:
         return jsonify({"success": False, "error": f"Failed to create/verify fulltext index: {e}"}), 400
@@ -975,6 +1026,7 @@ def fulltext_index_ensure():
             "index_name": index_name,
             "created": before is None and after is not None,
             "exists": after is not None,
+            "replaced": dropped_and_recreated,
             "state": after.get("state") if after else None,
             "labels": after.get("labels") if after else None,
             "properties": after.get("properties") if after else properties,
@@ -1188,6 +1240,8 @@ def build_cypher_with_ai():
         return jsonify({"success": False, "error": str(e)}), 500
     except Exception as e:
         return jsonify({"success": False, "error": f"Unexpected error: {e}"}), 500
+
+
 
 
 

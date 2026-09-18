@@ -83,7 +83,10 @@ Copyright (c) 2025 Robert Čmrlec
             }
         </style>
     </head>    
-<body data-node-id="{{ node_id | default('') | e }}">
+<body
+    data-node-id="{{ node_id | default('') | e }}"
+    data-template-type="{{ template_type | default('CKEDITOR_MEETING') | e }}"
+>
 
 <h1>CKEditor 5  Classic Editor</h1>
 
@@ -99,6 +102,7 @@ Copyright (c) 2025 Robert Čmrlec
 <script src="{{ url_for('static', filename='ckeditor/build/ckeditor.js') }}"></script>
 <script>
     const IV_NODE_ID = document.body.dataset.nodeId || null;
+    const IV_TEMPLATE_TYPE = document.body.dataset.templateType || 'CKEDITOR_MEETING';
 
     let editorInstance;
 
@@ -496,7 +500,7 @@ Copyright (c) 2025 Robert Čmrlec
                 body: JSON.stringify({
                     html: html,
                     projectName: localStorage.getItem('iv_project') || 'WS_CMRLECR',
-                    sourceType: 'CKEDITOR_MEETING',
+                    templateType: IV_TEMPLATE_TYPE,
                     nodeId: IV_NODE_ID || null
                 })
             });

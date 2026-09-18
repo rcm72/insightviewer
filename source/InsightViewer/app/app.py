@@ -1028,10 +1028,13 @@ td:not([style*="dotted"]):not([style*="dashed"]):not([style*="double"]):not([sty
         else:
             content = "<p>Start editing...</p>"
 
+        template_type = request.args.get('templateType', 'CKEDITOR_MEETING')
+
         # CKEditor now gets only the fragment (no nested <html>, <head>, etc)
         return render_template('ckeditor_template.html',
                                content=content,
                                node_id=node_id,
+                       template_type=template_type,
                                ckeditor_config={"extraPlugins": "mathjax"})
     except Exception as e:
         print(f"Error in edit_node: {e}")

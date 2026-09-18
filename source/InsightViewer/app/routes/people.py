@@ -17,7 +17,8 @@ def add_person():
     data = request.json
     name = data.get("name", "Unnamed Person")
 
-    query = "CREATE (p:Person {name: $name}) RETURN p"
+    # Ensure created Person has an id_rc for consistent referencing
+    query = "CREATE (p:Person {name: $name, id_rc: randomUUID()}) RETURN p"
     result = neo4j.query(query, {"name": name})
     created_node = [{"labels": list(record["p"].labels), "properties": dict(record["p"])} for record in result]
     
