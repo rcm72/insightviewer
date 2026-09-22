@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*- 
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (c) 2025 Robert Čmrlec
 
@@ -35,6 +35,7 @@ from neo4j.graph import Node, Relationship  # Import for type checking
 import requests 
 import re 
 from html import unescape
+from bs4 import BeautifulSoup
 import neo4j.time as _neo4j_time
 from dotenv import load_dotenv
 import sys
@@ -609,12 +610,12 @@ def add_node():
             node_type_properties = dict(record["t"])  # Extract NodeType properties
             print("NodeType properties before filtering:", node_type_properties)  # Debugging log
 
-            excluded_keys = {"size", "id_rc", "id", "name"}  # avoid clobbering generated id_rc and node name
+            excluded_keys = {"size", "id_rc", "id", "name", "name_unique"}  # avoid clobbering generated id_rc and node name
             filtered_properties = {k: v for k, v in node_type_properties.items() if k not in excluded_keys}
             print("Filtered NodeType properties:", filtered_properties)  # Debugging log
 
             # Generate a stable id_rc for the new node
-            new_id_rc = str(uuid.uuid4())
+            new_id_rc = str(uuid.uuid4()) 
 
             # Add the new node with combined properties including id_rc
             create_node_query = f"""
@@ -910,135 +911,486 @@ def editor():
         return jsonify({"success": True, "content": content})
     return render_template('editor.html')
 
+def _create_html_archive(node_id, user_data, html):
+    """Archive a complete editor document without modifying its source.
 
-        
+    Timestamp uses the application server's local time. name_unique is a
+    filename stem, as required by editor_file_path() and /edit.
+    """
+    from datetime import datetime
+
+    archive_id = str(uuid.uuid4())
+    archive_name = f"{node_id}.{datetime.now():%Y%m%d%H%M%S}"
+    # Only server-generated UUIDs enter the filesystem path.
+    name_unique = f"archive_{archive_id}"
+    path = editor_file_path(name_unique)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    file_created = False
+    commit_attempted = False
+    try:
+        with driver.session() as session:
+            with session.begin_transaction() as tx:
+                record = tx.run(
+                    """
+                    MATCH (original {id_rc: $node_id, projectName: $project})
+                    CREATE (a:archive {
+                        id_rc: $archive_id,
+                        name: $archive_name,
+                        name_unique: $name_unique,
+                        projectName: $project,
+                        createdBy: $uid,
+                        createdAt: datetime()
+                    })
+                    CREATE (original)-[:hasArchive {id_rc: $edge_id}]->(a)
+                    RETURN a.id_rc AS id_rc
+                    """,
+                    node_id=node_id, project=user_data["project"],
+                    uid=user_data["uid"], archive_id=archive_id,
+                    archive_name=archive_name, name_unique=name_unique,
+                    edge_id=str(uuid.uuid4())
+                ).single(strict=True)
+                if record is None:
+                    raise ValueError("Original node no longer exists in your project.")
+                with open(path, 'x', encoding='utf-8') as f:
+                    file_created = True
+                    f.write(html)
+                    f.flush()
+                    os.fsync(f.fileno())
+                commit_attempted = True
+                tx.commit()
+        return jsonify(
+            success=True, message=f"Archive created: {archive_name}",
+            id_rc=archive_id, name=archive_name, name_unique=name_unique
+        )
+    except Exception:
+        # Before commit, rollback and remove the incomplete file. If commit's
+        # outcome is unknown, retain it so a committed node cannot lose its HTML.
+        if file_created and not commit_attempted:
+            os.remove(path)
+        if commit_attempted:
+            app.logger.exception("Archive commit outcome uncertain: %s", archive_id)
+        raise
+
+
 @app.route('/edit/<node_id>', methods=['GET', 'POST'])
 def edit_node(node_id):
-    # Validate JWT and extract user data
     user_data, error_response, status_code = validate_jwt()
     if error_response:
         return error_response, status_code
 
-    # Extract user data from JWT
-    uid = user_data["uid"]
-    project = user_data["project"]       
+    is_archive = request.method == 'POST' and request.form.get('action') == 'archive'
+    if is_archive and 'content' not in request.form:
+        return jsonify(success=False, error="Missing editor content."), 400
 
     try:
+        # Find exactly one node. Duplicate IDs must not silently select
+        # another node's document.
         with driver.session() as session:
-            query = """
-            MATCH (n)
-            WHERE n.id_rc = $node_id
-            RETURN n.name_unique AS name_unique
-            """
-            result = session.run(query, node_id=node_id)
-            record = result.single()
-
-            if record and record["name_unique"]:
-                name_unique = record["name_unique"]
-                print(f"Node {node_id} already has name_unique: {name_unique}")
-            else:
-                name_unique = f"node_{node_id}_{uuid.uuid4().hex[:8]}"
-                print(f"Generating name_unique for node {node_id}: {name_unique}")
-                update_query = """
+            record = session.run(
+                """
                 MATCH (n)
                 WHERE n.id_rc = $node_id
-                SET n.name_unique = $name_unique
-                RETURN n.name_unique AS name_unique
-                """
-                session.run(update_query, node_id=node_id, name_unique=name_unique)
-                print(f"Updated node {node_id} with name_unique: {name_unique}")
+                RETURN n.name_unique AS name_unique, n.projectName AS project_name
+                """,
+                node_id=node_id
+            ).single(strict=True)
 
-        file_path = os.path.join(app.root_path, 'static', 'editor_files', f"{name_unique}.html")
+            if is_archive and record["project_name"] != user_data["project"]:
+                return jsonify(success=False, error="Node is not in your project."), 403
 
-        # ---------- POST: save content ----------
-        if request.method == 'POST':
-            # CKEditor data = fragment we want inside <body>
-            content = request.form.get('content') or ""
-            mathjax_script = """
-            <script src="https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js?config=TeX-AMS_HTML"></script>
-            """
-            try:
-                fragment = content  # just use it as-is
+            name_unique = record["name_unique"]
 
-                full_html = f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{name_unique}</title>
-{mathjax_script}
-<style>
-/* minimal styling — adjust as needed */
-body{{
-    font-family:system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    line-height:1.6;
-    margin:1rem;
-    max-width:100%;
-    color:#111;
-}}
+            if not name_unique and not is_archive:
+                name_unique = f"node_{node_id}_{uuid.uuid4().hex[:8]}"
 
-/* Table defaults: collapse and readable padding */
-table {{
-    border-collapse: collapse;
-    width: 100%;
-}}
+                session.run(
+                    """
+                    MATCH (n)
+                    WHERE n.id_rc = $node_id
+                    SET n.name_unique = $name_unique
+                    """,
+                    node_id=node_id,
+                    name_unique=name_unique
+                ).consume()
 
+        file_path = os.path.join(
+            app.root_path,
+            'static',
+            'editor_files',
+            f"{name_unique}.html"
+        )
 
-/* Apply a default solid border only when the cell does not declare a border-style inline.
-   This avoids overriding user-chosen styles such as 'dotted' or 'dashed'. */
-th:not([style*="dotted"]):not([style*="dashed"]):not([style*="double"]):not([style*="solid"]):not([style*="ridge"]):not([style*="groove"]):not([style*="inset"]):not([style*="outset"]),
-td:not([style*="dotted"]):not([style*="dashed"]):not([style*="double"]):not([style*="solid"]):not([style*="ridge"]):not([style*="groove"]):not([style*="inset"]):not([style*="outset"]) {{
-    border: 2px solid #000;
-    padding: 6px;
-    word-wrap: break-word;
-    overflow-wrap: anywhere;
-}}
+        # Read the saved document before handling either GET or POST.
+        file_exists = bool(name_unique) and os.path.exists(file_path)
+        full_html = ""
 
-/* If you prefer not to rely on inline styles, have CKEditor set 'border-style' or use classes so CSS can detect them. */
-
-</style>
-</head>
-<body>
-{fragment}
-</body>
-</html>"""
-
-                with open(file_path, 'w', encoding='utf-8') as f:
-                    f.write(full_html)
-
-                return jsonify({"success": True, "message": f"Content saved for {name_unique}"})
-            except Exception as save_err:
-                app.logger.exception("Failed saving editor content")
-                return jsonify({"success": False, "error": str(save_err)}), 500
-
-        # ---------- GET: load content for editing ----------
-        if os.path.exists(file_path):
+        if file_exists:
             with open(file_path, 'r', encoding='utf-8') as f:
                 full_html = f.read()
 
-            # Extract only what's inside <body>...</body> for the editor
-            import re
-            m = re.search(r'<body[^>]*>(.*)</body>', full_html,
-                          flags=re.IGNORECASE | re.DOTALL)
-            if m:
-                content = m.group(1).strip()
-            else:
-                # fallback: if no <body>, just use whole file
-                content = full_html
+        soup = BeautifulSoup(full_html, "html.parser")
+
+        def read_meta(name):
+            tag = soup.find("meta", attrs={"name": name})
+            return (tag.get("content") or "").strip() if tag else ""
+
+        # Saved metadata takes priority over form/query defaults.
+        template_type = (
+            read_meta("templateType")
+            or (request.form.get("templateType") or "").strip()
+            or (request.args.get("templateType") or "").strip()
+            or "CKEDITOR_MEETING"
+        ).upper()
+
+        graph_node_name = (
+            read_meta("graphNodeName")
+            or (request.form.get("graphNodeName") or "").strip()
+            or "Summary"
+        )
+
+        # ---------- POST: save editor content ----------
+        if request.method == 'POST':
+            content = request.form.get('content') or ""
+
+            # Preserve the existing head, including styles, scripts,
+            # title and metadata.
+            if soup.html is None:
+                document = BeautifulSoup(
+                    '<!DOCTYPE html><html lang="sl">'
+                    '<head></head><body></body></html>',
+                    "html.parser"
+                )
+
+                if soup.head is not None:
+                    document.head.replace_with(soup.head.extract())
+
+                soup = document
+
+            if soup.head is None:
+                soup.html.insert(0, soup.new_tag("head"))
+
+            if soup.body is None:
+                soup.html.append(soup.new_tag("body"))
+
+            if not soup.html.get("lang"):
+                soup.html["lang"] = "sl"
+
+            def set_meta(name, value):
+                # Keep exactly one tag for each managed metadata field.
+                tags = soup.find_all("meta", attrs={"name": name})
+
+                if tags:
+                    tag = tags[0]
+                    for duplicate in tags[1:]:
+                        duplicate.decompose()
+                    tag.extract()
+                else:
+                    tag = soup.new_tag("meta")
+                    tag["name"] = name
+
+                tag["content"] = value
+                soup.head.append(tag)
+
+            set_meta("templateType", template_type)
+            set_meta("graphNodeName", graph_node_name)
+
+            if soup.head.find("meta", attrs={"charset": True}) is None:
+                charset = soup.new_tag("meta")
+                charset["charset"] = "utf-8"
+                soup.head.insert(0, charset)
+
+            if soup.head.find("meta", attrs={"name": "viewport"}) is None:
+                set_meta(
+                    "viewport",
+                    "width=device-width, initial-scale=1"
+                )
+
+            if soup.head.find("title") is None:
+                title = soup.new_tag("title")
+                title.string = name_unique
+                soup.head.append(title)
+
+            # Supply basic styling only when the document has no styles.
+            if (
+                soup.head.find("style") is None
+                and soup.head.find(
+                    "link", rel="stylesheet"
+                ) is None
+            ):
+                style = soup.new_tag("style")
+                style.string = """
+body {
+    font-family: system-ui, -apple-system, "Segoe UI",
+                 Roboto, "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.6;
+    margin: 1rem;
+    max-width: 100%;
+    color: #111;
+}
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+th, td {
+    border: 2px solid #000;
+    padding: 6px;
+    overflow-wrap: anywhere;
+}
+"""
+                soup.head.append(style)
+
+            # CKEditor supplies body content. Replace only the body;
+            # retain the saved document's head.
+            fragment = BeautifulSoup(content, "html.parser")
+            fragment_root = (
+                fragment.body
+                if fragment.body is not None
+                else fragment
+            )
+
+            soup.body.clear()
+
+            for child in list(fragment_root.contents):
+                soup.body.append(child.extract())
+
+            if is_archive:
+                return _create_html_archive(node_id, user_data, str(soup))
+
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(str(soup))
+
+            return jsonify({
+                "success": True,
+                "message": f"Content saved for {name_unique}",
+                "templateType": template_type,
+                "graphNodeName": graph_node_name
+            })
+
+        # ---------- GET: open content in CKEditor ----------
+        if soup.body is not None:
+            content = soup.body.decode_contents()
+        elif file_exists:
+            content = full_html
         else:
             content = "<p>Start editing...</p>"
 
-        template_type = request.args.get('templateType', 'CKEDITOR_MEETING')
+        return render_template(
+            'ckeditor_template.html',
+            content=content,
+            node_id=node_id,
+            template_type=template_type,
+            graph_node_name=graph_node_name,
+            ckeditor_config={"extraPlugins": "mathjax"}
+        )
 
-        # CKEditor now gets only the fragment (no nested <html>, <head>, etc)
-        return render_template('ckeditor_template.html',
-                               content=content,
-                               node_id=node_id,
-                       template_type=template_type,
-                               ckeditor_config={"extraPlugins": "mathjax"})
-    except Exception as e:
-        print(f"Error in edit_node: {e}")
-        return jsonify({"success": False, "error": str(e)}), 500
+    except Exception as exc:
+        app.logger.exception("Failed to open or save node HTML")
+        return jsonify({
+            "success": False,
+            "error": str(exc)
+        }), 500
+        
+# """ @app.route('/edit/<node_id>', methods=['GET', 'POST'])
+# def edit_node(node_id):
+#     # Validate JWT and extract user data
+#     user_data, error_response, status_code = validate_jwt()
+#     if error_response:
+#         return error_response, status_code
+
+#     # Extract user data from JWT
+#     uid = user_data["uid"]
+#     project = user_data["project"]       
+
+#     try:
+#         with driver.session() as session:
+#             query = """
+#             MATCH (n)
+#             WHERE n.id_rc = $node_id
+#             RETURN n.name_unique AS name_unique
+#             """
+#             result = session.run(query, node_id=node_id)
+#             record = result.single()
+
+#             if record and record["name_unique"]:
+#                 name_unique = record["name_unique"]
+#                 print(f"Node {node_id} already has name_unique: {name_unique}")
+#             else:
+#                 name_unique = f"node_{node_id}_{uuid.uuid4().hex[:8]}"
+#                 print(f"Generating name_unique for node {node_id}: {name_unique}")
+#                 update_query = """
+#                 MATCH (n)
+#                 WHERE n.id_rc = $node_id
+#                 SET n.name_unique = $name_unique
+#                 RETURN n.name_unique AS name_unique
+#                 """
+#                 session.run(update_query, node_id=node_id, name_unique=name_unique)
+#                 print(f"Updated node {node_id} with name_unique: {name_unique}")
+
+#         file_path = os.path.join(app.root_path, 'static', 'editor_files', f"{name_unique}.html")
+
+#         # ---------- POST: save content ----------
+#         if request.method == 'POST':
+#             # CKEditor data = fragment we want inside <body>
+#             content = request.form.get('content') or ""
+#             mathjax_script = """
+#             <script src="https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js?config=TeX-AMS_HTML"></script>
+#             """
+#             try:
+#                 fragment = content  # just use it as-is
+
+#                 # Prefer preserving existing templateType from the stored file (when editing an existing file).
+#                 # Fallback to the submitted form value or querystring when no existing meta is present.
+#                 import re
+#                 existing_template_type = None
+#                 existing_graph_node_name = None
+
+#                 if os.path.exists(file_path):
+#                     try:
+#                         with open(file_path, 'r', encoding='utf-8') as ef:
+#                             old_html = ef.read()
+
+#                         m_old = re.search(
+#                             r'<meta[^>]*name=["\']templateType["\'][^>]*content=["\']([^"\']+)["\']',
+#                             old_html,
+#                             flags=re.IGNORECASE
+#                         )
+#                         if m_old:
+#                             existing_template_type = m_old.group(1)
+
+#                         m_graph = re.search(
+#                             r'<meta[^>]*name=["\']graphNodeName["\'][^>]*content=["\']([^"\']+)["\']',
+#                             old_html,
+#                             flags=re.IGNORECASE
+#                         )
+#                         if m_graph:
+#                             existing_graph_node_name = m_graph.group(1)
+
+#                     except Exception:
+#                         existing_template_type = None
+#                         existing_graph_node_name = None
+
+#                 # Use existing_template_type when available, otherwise prefer explicit form value, then querystring, then default
+#                 #template_type = existing_template_type or request.form.get('templateType') or request.args.get('templateType') or 'CKEDITOR_MEETING'
+#                 template_type = (
+#                     existing_template_type
+#                     or request.form.get('templateType')
+#                     or request.args.get('templateType')
+#                     or 'CKEDITOR_MEETING'
+#                 ).strip().upper()                
+#                 meta_tag = f'<meta name="templateType" content="{template_type}">'
+                
+#                 graph_node_name = (
+#                     existing_graph_node_name
+#                     or request.form.get('graphNodeName')
+#                     or 'Summary'
+#                 )
+#                 graph_node_name_tag = (
+#                     f'<meta name="graphNodeName" content="{graph_node_name}">'
+#                 )
+
+#                 full_html = f"""<!DOCTYPE html>
+# <html lang="en">
+# <head>
+# <meta charset="utf-8">
+# {meta_tag}
+# {graph_node_name_tag}
+# <meta name="viewport" content="width=device-width, initial-scale=1">
+# <title>{name_unique}</title>
+# {mathjax_script}
+# <style>
+# /* minimal styling — adjust as needed */
+# body{{
+#     font-family:system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+#     line-height:1.6;
+#     margin:1rem;
+#     max-width:100%;
+#     color:#111;
+# }}
+
+# /* Table defaults: collapse and readable padding */
+# table {{
+#     border-collapse: collapse;
+#     width: 100%;
+# }}
+
+
+# /* Apply a default solid border only when the cell does not declare a border-style inline.
+#    This avoids overriding user-chosen styles such as 'dotted' or 'dashed'. */
+# th:not([style*="dotted"]):not([style*="dashed"]):not([style*="double"]):not([style*="solid"]):not([style*="ridge"]):not([style*="groove"]):not([style*="inset"]):not([style*="outset"]),
+# td:not([style*="dotted"]):not([style*="dashed"]):not([style*="double"]):not([style*="solid"]):not([style*="ridge"]):not([style*="groove"]):not([style*="inset"]):not([style*="outset"]) {{
+#     border: 2px solid #000;
+#     padding: 6px;
+#     word-wrap: break-word;
+#     overflow-wrap: anywhere;
+# }}
+
+# /* If you prefer not to rely on inline styles, have CKEditor set 'border-style' or use classes so CSS can detect them. */
+
+# </style>
+# </head>
+# <body>
+# {fragment}
+# </body>
+# </html>"""
+
+#                 with open(file_path, 'w', encoding='utf-8') as f:
+#                     f.write(full_html)
+
+#                 return jsonify({"success": True, "message": f"Content saved for {name_unique}"})
+#             except Exception as save_err:
+#                 app.logger.exception("Failed saving editor content")
+#                 return jsonify({"success": False, "error": str(save_err)}), 500
+
+#         # ---------- GET: load content for editing ----------
+#         file_template_type = None
+#         file_graph_node_name = None
+#         if os.path.exists(file_path):
+#             with open(file_path, 'r', encoding='utf-8') as f:
+#                 full_html = f.read()
+
+#             # Extract only what's inside <body>...</body> for the editor
+#             import re
+#             m = re.search(r'<body[^>]*>(.*)</body>', full_html,
+#                           flags=re.IGNORECASE | re.DOTALL)
+#             if m:
+#                 content = m.group(1).strip()
+#             else:
+#                 # fallback: if no <body>, just use whole file
+#                 content = full_html
+
+#             # try to extract templateType meta from existing file so frontend reflects it
+#             try:
+#                 m_meta = re.search(r'<meta[^>]*name=["\']templateType["\'][^>]*content=["\']([^"\']+)["\']', full_html, flags=re.IGNORECASE)
+#                 if m_meta:
+#                     file_template_type = m_meta.group(1)
+#             except Exception:
+#                 file_template_type = None
+#                 file_graph_node_name = None
+#         else:
+#             content = "<p>Start editing...</p>"
+
+#         # Priority: explicit query param > file's existing meta > default
+#         # template_type = request.args.get('templateType') or file_template_type or 'CKEDITOR_MEETING'
+#         template_type = (
+#             file_template_type
+#             or request.args.get('templateType')
+#             or 'CKEDITOR_MEETING'
+#         )
+
+#         # CKEditor now gets only the fragment (no nested <html>, <head>, etc)
+#         return render_template(
+#             'ckeditor_template.html',
+#             content=content,
+#             node_id=node_id,
+#             template_type=template_type,
+#             graph_node_name=file_graph_node_name or 'Summary',
+#             ckeditor_config={"extraPlugins": "mathjax"}
+#         )
+#     except Exception as e:
+#         print(f"Error in edit_node: {e}")
+#         return jsonify({"success": False, "error": str(e)}), 500 """
 
 
 @app.route('/edit_v4/<node_id>', methods=['GET', 'POST'])
@@ -1598,18 +1950,100 @@ def save_html(node_id):
     uid = user_data["uid"]
     project = user_data["project"]           
     try:
-        with driver.session() as s:
-            name_unique = ensure_name_unique(s, node_id)
-        path = editor_file_path(name_unique)
+        # prefer explicit name_unique sent from client (from previous GET)
+        # form_name_unique = request.form.get('name_unique')
 
         content = request.form.get("content") or ""
         # If CKEditor escaped HTML elsewhere, make sure we store real HTML
         if "&lt;html" in content or "&lt;!DOCTYPE" in content:
             content = unescape(content)
 
+        with driver.session() as s:
+            name_unique = ensure_name_unique(s, node_id)
+
+        path = editor_file_path(name_unique)
+
+        print(
+            f"SAVE HTML: node_id={node_id}, name_unique={name_unique}",
+            flush=True
+        )
+
+        # merge head/meta from existing saved file when CKEditor edited only the body
+        existing_content = ""
+        if os.path.exists(path):
+            with open(path, 'r', encoding='utf-8') as f:
+                existing_content = f.read()
+
+        new_full = _extract_full_html(content)
+        existing_full = _extract_full_html(existing_content) if existing_content else None
+
+        try:
+            new_soup = BeautifulSoup(new_full, 'html.parser')
+            existing_soup = BeautifulSoup(existing_full, 'html.parser') if existing_full else None
+
+            # ensure head exists
+            if not new_soup.head:
+                if new_soup.html:
+                    new_soup.html.insert(0, new_soup.new_tag('head'))
+                else:
+                    # create full html structure
+                    html_tag = new_soup.new_tag('html')
+                    head_tag = new_soup.new_tag('head')
+                    body_tag = new_soup.new_tag('body')
+                    body_tag.extend(new_soup.contents)
+                    html_tag.append(head_tag)
+                    html_tag.append(body_tag)
+                    new_soup.clear()
+                    new_soup.append(html_tag)
+
+            if existing_soup and existing_soup.head:
+                # copy meta tags (by name) that are present in existing but missing in new
+                for meta in existing_soup.head.find_all('meta'):
+                    name = meta.get('name')
+                    if name and not new_soup.head.find('meta', attrs={'name': name}):
+                        m = new_soup.new_tag('meta')
+                        for k, v in meta.attrs.items():
+                            m.attrs[k] = v
+                        new_soup.head.append(m)
+
+                # preserve title if missing
+                if existing_soup.head.title and not new_soup.head.title:
+                    t = new_soup.new_tag('title')
+                    t.string = existing_soup.head.title.string or ''
+                    new_soup.head.append(t)
+
+            # honor explicit hidden form fields if provided (override or set meta)
+            form_graph_node = request.form.get('graphNodeName')
+            form_template_type = request.form.get('templateType')
+            if form_graph_node:
+                m = new_soup.head.find('meta', attrs={'name': 'graphNodeName'})
+                if m:
+                    m['content'] = form_graph_node
+                else:
+                    new_m = new_soup.new_tag('meta')
+                    new_m.attrs['name'] = 'graphNodeName'
+                    new_m.attrs['content'] = form_graph_node
+                    new_soup.head.append(new_m)
+
+                # Preserve metadata already present in the HTML.
+                # Use the form value only when no templateType tag exists.
+                if form_template_type:
+                    m2 = new_soup.head.find('meta', attrs={'name': 'templateType'})
+
+                    if m2 is None:
+                        m2 = new_soup.new_tag('meta')
+                        m2['name'] = 'templateType'
+                        m2['content'] = form_template_type
+                        new_soup.head.append(m2)
+
+            content_to_write = str(new_soup)
+        except Exception:
+            # fallback: write the raw content if parsing/merge fails
+            content_to_write = content
+
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, 'w', encoding='utf-8') as f:
-            f.write(content)
+            f.write(content_to_write)
 
         return jsonify({"success": True, "message": f"Saved {name_unique}.html"})
     except Exception as e:

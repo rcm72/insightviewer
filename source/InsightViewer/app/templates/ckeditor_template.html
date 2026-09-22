@@ -95,7 +95,10 @@ Copyright (c) 2025 Robert Čmrlec
         {{ content | safe }}
     </div>
     <textarea name="content" id="editor-content" style="display: none;"></textarea>
+    <input type="hidden" name="templateType" value="{{ template_type | default('CKEDITOR_MEETING') | e }}" />
+    <input type="hidden" name="graphNodeName" value="{{ graph_node_name | default('Summary') | e }}" />
     <button type="submit">Save</button>
+    <button type="button" id="archive-button" onclick="archiveContent()">Archive</button>
     <button type="button" onclick="generateGraph()">Generate graph</button>
 </form>
 
@@ -464,23 +467,102 @@ Copyright (c) 2025 Robert Čmrlec
         });
     })();
 
-    // helper to submit editor content into hidden textarea before form submit
-    function submitContent(event) {
+    // helper to submit editor content via AJAX and show a modal dialog instead of navigating
+    async function submitContent(event) {
+        if (event && typeof event.preventDefault === 'function') event.preventDefault();
+
         try {
             const editorData = window.editorInstance ? window.editorInstance.getData() : '';
-            const ta = document.querySelector('#editor-content');
-            if (!ta) {
-                console.error('No hidden textarea #editor-content found');
-                // allow submit to proceed so server can handle absence as needed
+
+            // If no IV_NODE_ID available, fall back to normal submit (conservative)
+            if (!IV_NODE_ID) {
+                console.error('IV_NODE_ID missing; cannot submit via AJAX. Falling back to normal submit.');
                 return true;
             }
-            ta.value = editorData;
-            console.log('submitContent: data length=', editorData.length);
+
+            const formEl = document.querySelector('form');
+            const formData = new FormData(formEl || document.createElement('form'));
+            formData.set('content', editorData);
+            formData.set('templateType', IV_TEMPLATE_TYPE || 'CKEDITOR_MEETING');
+
+            const resp = await fetch('/edit/' + encodeURIComponent(IV_NODE_ID), {
+                method: 'POST',
+                body: formData
+            });
+
+            let result = {};
+            try { result = await resp.json(); } catch (e) { /* ignore parse errors */ }
+
+            if (!resp.ok || !result || !result.success) {
+                const msg = (result && (result.error || result.message)) || ('Save failed: HTTP ' + resp.status);
+                showIvModal('Save failed', msg);
+                return false;
+            }
+
+            // Success — show confirm modal (do not navigate)
+            showIvModal('Saved','Content saved successfully.');
         } catch (err) {
             console.error('submitContent error:', err);
+            showIvModal('Save error', (err && err.message) || String(err));
         }
-        // return true to allow the form to submit
-        return true;
+
+        // prevent default navigation
+        return false;
+    }
+
+    // small helper: show an in-page modal dialog for user feedback
+    function showIvModal(title, message) {
+        let dlg = document.getElementById('iv-save-dialog');
+        if (!dlg) {
+            dlg = document.createElement('div');
+            dlg.id = 'iv-save-dialog';
+            Object.assign(dlg.style, {
+                position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%,-50%)',
+                background: 'white', border: '1px solid #ccc', padding: '18px', zIndex: 99999,
+                boxShadow: '0 6px 24px rgba(0,0,0,0.2)', maxWidth: '90%', width: '420px', borderRadius: '6px'
+            });
+
+            const h = document.createElement('h3'); h.id = 'iv-save-dialog-title'; h.style.marginTop = '0';
+            const p = document.createElement('div'); p.id = 'iv-save-dialog-message'; p.style.whiteSpace = 'pre-wrap'; p.style.margin = '8px 0 16px';
+            const btn = document.createElement('button'); btn.textContent = 'OK';
+            btn.onclick = () => { dlg.style.display = 'none'; };
+
+            dlg.appendChild(h); dlg.appendChild(p); dlg.appendChild(btn);
+            document.body.appendChild(dlg);
+        }
+        document.getElementById('iv-save-dialog-title').textContent = title || '';
+        document.getElementById('iv-save-dialog-message').textContent = message || '';
+        dlg.style.display = 'block';
+    }
+
+    async function archiveContent() {
+        const button = document.getElementById('archive-button');
+        if (button.disabled) return;
+        if (!window.editorInstance || !IV_NODE_ID) {
+            alert('The editor or original node is not ready.');
+            return;
+        }
+        button.disabled = true;
+        button.textContent = 'Archiving…';
+        try {
+            const form = new FormData(document.getElementById('editor-content').form);
+            form.set('content', window.editorInstance.getData());
+            form.set('action', 'archive');
+            const response = await fetch('/edit/' + encodeURIComponent(IV_NODE_ID), {
+                method: 'POST', body: form
+            });
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                throw new Error(result.error || 'Archive failed.');
+            }
+            alert(result.message);
+        } catch (error) {
+            console.error('Archive failed:', error);
+            alert('Archive could not be confirmed. Check the graph before retrying.\n' + error.message);
+        } finally {
+            button.disabled = false;
+            button.textContent = 'Archive';
+        }
     }
 
     async function generateGraph() {
@@ -492,7 +574,11 @@ Copyright (c) 2025 Robert Čmrlec
                 return;
             }
 
-            const response = await fetch('/graph/generate-meeting-graph', {
+            const graphNodeName = (
+                document.querySelector('input[name="graphNodeName"]')?.value || ''
+            ).trim();
+
+            const response = await fetch('/graph/generate-graph', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -501,6 +587,7 @@ Copyright (c) 2025 Robert Čmrlec
                     html: html,
                     projectName: localStorage.getItem('iv_project') || 'WS_CMRLECR',
                     templateType: IV_TEMPLATE_TYPE,
+                    graphNodeName: graphNodeName,
                     nodeId: IV_NODE_ID || null
                 })
             });

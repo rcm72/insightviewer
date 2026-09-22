@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2025 Robert �mrlec
+// indexScript.js
 
 // Get current project and user email
 const currentProject = window.IV_CURRENT_USER?.project;
@@ -1497,6 +1498,8 @@ document.addEventListener("DOMContentLoaded", function () {
            const data = await res.json();
            if (data.success) {
                cmEditor.setValue(data.content || "<!-- New document -->\n");
+               // remember the server-assigned unique filename so saves go to the same file
+               window.htmlEditorNameUnique = data.name_unique || null;
                setEditorStatus('Loaded');
            } else {
                cmEditor.setValue("<!-- New document -->\n");
@@ -1525,10 +1528,11 @@ document.addEventListener("DOMContentLoaded", function () {
    async function saveHtmlFromEditor() {
        if (!htmlEditorNodeId) return alert("No node selected.");
        const content = cmEditor ? cmEditor.getValue() : '';
-       setEditorStatus('Saving�');
+       setEditorStatus('Saving...');
        try {
            const form = new FormData();
            form.append('content', content);
+           //if (window.htmlEditorNameUnique) form.append('name_unique', window.htmlEditorNameUnique);
            const res = await fetch(`/save-html/${htmlEditorNodeId}`, { method: 'POST', body: form });
            const data = await res.json();
            if (data.success) {
@@ -2073,6 +2077,87 @@ function formatProperties(properties) {
        .join("");
 }
 
+// Refresh node properties from backend and update UI
+async function refreshNodePropertiesFromServer(visNodeId) {
+    // If no visNodeId provided, try to resolve from current selection or global
+    if (!visNodeId) {
+        const sel = (network && typeof network.getSelectedNodes === 'function') ? network.getSelectedNodes() : [];
+        visNodeId = sel && sel.length ? sel[0] : (window.selectedNodeId || null);
+        console.log('refreshNodePropertiesFromServer: resolved visNodeId from selection/global:', visNodeId);
+    }
+
+    const node = nodes.get(visNodeId);
+    if (!node) return alert("Node not found");
+
+    // prefer server id_rc when present
+    const nodeIdParam = node.id_rc || (node.properties && node.properties.id_rc) || node.id;
+
+    try {
+        const res = await fetch('/expand-node', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ node_id: String(nodeIdParam) })
+        });
+        const data = await res.json();
+        if (!res.ok || !data || data.success === false) {
+            throw new Error(data && data.error ? data.error : 'Failed to fetch node');
+        }
+
+        // find the returned node that matches our id
+        const returnedNodes = data.nodes || [];
+        console.log('refreshNodePropertiesFromServer: returned nodes:', returnedNodes);
+
+        let returned = returnedNodes.find(n => String(n.id) === String(nodeIdParam) || String(n.id_rc) === String(nodeIdParam));
+
+        // try matching against properties.id_rc or properties.id
+        if (!returned) {
+            returned = returnedNodes.find(n => n.properties && (String(n.properties.id_rc) === String(nodeIdParam) || String(n.properties.id) === String(nodeIdParam)));
+        }
+
+        // try matching by label as a last-resort (not unique)
+        if (!returned && node && node.label) {
+            returned = returnedNodes.find(n => String(n.label) === String(node.label));
+        }
+
+        // if still not found but exactly one node was returned, assume it's the one
+        if (!returned && returnedNodes.length === 1) {
+            returned = returnedNodes[0];
+            console.warn('refreshNodePropertiesFromServer: no exact match, using sole returned node as fallback');
+        }
+
+        if (!returned) {
+            console.error('refreshNodePropertiesFromServer: no matching node. Sent nodeIdParam:', nodeIdParam, 'vis node:', node, 'returnedNodes:', returnedNodes);
+            return alert('Node not returned by server. See console for details.');
+        }
+
+        // update vis dataset entry
+        nodes.update({
+            id: visNodeId,
+            label: returned.label || node.label,
+            properties: returned.properties || node.properties || {},
+            labels: returned.labels || node.labels || [],
+            color: returned.color || node.color,
+            shape: returned.shape || node.shape,
+            image: returned.image || node.image,
+            size: returned.size || node.size
+        });
+
+        // refresh dialog content if open
+        const content = document.getElementById('node-properties-content');
+        if (content) {
+            const current = nodes.get(visNodeId);
+            const labels = (current && current.labels) || ['Unknown'];
+            content.innerHTML = `\n                <div style="margin-bottom:8px"><b>Labels:</b> ${labels.join(', ')}</div>\n                ${formatProperties(current.properties)}\n                <div style="margin-top:8px">\n                  <button id="refresh-node-properties">Refresh</button>\n                </div>\n            `;
+            const btn = document.getElementById('refresh-node-properties');
+            if (btn) btn.onclick = () => refreshNodePropertiesFromServer(visNodeId);
+        }
+
+    } catch (e) {
+        console.error('refreshNodePropertiesFromServer error:', e);
+        alert('Failed to refresh node properties: ' + (e.message || e));
+    }
+}
+
 function deleteSelected() {
    // Get selected nodes and edges
    const selected = network.getSelection();
@@ -2273,21 +2358,28 @@ function openNodePropertiesDialog() {
    // Retrieve labels from the node object
    const labels = node.labels || ["Unknown"]; // Use stored labels or fallback to "Unknown"
 
-   // Format the properties and include labels
-   const formattedProperties = `
-       <div><b>Labels:</b> ${labels.join(", ")}</div>
-       ${formatProperties(node.properties)}
-   `;
+     // Format the properties and include labels, plus Refresh button
+     const formattedProperties = `
+             <div><b>Labels:</b> ${labels.join(", ")}</div>
+             ${formatProperties(node.properties)}
+             <div style="margin-top:8px">
+                 <button id="refresh-node-properties">Refresh</button>
+             </div>
+     `;
 
    // Populate the dialog with node properties and labels
    content.innerHTML = formattedProperties;
 
-   // Show the dialog
-   dialog.style.display = "block";
+    // Show the dialog
+    dialog.style.display = "block";
 
-   // Make the dialog draggable
-   makeDialogDraggable(dialog);
-   console.log("Dialog opened with node properties and labels:", { labels, properties: node.properties });
+    // Wire refresh button
+    const refreshBtn = document.getElementById('refresh-node-properties');
+    if (refreshBtn) refreshBtn.onclick = () => refreshNodePropertiesFromServer(nodeId);
+
+    // Make the dialog draggable
+    makeDialogDraggable(dialog);
+    console.log("Dialog opened with node properties and labels:", { labels, properties: node.properties });
 }
 
 function closeNodePropertiesDialog() {
