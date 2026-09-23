@@ -914,16 +914,77 @@
       }
     });
 
-    // Open Guided Search automatically once per tab to avoid a seemingly blank startup screen.
+    // Startup chooser: show a small modal on first tab load so users can pick
+    // how they want to start (guided search, custom graphs, or none). Persist
+    // choice to `localStorage.iv_startup_choice`. Keep per-tab suppression
+    // using `sessionStorage.iv_guided_search_auto_opened` to avoid repeat opens.
     const autoOpenKey = "iv_guided_search_auto_opened";
     const hasDialog = !!byId("guided-search-dialog");
     if (hasDialog && !sessionStorage.getItem(autoOpenKey)) {
       sessionStorage.setItem(autoOpenKey, "1");
-      setTimeout(() => {
-        window.openGuidedSearchDialog({ mode: "neo4j-global" });
-      }, 150);
+
+      const savedChoice = localStorage.getItem("iv_startup_choice");
+      if (savedChoice === "guided-search") {
+        setTimeout(() => window.openGuidedSearchDialog({ mode: "neo4j-global" }), 150);
+      } else if (savedChoice === "custom-graphs") {
+        setTimeout(() => { if (typeof window.openLoadCustomGraphDialog === 'function') window.openLoadCustomGraphDialog(); }, 150);
+      } else if (savedChoice === "none") {
+        // explicit do-nothing saved choice
+      } else {
+        // no saved choice -> show chooser modal
+        setTimeout(() => showStartupChooserModal(), 150);
+      }
     }
   }
+
+  // Show a simple startup chooser and optionally persist the user's choice.
+  // Defined at top-level so callers (including inline HTML handlers) can invoke it.
+  function showStartupChooserModal() {
+    // Create overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'iv-startup-chooser-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:10000;';
+
+    const box = document.createElement('div');
+    box.style.cssText = 'background:#fff;border-radius:8px;padding:20px;max-width:480px;width:92%;box-shadow:0 8px 30px rgba(0,0,0,0.2);font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#222;';
+
+    box.innerHTML = `
+      <h3 style="margin:0 0 8px 0">Welcome to Insight Viewer</h3>
+      <p style="margin:0 0 18px 0;color:#555;">Choose how you'd like to start this session:</p>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;">
+        <button id="iv-start-custom" style="padding:10px;border-radius:6px;border:1px solid #d0d7de;background:#2e7d32;color:white;cursor:pointer;text-align:left;">Custom Graphs — open saved graphs</button>        
+        <button id="iv-start-guided" style="padding:10px;border-radius:6px;border:1px solid #d0d7de;background:#1976d2;color:white;cursor:pointer;text-align:left;">Guided Search — build queries with templates</button>          
+        <button id="iv-start-none" style="padding:10px;border-radius:6px;border:1px solid #d0d7de;background:#f5f5f5;color:#222;cursor:pointer;text-align:left;">Do nothing — start with blank view</button>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#444;"><input id="iv-start-remember" type="checkbox"> Remember my choice</label>
+      <div style="display:flex;justify-content:flex-end;margin-top:12px;"><button id="iv-start-cancel" style="padding:8px 12px;border-radius:6px;border:1px solid #ccc;background:#fff;cursor:pointer;">Close</button></div>
+    `;
+
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    const cleanup = () => { const el = document.getElementById('iv-startup-chooser-overlay'); if (el) el.remove(); };
+
+    const doChoice = (choice) => {
+      const remember = !!document.getElementById('iv-start-remember').checked;
+      if (remember) localStorage.setItem('iv_startup_choice', choice);
+      cleanup();
+      if (choice === 'guided-search') {
+        if (typeof window.openGuidedSearchDialog === 'function') window.openGuidedSearchDialog({ mode: 'neo4j-global' });
+      } else if (choice === 'custom-graphs') {
+        if (typeof window.openLoadCustomGraphDialog === 'function') window.openLoadCustomGraphDialog();
+      }
+      // 'none' -> do nothing
+    };
+
+    box.querySelector('#iv-start-guided').onclick = () => doChoice('guided-search');
+    box.querySelector('#iv-start-custom').onclick = () => doChoice('custom-graphs');
+    box.querySelector('#iv-start-none').onclick = () => doChoice('none');
+    box.querySelector('#iv-start-cancel').onclick = cleanup;
+  }
+
+  // Export to global so inline HTML handlers can call it (onclick="showStartupChooserModal()").
+  if (typeof window !== 'undefined') window.showStartupChooserModal = showStartupChooserModal;
 
   document.addEventListener("DOMContentLoaded", installHandlers);
 })();

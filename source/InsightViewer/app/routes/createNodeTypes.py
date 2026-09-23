@@ -772,9 +772,11 @@ def get_custom_graphs():
 
     _ensure_driver()
     """Fetch custom graphs from Neo4j."""
-    query = "MATCH (s:CustomGraph) where s.projectname=$projectName  ORDER BY s.name RETURN s"
+    query = "MATCH (s:CustomGraph) where s.projectName=$projectName  ORDER BY s.name RETURN s"
+    # project should be provided by the validated JWT; ensure a sensible fallback
+    param_project = project or 'ALL'
     with driver.session() as session:
-        result = session.run(query)
+        result = session.run(query, projectName=param_project)
         graphs = []
         for record in result:
             graph_node = record["s"]

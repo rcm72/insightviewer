@@ -194,12 +194,14 @@ Copyright (c) 2025 Robert Čmrlec
                             <li onclick="AddExistingNodes()">Add existing nodes</li>            
                         </ul>
                     </li>                 
+                    <li onclick="showStartupChooserModal()">Show startup options</li>                                                                            
                     <li>Define Meta Model
                         <ul>
                             <li onclick="openCreateNodeTypeDialog()">Create Node Type</li>
                             <li onclick="openCreateEdgeTypeDialog()">Create Edge Type</li>
                         </ul>
-                    </li>                    
+                    </li>  
+
                 </ul>        
             </li>
             <li>Utilities
@@ -623,21 +625,59 @@ RETURN s, r, t
         <button onclick="submitNodeType()">Create</button>
     </div>    
 
+    
     <!-- Context Menu for Nodes -->
     <div id="node-context-menu" class="context-menu">
-        <ul>
-            <li onclick="openHtml()">Edit html for user</li>
-            <li onclick="openHtml_v4()">Edit html for user old version</li>
-            <li onclick="openHtml_jsEditor()">Edit html for power user</li>
-            <li onclick="openHtml_browser()">Open with browser</li>
-        <li onclick="openGraphAiDialog()">Ask AI about node</li>
-            <li onclick="openNodeScopedNeo4jSearch()">Neo4j global search from node</li>
-            <li onclick="collapseNode()">Collapse</li>
-            <li onclick="clearNode()">Clear node</li>
-            <li onclick="removeNodeCustomGraph()">Remove node from custom graph</li>
-            <li onclick="expandByEdgeType()">Expand by Edge Type</li>
-        </ul>
+        <details>
+            <summary>Edit</summary>
+            <ul>
+                <li onclick="openHtml()">Edit html for user</li>
+                <li onclick="openHtml_v4()">Edit html for user old version</li>
+                <li onclick="openHtml_jsEditor()">Edit html for power user</li>
+            </ul>
+        </details>
+
+        <details>
+            <summary>Open</summary>
+            <ul>
+                <li onclick="openHtml_browser()">Open with browser</li>
+            </ul>
+        </details>
+
+        <details>
+            <summary>Search</summary>
+            <ul>
+                <li onclick="openGraphAiDialog()">Ask AI about node</li>
+                <li onclick="openNodeScopedNeo4jSearch()">Neo4j global search from node</li>
+            </ul>
+        </details>
+
+        <details>
+            <summary>Node Operations</summary>
+            <ul>
+                <li onclick="collapseNode()">Collapse</li>
+                <li onclick="clearNode()">Clear node</li>
+                <li onclick="removeNodeCustomGraph()">Remove node from custom graph</li>
+            </ul>
+        </details>
+
+        <details>
+            <summary>Navigate</summary>
+            <ul>
+                <li onclick="expandByEdgeType()">Outgoing connections</li>
+                <li onclick="incomingConnections()">Incoming connections</li>
+            </ul>
+        </details>
     </div>
+
+    <script>
+        document.querySelectorAll('#node-context-menu summary')
+            .forEach(summary => {
+                summary.addEventListener('click', event => {
+                    event.stopPropagation();
+                });
+            });
+    </script>
 
     <!-- Choose Edges Dialog -->
     <div id="choose-edges-dialog" class="floating-dialog">

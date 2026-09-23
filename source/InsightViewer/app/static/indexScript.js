@@ -690,6 +690,8 @@ function visualizeGraph(data, allowedNodeLabels = []) {
     }
 }
 
+
+
 async function expandByEdgeType() {
     const selectedNodes = network.getSelectedNodes();
     if (selectedNodes.length === 0) {
@@ -745,6 +747,60 @@ async function expandByEdgeType() {
     } catch (error) {
         console.error("Error in expandByEdgeType:", error);
         alert("An error occurred while expanding the node.");
+    }
+}
+
+// Show only incoming connections to the selected node
+async function incomingConnections() {
+    const selectedNodes = network.getSelectedNodes();
+    if (selectedNodes.length === 0) {
+        alert("Please select a node to inspect incoming connections.");
+        return;
+    }
+
+    const nodeId = selectedNodes[0];
+    console.log("Fetching incoming connections for node ID:", nodeId);
+
+    try {
+        const expandResponse = await fetch(`/expand-node`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ node_id: nodeId })
+        });
+
+        const expandData = await expandResponse.json();
+        if (!expandData || expandData.success === false) {
+            alert("Failed to fetch connections: " + (expandData && expandData.error ? expandData.error : "Unknown error"));
+            return;
+        }
+
+        const allEdges = expandData.edges || [];
+        const allNodes = expandData.nodes || [];
+
+        // Keep edges where the selected node is the 'to' side (incoming)
+        const incomingEdges = allEdges.filter(e => String(e.to) === String(nodeId));
+
+        if (!incomingEdges.length) {
+            alert('No incoming connections found for the selected node.');
+            return;
+        }
+
+        // Collect node ids we need to include (selected node + sources of incoming edges)
+        const neededIds = new Set();
+        neededIds.add(String(nodeId));
+        incomingEdges.forEach(e => neededIds.add(String(e.from)));
+
+        // Pick nodes from returned list that match needed ids (match id or id_rc)
+        const subsetNodes = allNodes.filter(n => {
+            const nid = n.id || n.id_rc || (n.properties && n.properties.id_rc) || n.properties && n.properties.id;
+            return nid && neededIds.has(String(nid));
+        });
+
+        const payload = { nodes: subsetNodes, edges: incomingEdges };
+        visualizeGraph(payload, gAllowedNodeLabels);
+    } catch (err) {
+        console.error('incomingConnections error:', err);
+        alert('Failed to load incoming connections: ' + (err && err.message ? err.message : err));
     }
 }
 
