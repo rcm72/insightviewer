@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Copyright (c) 2025 Robert �mrlec
+// Copyright (c) 2025 Robert Čmrlec
 // indexScript.js
 
 // Get current project and user email
@@ -2056,15 +2056,24 @@ function addNewNodeTypePropertyField() {
 
 // Update the submitNodeType function to include properties
 function submitNodeType(pNodeType, pName, pShape, pColor, pSize) {
-   const name = document.getElementById("node-type-name").value || pName;
-   const shape = pShape || document.getElementById("node-type-shape").value;
-   const color = pColor || document.getElementById("node-type-color").value ;
-   const size = parseInt(pSize || document.getElementById("node-type-size").value, 10);
+   const enteredName = document.getElementById("node-type-name").value.trim() || pName;
 
-   if (!name) {
+   if (!enteredName) {
        alert("Node type name is required!");
        return;
    }
+
+   const projectName = currentProject;
+
+   if (!projectName) {
+       alert("Project name is required to create a node type.");
+       return;
+   }
+
+   const name = `${projectName}.${enteredName}`;
+   const shape = pShape || document.getElementById("node-type-shape").value;
+   const color = pColor || document.getElementById("node-type-color").value ;
+   const size = parseInt(pSize || document.getElementById("node-type-size").value, 10);
 
    // Collect properties
    const properties = {};
@@ -2078,13 +2087,6 @@ function submitNodeType(pNodeType, pName, pShape, pColor, pSize) {
            properties[key] = value;
        }
    });
-
-   // determine project and creator (use explicit globals, then storage fallbacks)
-   const projectName = window.currentProject
-       || (typeof currentProject !== 'undefined' && currentProject)
-       || localStorage.getItem('iv_project')
-       || sessionStorage.getItem('iv_project')
-       || null;
 
    const createdBy = window.currentEmail
        || (typeof currentEmail !== 'undefined' && currentEmail)

@@ -1121,10 +1121,10 @@ def write_meeting_graph(
     # If the MERGE matched an existing node by name, fetch its id_rc and
     # update parsed['meetingId'] so subsequent MATCH/params use the stored id.
     node_name_for_lookup = parsed.get("graphNodeName") or parsed.get("title")
-    full_meeting_name = project_name + ".Meeting." + (node_name_for_lookup or "")
+    full_meeting_name = project_name + ".MeetingSummary." + (node_name_for_lookup or "")
     rec = tx.run(
         """
-        MATCH (m:Meeting)
+        MATCH (m:MeetingSummary)
         WHERE m.name = $fullName
         RETURN m.id_rc AS id_rc
         """,
@@ -1135,8 +1135,8 @@ def write_meeting_graph(
         parsed["meetingId"] = rec.get("id_rc")
     else:
         tx.run("""
-            MERGE (m:Meeting {
-                name: $projectName + '.Meeting.' + $nodeName
+            MERGE (m:MeetingSummary {
+                name: $projectName + '.MeetingSummary.' + $nodeName
             })
             ON CREATE SET
                 m.id_rc = $meetingId,
@@ -1172,7 +1172,7 @@ def write_meeting_graph(
         
         print("******************************")
         tx.run("""
-            MATCH (m:Meeting {id_rc: $meetingId})
+            MATCH (m:MeetingSummary {id_rc: $meetingId})
 
             MERGE (person:Person {name: $personName})
             SET person.id_rc = coalesce(person.id_rc, randomUUID()),
@@ -1196,7 +1196,7 @@ def write_meeting_graph(
 
     for agenda_item in parsed["agenda"]:
         tx.run("""
-            MATCH (m:Meeting {id_rc: $meetingId})
+            MATCH (m:MeetingSummary {id_rc: $meetingId})
 
             MERGE (a:AgendaItem {
                 meetingId: $meetingId,
@@ -1215,7 +1215,7 @@ def write_meeting_graph(
 
     if parsed["notes"]:
         tx.run("""
-            MATCH (m:Meeting {id_rc: $meetingId})
+            MATCH (m:MeetingSummary {id_rc: $meetingId})
 
             MERGE (n:MeetingNote {meetingId: $meetingId})
             SET n.id_rc = coalesce(n.id_rc, randomUUID()),
@@ -1235,7 +1235,7 @@ def write_meeting_graph(
         task_id = str(uuid.uuid4())
 
         tx.run("""
-            MATCH (m:Meeting {id_rc: $meetingId})
+            MATCH (m:MeetingSummary {id_rc: $meetingId})
 
             MERGE (t:ServiceRequest {name: $meetingId +'.ServiceRequest.' + $title})
             SET t.id_rc = coalesce(t.id_rc, randomUUID()),
@@ -1310,7 +1310,7 @@ def write_meeting_graph(
     if node_id:
         tx.run("""
             MATCH (parent {id_rc: $nodeId})
-            MATCH (m:Meeting {id_rc: $meetingId})
+            MATCH (m:MeetingSummary {id_rc: $meetingId})
             MERGE (parent)-[:HAS_MEETING]->(m)
         """, {
             "nodeId": node_id,
@@ -1580,7 +1580,7 @@ def write_generic_graph(
     """
     # derive a simple label mapping
     mapping = {
-        "CKEDITOR_MEETING": "Meeting",
+        "CKEDITOR_MEETING": "MeetingSummary",
         "CKEDITOR_DOCUMENTATION": "Documentation",
         "CKEDITOR_SERVICE_REQUEST": "ServiceRequest",
         "CKEDITOR_TASK": "TaskContainer",
