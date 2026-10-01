@@ -357,7 +357,8 @@ def parse_tasks(section) -> list[dict]:
             "owner": cells[1] if len(cells) > 1 else None,
             "description": cells[2] if len(cells) > 2 else None,
             "assignedDate": parse_date(cells[3]) if len(cells) > 3 else None,
-            "dueDate": parse_date(cells[4]) if len(cells) > 4 else None,            
+            "dueDate": parse_date(cells[4]) if len(cells) > 4 else None,                        
+            "finishedDate": parse_date(cells[5]) if len(cells) > 5 else None,            
             # parse finished as date when present
             "finished": parse_date(finished_raw) if finished_raw else None,
             # status is textual
@@ -567,13 +568,238 @@ def parse_document_html(html: str) -> dict:
 
 
 def parse_service_request_html(html: str) -> dict:
-    """Parse a service request template. Placeholder — reuse meeting parser for now."""
-    return parse_meeting_html(html)
+    """Extract service request fields and tasks from CKEditor's HTML fragment."""
+    soup = BeautifulSoup(html, "html.parser")
+    title = get_title(soup)
+    sections = {}
+    headings = {
+        "description": "description",
+        "definition of problem": "problem",
+        "proposed solution": "solution",
+        "notes": "notes",
+        "tasks": "tasks",
+    }
+    for section in soup.find_all("section"):
+        heading = section.find("h2")
+        if heading:
+            key = headings.get(normalize_heading(heading.get_text(" ")))
+            if key:
+                sections[key] = section
+
+    def section_text(key):
+        section = sections.get(key)
+        if not section:
+            return ""
+        heading = section.find("h2")
+        content = section.find("div", class_="content") or section
+        if content is section and heading:
+            return clean_text(" ".join(content.stripped_strings).removeprefix(clean_text(heading.get_text(" "))))
+        return clean_text(content.get_text(" "))
+
+    tasks = parse_tasks(sections.get("tasks"))
+    return {
+        "serviceRequestId": str(uuid.uuid4()),
+        "documentId": str(uuid.uuid4()),
+        "title": title,
+        "graphNodeName": get_graph_node_name(soup) or title,
+        "language": get_language(soup),
+        "description": section_text("description"),
+        "problem": section_text("problem"),
+        "solution": section_text("solution"),
+        "notes": section_text("notes"),
+        "tasks": tasks,
+        "chunks": build_chunks(title, sections),
+    }
 
 
 def parse_task_html(html: str) -> dict:
-    """Parse a standalone task template."""
-    return parse_meeting_html(html)
+    """Parse the standalone task template into graph-writer fields."""
+    soup = BeautifulSoup(html, "html.parser")
+
+    # CKEditor may submit either the complete template or only its body. In
+    # the latter case the task name is usually an h2 inside the header.
+    header = soup.find("header")
+    heading = header.find(["h1", "h2"]) if header else soup.find(["h1", "h2"])
+    raw_title = clean_text(heading.get_text(" ")) if heading else get_title(soup)
+    title = re.sub(r"^(?:naloga|task)\s*:\s*", "", raw_title, flags=re.IGNORECASE).strip()
+    title = title or raw_title or "Task"
+
+    summary = ""
+    if header:
+        summary_node = header.find("p")
+        if summary_node:
+            summary = clean_text(summary_node.get_text(" "))
+
+    section_names = {
+        "osnovni podatki": "basic_info",
+        "basic information": "basic_info",
+        "cilj naloge": "goal",
+        "task goal": "goal",
+        "podroben opis": "description",
+        "detailed description": "description",
+        "koraki izvedbe": "steps",
+        "execution steps": "steps",
+        "kriteriji zaključka": "completion_criteria",
+        "completion criteria": "completion_criteria",
+        "povezave in odvisnosti": "dependencies",
+        "links and dependencies": "dependencies",
+        "opombe in potek dela": "notes",
+        "notes and workflow": "notes",
+    }
+    sections = {}
+    for section in soup.find_all("section"):
+        section_heading = section.find("h2")
+        if not section_heading:
+            continue
+        heading_text = clean_text(section_heading.get_text(" "))
+        section_key = section_names.get(normalize_heading(heading_text))
+        if section_key:
+            sections[section_key] = (section, heading_text)
+
+    # Read the label/value table without relying on row positions.
+    basic_fields = {}
+    basic_section = sections.get("basic_info")
+    if basic_section:
+        table = basic_section[0].find("table")
+        if table:
+            field_names = {
+                "status": "status",
+                "owner": "owner",
+                "assignee": "owner",
+                "odgovorna oseba": "owner",
+                "assigned to": "owner",
+                "created by": "createdBy",
+                "ustvaril": "createdBy",
+                "datum dodelitve": "assignedDate",
+                "assigned date": "assignedDate",
+                "rok dokončanja": "dueDate",
+                "due date": "dueDate",
+                "datum zaključka": "finishedDate",
+                "finished date": "finishedDate",
+                "prioriteta": "priority",
+                "priority": "priority",
+                "finished": "finished",
+            }
+            for row in table.find_all("tr"):
+                cells = row.find_all(["th", "td"], recursive=False)
+                if len(cells) < 2:
+                    continue
+                label = normalize_heading(cells[0].get_text(" "))
+                field = field_names.get(label)
+                if field:
+                    basic_fields[field] = clean_text(cells[1].get_text(" "))
+
+    def section_text(key: str) -> str:
+        section_info = sections.get(key)
+        if not section_info:
+            return ""
+        section, heading_text = section_info
+        # stripped_strings preserves table/list contents while excluding the
+        # section heading itself.
+        parts = [
+            text for text in section.stripped_strings
+            if clean_text(text) != clean_text(heading_text)
+        ]
+        return clean_text(" ".join(parts))
+
+    goal = section_text("goal")
+    description = section_text("description")
+    steps = []
+    if "steps" in sections:
+        steps = [
+            clean_text(item.get_text(" "))
+            for item in sections["steps"][0].find_all("li")
+            if clean_text(item.get_text(" "))
+        ]
+    completion_criteria = []
+    if "completion_criteria" in sections:
+        completion_criteria = [
+            clean_text(item.get_text(" "))
+            for item in sections["completion_criteria"][0].find_all("li")
+            if clean_text(item.get_text(" "))
+        ]
+
+    related_objects = []
+    dependencies_section = sections.get("dependencies")
+    if dependencies_section:
+        table = dependencies_section[0].find("table")
+        if table:
+            for row in table.find_all("tr")[1:]:
+                cells = [clean_text(cell.get_text(" ")) for cell in row.find_all(["td", "th"])]
+                if any(cells):
+                    related_objects.append({
+                        "type": cells[0] if len(cells) > 0 else None,
+                        "name": cells[1] if len(cells) > 1 else None,
+                        "description": cells[2] if len(cells) > 2 else None,
+                    })
+
+    notes = section_text("notes")
+    finished = parse_date(basic_fields.get("finished", ""))
+    finished_date = parse_date(basic_fields.get("finishedDate", ""))
+    task_description_parts = [
+        part for part in (
+            summary,
+            f"Goal: {goal}" if goal else "",
+            description,
+            "Steps: " + "; ".join(steps) if steps else "",
+            "Completion criteria: " + "; ".join(completion_criteria)
+            if completion_criteria else "",
+            "Dependencies: " + "; ".join(
+                ": ".join(filter(None, (item.get("type"), item.get("name"), item.get("description"))))
+                for item in related_objects
+            ) if related_objects else "",
+            notes,
+        ) if part
+    ]
+    task_record = {
+        "title": title,
+        "owner": basic_fields.get("owner") or None,
+        "description": "\n".join(task_description_parts),
+        "assignedDate": parse_date(basic_fields.get("assignedDate", "")),
+        "dueDate": parse_date(basic_fields.get("dueDate", "")),
+        "finishedDate": finished_date,
+        "finished": finished,
+        "status": basic_fields.get("status") or "OPEN",
+        "priority": basic_fields.get("priority") or None,
+        "createdBy": basic_fields.get("createdBy") or None,
+    }
+
+    chunks = []
+    for key, (section, heading_text) in sections.items():
+        text = section_text(key)
+        if text:
+            chunks.append({
+                "id": str(uuid.uuid4()),
+                "section": key,
+                "text": text,
+                "title": f"{title} - {heading_text}",
+            })
+
+    return {
+        "documentId": str(uuid.uuid4()),
+        "title": title,
+        "graphNodeName": get_graph_node_name(soup) or title,
+        "language": get_language(soup),
+        "summary": summary,
+        "status": task_record["status"],
+        "owner": task_record["owner"],
+        "createdBy": task_record["createdBy"],
+        "assignedDate": task_record["assignedDate"],
+        "dueDate": task_record["dueDate"],
+        "finishedDate": finished_date,
+        "finished": finished,
+        "priority": task_record["priority"],
+        "goal": goal,
+        "description": description,
+        "steps": steps,
+        "completionCriteria": completion_criteria,
+        "relatedObjects": related_objects,
+        "notes": notes,
+        "attendees": [],
+        "agenda": [],
+        "tasks": [task_record],
+        "chunks": chunks,
+    }
 
 
 def extract_template_type_from_html(html: str) -> str | None:
@@ -1004,14 +1230,14 @@ def write_meeting_graph(
             "projectName": project_name
         })
 
-    print("tasks processing" + str(parsed["tasks"]))
+    print("srevice request processing" + str(parsed["tasks"]))
     for task in parsed["tasks"]:
         task_id = str(uuid.uuid4())
 
         tx.run("""
             MATCH (m:Meeting {id_rc: $meetingId})
 
-            MERGE (t:Task {name: $meetingId +'.Task.' + $title})
+            MERGE (t:ServiceRequest {name: $meetingId +'.ServiceRequest.' + $title})
             SET t.id_rc = coalesce(t.id_rc, randomUUID()),
                 t.name = $meetingId +'.Task.' + $title,
                 t.title = $title,
@@ -1024,13 +1250,17 @@ def write_meeting_graph(
                     WHEN $dueDate IS NULL THEN NULL
                     ELSE date($dueDate)
                 END,
+                t.finishedDate = CASE
+                    WHEN $finishedDate IS NULL THEN NULL
+                    ELSE date($finishedDate)
+                END,
                 t.status = $status,
                 t.finished = $finished,
                 t.source = 'meeting',
                 t.projectName = $projectName,
                 t.createdAt = datetime()
 
-            MERGE (m)-[:CREATED_TASK]->(t)
+            MERGE (m)-[:CREATED_SR]->(t)
 
             WITH t
             WHERE $ownerName IS NOT NULL AND $ownerName <> ''
@@ -1047,6 +1277,7 @@ def write_meeting_graph(
             "description": task.get("description"),
             "assignedDate": task.get("assignedDate"),
             "dueDate": task.get("dueDate"),
+            "finishedDate": task.get("finishedDate"),
             "finished": task.get("finished"),
             "status": task.get("status", "OPEN"),
             "ownerName": task.get("owner"),
@@ -1087,6 +1318,252 @@ def write_meeting_graph(
         })
 
 
+def write_service_request_graph(
+    tx,
+    project_name: str,
+    html: str,
+    parsed: dict,
+    node_id: str = None,
+    template_type: str = "CKEDITOR_SERVICE_REQUEST"
+):
+    """Persist a request, its document, searchable sections and assigned tasks."""
+    name = f"{project_name}.ServiceRequest.{parsed['graphNodeName']}"
+    doc_name = f"{name}.Document"
+    record = tx.run("""
+        MERGE (sr:ServiceRequest {name: $name})
+        ON CREATE SET sr.id_rc = randomUUID(), sr.createdAt = datetime()
+        SET sr.title = $title, sr.description = $description,
+            sr.problem = $problem, sr.proposedSolution = $solution,
+            sr.notes = $notes, sr.language = $language,
+            sr.projectName = $projectName, sr.updatedAt = datetime()
+        MERGE (doc:DocumentHTML {name: $docName})
+        ON CREATE SET doc.id_rc = randomUUID(), doc.createdAt = datetime()
+        SET doc.title = $title, doc.html = $html,
+            doc.language = $language, doc.projectName = $projectName,
+            doc.sourceType = $templateType, doc.updatedAt = datetime()
+        MERGE (sr)-[:DOCUMENTED_BY]->(doc)
+        RETURN sr.id_rc AS serviceRequestId, doc.id_rc AS documentId
+    """, {
+        "name": name, "docName": doc_name, "title": parsed["title"],
+        "description": parsed["description"], "problem": parsed["problem"],
+        "solution": parsed["solution"], "notes": parsed["notes"],
+        "language": parsed["language"], "projectName": project_name,
+        "html": html, "templateType": template_type,
+    }).single()
+    parsed["serviceRequestId"] = record["serviceRequestId"]
+    parsed["documentId"] = record["documentId"]
+
+    for chunk in parsed["chunks"]:
+        tx.run("""
+            MATCH (doc:DocumentHTML {id_rc: $documentId})
+            MERGE (c:Chunk {name: $chunkName})
+            ON CREATE SET c.id_rc = randomUUID(), c.createdAt = datetime()
+            SET c.title = $title, c.section = $section, c.text = $text,
+                c.projectName = $projectName, c.updatedAt = datetime()
+            MERGE (doc)-[:HAS_CHUNK]->(c)
+        """, {
+            "documentId": parsed["documentId"],
+            "chunkName": f"{doc_name}.Chunk.{chunk['section']}",
+            "title": chunk["title"], "section": chunk["section"],
+            "text": chunk["text"], "projectName": project_name,
+        }).consume()
+
+    for task in parsed["tasks"]:
+        tx.run("""
+            MATCH (sr:ServiceRequest {id_rc: $serviceRequestId})
+            MERGE (t:Task {name: $taskName})
+            ON CREATE SET t.id_rc = randomUUID(), t.createdAt = datetime()
+            SET t.title = $title, t.description = $description,
+                t.assignedDate = CASE WHEN $assignedDate IS NULL THEN NULL ELSE date($assignedDate) END,
+                t.dueDate = CASE WHEN $dueDate IS NULL THEN NULL ELSE date($dueDate) END,
+                t.finished = $finished, t.status = $status,
+                t.source = $templateType, t.projectName = $projectName,
+                t.updatedAt = datetime()
+            MERGE (sr)-[:CREATED_TASK]->(t)
+            WITH t
+            WHERE $ownerName IS NOT NULL AND $ownerName <> ''
+            MERGE (person:Person {name: $ownerName})
+            SET person.id_rc = coalesce(person.id_rc, randomUUID()),
+                person.projectName = $projectName
+            MERGE (t)-[:ASSIGNED_TO]->(person)
+        """, {
+            "serviceRequestId": parsed["serviceRequestId"],
+            "taskName": f"{name}.Task.{task['title']}",
+            "title": task["title"], "description": task.get("description"),
+            "assignedDate": task.get("assignedDate"), "dueDate": task.get("dueDate"),
+            "finishedDate": task.get("finishedDate"),
+            "finished": task.get("finished"), "status": task.get("status") or "OPEN",
+            "ownerName": task.get("owner"), "projectName": project_name,
+            "templateType": template_type,
+        }).consume()
+
+    if node_id:
+        tx.run("""
+            MATCH (parent {id_rc: $nodeId})
+            MATCH (sr:ServiceRequest {id_rc: $serviceRequestId})
+            MERGE (parent)-[:HAS_REQUEST]->(sr)
+        """, {
+            "nodeId": node_id,
+            "serviceRequestId": parsed["serviceRequestId"],
+        }).consume()
+
+
+def write_task_graph(
+    tx,
+    project_name: str,
+    html: str,
+    parsed: dict,
+    node_id: str = None,
+    template_type: str = "CKEDITOR_TASK"
+):
+    """Persist one standalone task and its editable document and sections."""
+    node_name = parsed.get("graphNodeName") or parsed.get("title")
+    if not node_name:
+        raise ValueError("Task requires a graphNodeName or title")
+
+    parent_name = None
+    if node_id:
+        parent = tx.run("""
+            MATCH (parent {id_rc: $nodeId})
+            RETURN parent.name AS name
+        """, {"nodeId": node_id}).single()
+        if not parent or not parent["name"]:
+            raise ValueError(f"Parent node {node_id} was not found or has no name")
+        parent_name = parent["name"]
+        # Stored node names can already include the project prefix.
+        if parent_name.startswith(f"{project_name}."):
+            parent_name = parent_name[len(project_name) + 1:]
+
+    container_name = (
+        f"{project_name}.{parent_name}.TaskContainer.{node_name}"
+        if parent_name else f"{project_name}.TaskContainer.{node_name}"
+    )
+    document_name = f"{container_name}.Document"
+    task_name = f"{container_name}.Task"
+    task = parsed["tasks"][0]
+
+    record = tx.run("""
+        MERGE (container:TaskContainer {name: $containerName})
+        ON CREATE SET container.createdAt = datetime()
+        SET container.id_rc = coalesce(container.id_rc, randomUUID()),
+            container.title = $title,
+            container.language = $language,
+            container.projectName = $projectName,
+            container.updatedAt = datetime()
+
+        MERGE (doc:DocumentHTML {name: $documentName})
+        ON CREATE SET doc.createdAt = datetime()
+        SET doc.id_rc = coalesce(doc.id_rc, randomUUID()),
+            doc.title = $title,
+            doc.html = $html,
+            doc.language = $language,
+            doc.projectName = $projectName,
+            doc.sourceType = $templateType,
+            doc.updatedAt = datetime()
+        MERGE (container)-[:DOCUMENTED_BY]->(doc)
+
+        MERGE (task:Task {name: $taskName})
+        ON CREATE SET task.createdAt = datetime()
+        SET task.id_rc = coalesce(task.id_rc, randomUUID()),
+            task.title = $taskTitle,
+            task.description = $description,
+            task.status = $status,
+            task.priority = $priority,
+            task.summary = $summary,
+            task.goal = $goal,
+            task.assignedDate = CASE WHEN $assignedDate IS NULL THEN NULL ELSE date($assignedDate) END,
+            task.dueDate = CASE WHEN $dueDate IS NULL THEN NULL ELSE date($dueDate) END,
+            task.finishedDate = CASE WHEN $finishedDate IS NULL THEN NULL ELSE date($finishedDate) END,
+            task.finished = CASE WHEN $finished IS NULL THEN NULL ELSE date($finished) END,
+            task.source = $templateType,
+            task.projectName = $projectName,
+            task.updatedAt = datetime()
+        MERGE (container)-[:CREATED_TASK]->(task)
+
+        RETURN container.id_rc AS taskContainerId,
+               doc.id_rc AS documentId,
+               task.id_rc AS taskId
+    """, {
+        "containerName": container_name,
+        "documentName": document_name,
+        "taskName": task_name,
+        "title": parsed["title"],
+        "taskTitle": task["title"],
+        "description": task.get("description"),
+        "status": task.get("status") or "OPEN",
+        "priority": task.get("priority"),
+        "summary": parsed.get("summary"),
+        "goal": parsed.get("goal"),
+        "assignedDate": task.get("assignedDate"),
+        "dueDate": task.get("dueDate"),
+        "finishedDate": task.get("finishedDate"),
+        "finished": task.get("finished"),        
+        "projectName": project_name,
+        "language": parsed.get("language") or "unknown",
+        "html": html,
+        "templateType": template_type,
+    }).single()
+    parsed["taskContainerId"] = record["taskContainerId"]
+    parsed["documentId"] = record["documentId"]
+    parsed["taskId"] = record["taskId"]
+
+    for position, chunk in enumerate(parsed.get("chunks", [])):
+        section = chunk["section"]
+        result = tx.run("""
+            MATCH (doc:DocumentHTML {id_rc: $documentId})
+            MERGE (c:Chunk {name: $chunkName})
+            ON CREATE SET c.createdAt = datetime()
+            FOREACH (ignored IN CASE WHEN c.text IS NULL OR c.text <> $text THEN [1] ELSE [] END |
+                REMOVE c.embedding, c.embeddingModel, c.embeddedAt
+            )
+            SET c.id_rc = coalesce(c.id_rc, randomUUID()),
+                c.title = $title,
+                c.section = $section,
+                c.text = $text,
+                c.position = $position,
+                c.projectName = $projectName,
+                c.updatedAt = datetime()
+            MERGE (doc)-[:HAS_CHUNK]->(c)
+            RETURN c.id_rc AS chunkId
+        """, {
+            "documentId": parsed["documentId"],
+            "chunkName": f"{document_name}.Chunk.{section}",
+            "title": chunk["title"],
+            "section": section,
+            "text": chunk["text"],
+            "position": position,
+            "projectName": project_name,
+        }).single()
+        chunk["id"] = result["chunkId"]
+
+    for person_name, relationship in (
+        (task.get("owner"), "ASSIGNED_TO"),
+        (task.get("createdBy"), "CREATED_BY"),
+    ):
+        if person_name:
+            tx.run(f"""
+                MATCH (task:Task {{id_rc: $taskId}})
+                MERGE (person:Person {{name: $personName}})
+                SET person.id_rc = coalesce(person.id_rc, randomUUID()),
+                    person.projectName = $projectName
+                MERGE (task)-[:{relationship}]->(person)
+            """, {
+                "taskId": parsed["taskId"],
+                "personName": person_name,
+                "projectName": project_name,
+            }).consume()
+
+    if node_id:
+        tx.run("""
+            MATCH (parent {id_rc: $nodeId})
+            MATCH (container:TaskContainer {id_rc: $taskContainerId})
+            MERGE (parent)-[:HAS_DETAILS]->(container)
+        """, {
+            "nodeId": node_id,
+            "taskContainerId": parsed["taskContainerId"],
+        }).consume()
+
+
 def write_generic_graph(
     tx,
     project_name: str,
@@ -1121,7 +1598,7 @@ def write_generic_graph(
             p.createdAt = datetime()
 
         MERGE (doc:DocumentHTML {{id_rc: $documentId}})
-        SET doc.name = $projectName + '.Document.' + $nodeName,
+        SET doc.name = $projectName +'.'+ p.name + '.Document.' + $nodeName,
             doc.title = $title,
             doc.html = $html,
             doc.language = $language,
@@ -1141,6 +1618,40 @@ def write_generic_graph(
         "templateType": template_type
     })
 
+    # Persist parser-produced sections as searchable chunks linked to the
+    # complete editable document. Stable names make repeated saves update them.
+    for position, chunk in enumerate(parsed.get("chunks", [])):
+        section = chunk.get("section") or f"section_{position}"
+        chunk_name = f"{primary_id}.Chunk.{section}"
+        tx.run("""
+            MATCH (doc:DocumentHTML {id_rc: $documentId})
+            MERGE (c:Chunk {name: $chunkName})
+            ON CREATE SET c.createdAt = datetime()
+            FOREACH (
+                ignored IN CASE
+                    WHEN c.text IS NULL OR c.text <> $text THEN [1]
+                    ELSE []
+                END |
+                REMOVE c.embedding, c.embeddingModel, c.embeddedAt
+            )
+            SET c.id_rc = coalesce(c.id_rc, randomUUID()),
+                c.title = $title,
+                c.section = $section,
+                c.text = $text,
+                c.position = $position,
+                c.projectName = $projectName,
+                c.updatedAt = datetime()
+            MERGE (doc)-[:HAS_CHUNK]->(c)
+        """, {
+            "documentId": parsed.get("documentId"),
+            "chunkName": chunk_name,
+            "title": chunk.get("title") or f"{parsed.get('title', 'Task')} - {section}",
+            "section": section,
+            "text": chunk.get("text") or "",
+            "position": position,
+            "projectName": project_name,
+        }).consume()
+
     # create tasks if present (reuse existing Task creation snippet)
     for task in parsed.get("tasks", []):
         task_id = str(uuid.uuid4())
@@ -1159,6 +1670,10 @@ def write_generic_graph(
                     WHEN $dueDate IS NULL THEN NULL
                     ELSE date($dueDate)
                 END,
+                t.finishedDate = CASE
+                    WHEN $finishedDate IS NULL THEN NULL
+                    ELSE date($finishedDate)
+                END,    
                 t.status = $status,
                 t.finished = $finished,
                 t.source = $templateType,
@@ -1182,6 +1697,7 @@ def write_generic_graph(
             "description": task.get("description"),
             "assignedDate": task.get("assignedDate"),
             "dueDate": task.get("dueDate"),
+            "finishedDate": task.get("finishedDate"),
             "status": task.get("status", "OPEN"),
             "ownerName": task.get("owner"),
             "projectName": project_name,
@@ -1194,7 +1710,7 @@ def write_generic_graph(
         tx.run(f"""
             MATCH (parent {{id_rc: $nodeId}})
             MATCH (p:{primary_label} {{id_rc: $primaryId}})
-            MERGE (parent)-[:HAS_CHILD]->(p)
+            MERGE (parent)-[:HAS_DETAILS]->(p)
         """, {"nodeId": node_id, "primaryId": primary_id})
 
 
@@ -1265,13 +1781,27 @@ def generate_specific_graph(data,template_type):
         # CKEditor submits a body fragment, so head meta tags are not included in `html`.
         # The editor sends graphNodeName separately through the request JSON.
         request_graph_node_name = clean_text(data.get("graphNodeName", ""))
+        if template_type == "CKEDITOR_SERVICE_REQUEST" and request_graph_node_name in (
+            "MeetingSummary", "Summary"
+        ):
+            # Older editor documents can retain the meeting template's default.
+            # CKEditor sends only the body fragment, so restore the service
+            # request template's graph-node default when its head metadata is absent.
+            request_graph_node_name = "ServiceRequest"
+
+        # Older saved task documents carry the editor's generic "Summary"
+        # value; use the actual task heading as their graph identity instead.
+        if template_type == "CKEDITOR_TASK" and request_graph_node_name in (
+            "MeetingSummary", "Summary"
+        ):
+            request_graph_node_name = ""
 
         parsed = parser(html)
         # apply graphNodeName from request to parsed output so chunk titles use it
-        request_graph_node_name = clean_text(data.get("graphNodeName", ""))
         if request_graph_node_name:
             parsed["graphNodeName"] = request_graph_node_name
-            parsed["title"] = request_graph_node_name
+            if template_type not in ("CKEDITOR_SERVICE_REQUEST", "CKEDITOR_TASK"):
+                parsed["title"] = request_graph_node_name
             for chunk in parsed.get("chunks", []):
                 orig = chunk.get("title", "")
                 parts = orig.split(" - ", 1)
@@ -1342,8 +1872,12 @@ def generate_specific_graph(data,template_type):
             writer = write_meeting_graph
         elif template_type == "CKEDITOR_DOCUMENTATION":
             writer = write_document_graph
+        elif template_type == "CKEDITOR_SERVICE_REQUEST":
+            writer = write_service_request_graph
+        elif template_type == "CKEDITOR_TASK":
+            writer = write_task_graph
         else:
-            writer = write_generic_graph
+            return jsonify({"ok": False, "error": f"Unknown templateType '{template_type}'"}), 400
 
         # debug check before Neo4j write
         if isinstance(parsed, str):
@@ -1383,6 +1917,25 @@ def generate_specific_graph(data,template_type):
                 "sourcesCount": len(parsed.get("sources", [])),
                 "changesCount": len(parsed.get("changes", []))
             })
+        elif template_type == "CKEDITOR_SERVICE_REQUEST":
+            return jsonify({
+                "ok": True,
+                "serviceRequestId": parsed["serviceRequestId"],
+                "documentId": parsed["documentId"],
+                "title": parsed["title"],
+                "tasksCount": len(parsed["tasks"]),
+                "chunksCount": len(parsed["chunks"]),
+            })
+        elif template_type == "CKEDITOR_TASK":
+            return jsonify({
+                "ok": True,
+            "taskContainerId": parsed["taskContainerId"],
+            "taskId": parsed["taskId"],
+                "documentId": parsed["documentId"],
+                "title": parsed["title"],
+                "tasksCount": len(parsed["tasks"]),
+                "chunksCount": len(parsed["chunks"]),
+            })        
         else:
             return jsonify({
                 "ok": True,

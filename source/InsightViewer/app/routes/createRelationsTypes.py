@@ -2,7 +2,17 @@
 # Copyright (c) 2025 Robert Čmrlec
 
 # createRelationsTypes.py
+
+""" python3 source/InsightViewer/app/routes/createRelationsTypes.py \
+  --projectName "Šola" \
+  --createdBy "oglejsi2@gmail.com" \
+  --color "#808080" \
+  --shape ellipse \
+  --size 25 \
+  --url url """
+
 from neo4j import GraphDatabase
+import argparse
 import configparser
 from flask import Blueprint, jsonify, request
 import uuid
@@ -104,23 +114,47 @@ def backfill_idrc_rels():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
-def create_nodetype_relationships():
+def create_nodetype_relationships(projectName=None, createdBy=None, color="#808080", shape="ellipse", size=25, url="url"):
     query = """
     MATCH (a)-[r]->(b)
-    WHERE NOT a:NodeType AND NOT b:NodeType
+    WHERE NOT a:NodeType
+      AND NOT b:NodeType
+      AND ($projectName IS NULL OR (a.projectName = $projectName AND b.projectName = $projectName))
     WITH DISTINCT head(labels(a)) AS sourceType, type(r) AS relType, head(labels(b)) AS targetType
-    MERGE (nt1:NodeType {name: sourceType})
-    SET nt1.id_rc = coalesce(nt1.id_rc, randomUUID())
-    MERGE (nt2:NodeType {name: targetType})
-    SET nt2.id_rc = coalesce(nt2.id_rc, randomUUID())
+    MERGE (nt1:NodeType {name: sourceType, projectName: $projectName})
+    SET nt1.id_rc = coalesce(nt1.id_rc, randomUUID()),
+        nt1.shape = coalesce(nt1.shape, $shape),
+        nt1.color = coalesce(nt1.color, $color),
+        nt1.size = coalesce(nt1.size, $size),
+        nt1.url = coalesce(nt1.url, $url)
+    FOREACH (_ IN CASE WHEN $createdBy IS NOT NULL THEN [1] ELSE [] END |
+      SET nt1.createdBy = coalesce(nt1.createdBy, $createdBy)
+    )
+    MERGE (nt2:NodeType {name: targetType, projectName: $projectName})
+    SET nt2.id_rc = coalesce(nt2.id_rc, randomUUID()),
+        nt2.shape = coalesce(nt2.shape, $shape),
+        nt2.color = coalesce(nt2.color, $color),
+        nt2.size = coalesce(nt2.size, $size),
+        nt2.url = coalesce(nt2.url, $url)
+    FOREACH (_ IN CASE WHEN $createdBy IS NOT NULL THEN [1] ELSE [] END |
+      SET nt2.createdBy = coalesce(nt2.createdBy, $createdBy)
+    )
     WITH nt1, nt2, relType
-    CALL apoc.create.relationship(nt1, relType, {}, nt2) YIELD rel
-    RETURN COUNT(rel) AS created_rels;
+    CALL apoc.merge.relationship(nt1, relType, {}, {}, nt2) YIELD rel
+    RETURN COUNT(rel) AS merged_rels;
     """
 
     with driver.session() as session:
-        result = session.run(query)
-        count = result.single()["created_rels"]
+        result = session.run(
+            query,
+            projectName=projectName,
+            createdBy=createdBy,
+            color=color,
+            shape=shape,
+            size=size,
+            url=url,
+        )
+        count = result.single()["merged_rels"]
 
     print(f"Created {count} relationships between NodeType nodes. "  )
 
@@ -213,6 +247,24 @@ def get_edge_types():
 
 # Run script
 if __name__ == "__main__":
-    create_nodetype_relationships()
-    driver.close()
+    parser = argparse.ArgumentParser(description="Create relationships between NodeType nodes from existing graph relationships.")
+    parser.add_argument("--projectName", "--project", dest="projectName", required=True)
+    parser.add_argument("--createdBy", default=None)
+    parser.add_argument("--color", default="#808080")
+    parser.add_argument("--shape", default="ellipse")
+    parser.add_argument("--size", type=int, default=25)
+    parser.add_argument("--url", default="url")
+    args = parser.parse_args()
+
+    try:
+        create_nodetype_relationships(
+            projectName=args.projectName,
+            createdBy=args.createdBy,
+            color=args.color,
+            shape=args.shape,
+            size=args.size,
+            url=args.url,
+        )
+    finally:
+        driver.close()
 

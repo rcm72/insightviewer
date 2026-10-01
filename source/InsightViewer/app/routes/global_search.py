@@ -177,6 +177,42 @@ def _fetch_node_type_names(session, project):
     return [str(row.get("name") or "").strip() for row in rows if str(row.get("name") or "").strip()]
 
 
+def _fetch_node_type_structure(session, project):
+    cypher = """
+    MATCH (s:NodeType)-[r]-(t:NodeType)
+    WHERE ($project IS NULL OR (s.projectName = $project AND t.projectName = $project))
+      AND NOT s.name IN ["CustomGraph", "CustomGraphNode"]
+      AND NOT t.name IN ["CustomGraph", "CustomGraphNode"]
+    RETURN DISTINCT s.name AS source, type(r) AS relationship, t.name AS target
+    ORDER BY source, relationship, target
+    LIMIT 300
+    """
+
+    rows = session.run(cypher, project=project).data()
+    if not rows and project:
+        rows = session.run(cypher, project=None).data()
+
+    structure = []
+    for row in rows:
+        source = str(row.get("source") or "").strip()
+        relationship = str(row.get("relationship") or "").strip()
+        target = str(row.get("target") or "").strip()
+        if source and relationship and target:
+            structure.append({"source": source, "relationship": relationship, "target": target})
+    return structure
+
+
+def _format_node_type_structure_for_prompt(structure):
+    if not structure:
+        return ""
+    lines = ["NodeType relationship structure:"]
+    for item in structure[:120]:
+        lines.append(f"- ({item['source']})-[:{item['relationship']}]-({item['target']})")
+    if len(structure) > 120:
+        lines.append(f"- ... {len(structure) - 120} more")
+    return "\n".join(lines)
+
+
 def validate_jwt():
     token = request.cookies.get("access_token")
     if not token:
@@ -1133,14 +1169,23 @@ def build_cypher_with_ai():
         sample_limit = max(1, min(int(payload.get("sample_limit") or 12), 20))
 
         with driver.session() as session:
+            if source.get("id_rc") or (source.get("node_type") and source.get("name")):
+                source = _resolve_node_identity(session, source, "source", project)
+            if target.get("id_rc") or (target.get("node_type") and target.get("name")):
+                target = _resolve_node_identity(session, target, "target", project)
             ctx = fetch_graph_context(session, project=project, sample_limit=sample_limit)
             node_type_names = _fetch_node_type_names(session, project)
+            node_type_structure = _fetch_node_type_structure(session, project)
 
         prompt_parts = [format_context_for_prompt(ctx).strip()]
         if node_type_names:
             shown = ", ".join(node_type_names[:80])
             suffix = " ..." if len(node_type_names) > 80 else ""
             prompt_parts.append(f"Known NodeType names:\n- {shown}{suffix}")
+
+        node_type_structure_prompt = _format_node_type_structure_for_prompt(node_type_structure)
+        if node_type_structure_prompt:
+            prompt_parts.append(node_type_structure_prompt)
 
         if source.get("id_rc") or source.get("node_type") or source.get("name"):
             prompt_parts.append(
@@ -1175,8 +1220,16 @@ def build_cypher_with_ai():
             "- Use only labels, relationship types, and property names present in the provided context.\n"
             "- Prefer graph-friendly results for InsightViewer. Usually return nodes and relationships, for example RETURN s, r, t.\n"
             "- Do not return path variables directly. If you need a path, UNWIND relationships(p) AS r and RETURN startNode(r) AS s, r, endNode(r) AS t.\n"
+            "- For variable-length relationship patterns like [:REL*1..3], do not return the relationship variable directly because it is a list. Use a path variable, UNWIND relationships(path) AS r, and return startNode(r), r, endNode(r).\n"
+            "- Treat each schema row as an allowed directed triple: (sourceType)-[relationshipType]->(targetType).\n"
+            "- A relationship type is valid only between the source and target types specified in its schema row, not between arbitrary node types.\n"
+            "- For a specific destination, generate an explicit typed path and validate every hop against the schema. Do not flatten the schema into a list of relationship types for an unrestricted variable-length traversal.\n"
+            "- Do not return path variables directly. If you need a path, UNWIND relationships(p) AS r and RETURN startNode(r) AS s, r, endNode(r) AS t.\n"            
             f"- {project_instruction}"
         )
+
+
+
         prompt_parts.append(f"User request:\n{question}")
 
         system_prompt = str(
@@ -1221,6 +1274,7 @@ def build_cypher_with_ai():
                     "relationship_types": ctx.rel_types,
                     "sample_nodes": ctx.sample_nodes,
                     "node_types": node_type_names,
+                    "node_type_structure": node_type_structure,
                 },
             }
         )

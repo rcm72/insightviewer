@@ -564,15 +564,18 @@
   }
 
   function payloadForAiBuild() {
+    const scopedSourceId = state.sourceSelection?.id_rc || state.globalScopeNodeId || "";
+    const scopedSourceName = byId("gs-source-name")?.value.trim() || state.globalScopeNodeLabel || "";
+
     return {
       question: byId("gs-ai-question")?.value.trim() || "",
       provider: byId("gs-ai-provider")?.value || "",
       model: byId("gs-ai-model")?.value || "",
       project: currentProject(),
       source: {
-        id_rc: state.sourceSelection?.id_rc || "",
+        id_rc: scopedSourceId,
         node_type: byId("gs-source-type")?.value || "",
-        name: byId("gs-source-name")?.value.trim() || "",
+        name: scopedSourceName,
       },
       target: {
         id_rc: state.targetSelection?.id_rc || "",

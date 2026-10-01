@@ -2,19 +2,29 @@
 # Copyright (c) 2025 Robert Čmrlec
 
 # createNodeTypes.py
+
+""" python3 source/InsightViewer/app/routes/createNodeTypes.py \
+  --projectName "Šola" \
+  --createdBy "oglejsi2@gmail.com" \
+  --color "#808080" \
+  --shape ellipse \
+  --size 25 \
+  --url url """
+
 import os
 import jwt
 import neo4j
 import requests 
 from flask import Blueprint, jsonify, request
 from neo4j import GraphDatabase
+import argparse
 import configparser
 import sys
 import uuid
 import re  # add near other imports
 
 # JWT configuration
-JWT_SECRET = os.environ["JWT_SECRET"]
+JWT_SECRET = os.environ.get("JWT_SECRET")
 JWT_ALG = "HS256"
 
 # Create a Flask Blueprint with a URL prefix to avoid route conflicts
@@ -25,6 +35,9 @@ nodes_bp = Blueprint("createNodeTypes", __name__, url_prefix="/nodes")
 driver = None
 
 def validate_jwt():
+    if not JWT_SECRET:
+        return None, jsonify({"error": "Server misconfigured: JWT_SECRET is not set"}), 500
+
     token = request.cookies.get('access_token')
     if not token:
         return None, jsonify({"error": "Unauthorized: No token provided"}), 401
@@ -73,15 +86,35 @@ def _ensure_driver():
         raise RuntimeError("Neo4j driver not initialized. Call init_driver(driver) in app startup.")
 
 # Function to create NodeType nodes
-def create_node_types():
+def create_node_types(projectName=None, createdBy=None, color="#808080", shape="ellipse", size=25, url="url"):
     _ensure_driver()
     query = """
-    CALL db.labels() YIELD label
-    MERGE (nt:NodeType {name: label})
+    MATCH (n)
+    WHERE ($projectName IS NULL OR n.projectName = $projectName)
+      AND NOT n:NodeType
+    UNWIND labels(n) AS label
+    WITH DISTINCT label
+    MERGE (nt:NodeType {name: label, projectName: $projectName})
+    SET nt.id_rc = coalesce(nt.id_rc, randomUUID()),
+        nt.shape = coalesce(nt.shape, $shape),
+        nt.color = coalesce(nt.color, $color),
+        nt.size = coalesce(nt.size, $size),
+        nt.url = coalesce(nt.url, $url)
+    FOREACH (_ IN CASE WHEN $createdBy IS NOT NULL THEN [1] ELSE [] END |
+      SET nt.createdBy = coalesce(nt.createdBy, $createdBy)
+    )
     RETURN nt.name;
     """
     with driver.session() as session:
-        result = session.run(query)
+        result = session.run(
+            query,
+            projectName=projectName,
+            createdBy=createdBy,
+            color=color,
+            shape=shape,
+            size=size,
+            url=url,
+        )
         node_types = [record["nt.name"] for record in result]
     
     print("Created NodeType nodes:", node_types)
@@ -787,5 +820,25 @@ def get_custom_graphs():
 
 # Run script
 if __name__ == "__main__":
-    create_node_types()
-    driver.close()
+    parser = argparse.ArgumentParser(description="Create NodeType nodes from existing graph labels.")
+    parser.add_argument("--projectName", "--project", dest="projectName", required=True)
+    parser.add_argument("--createdBy", default=None)
+    parser.add_argument("--color", default="#808080")
+    parser.add_argument("--shape", default="ellipse")
+    parser.add_argument("--size", type=int, default=25)
+    parser.add_argument("--url", default="url")
+    parser.add_argument("--config", default=None, help="Optional path to config.ini/config_private.ini")
+    args = parser.parse_args()
+
+    init_driver_from_config(config_path=args.config)
+    try:
+        create_node_types(
+            projectName=args.projectName,
+            createdBy=args.createdBy,
+            color=args.color,
+            shape=args.shape,
+            size=args.size,
+            url=args.url,
+        )
+    finally:
+        driver.close()
