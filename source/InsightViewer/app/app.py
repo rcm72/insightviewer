@@ -1788,6 +1788,81 @@ def is_safe_read_query(cypher: str) -> bool:
         return False
     return bool(READ_ONLY_REQUIRED.search(cypher))
 
+
+@app.route("/saved-cypher", methods=["POST"])
+def save_cypher():
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    data = request.get_json(silent=True) or {}
+    name = str(data.get("name") or "").strip()
+    query = str(data.get("query") or "").strip()
+    project = str(data.get("project") or user_data["project"] or "").strip()
+    owner_uid = str(user_data["uid"])
+
+    if not name:
+        return jsonify({"success": False, "error": "A saved Cypher name is required"}), 400
+    if not query:
+        return jsonify({"success": False, "error": "A Cypher query is required"}), 400
+    if not project:
+        return jsonify({"success": False, "error": "A project is required"}), 400
+    if not is_safe_read_query(query):
+        return jsonify({"success": False, "error": "Only read-only Cypher queries can be saved"}), 400
+
+    try:
+        with driver.session() as session:
+            session.run(
+                """
+                MERGE (s:SavedCypher {
+                    ownerUid: $ownerUid,
+                    projectName: $project,
+                    name: $name
+                })
+                SET s.query = $cypherQuery, s.updatedAt = datetime()
+                """,
+                ownerUid=owner_uid,
+                project=project,
+                name=name,
+                cypherQuery=query,
+            ).consume()
+        return jsonify({"success": True, "name": name, "project": project})
+    except Exception as error:
+        app.logger.exception("Failed to save Cypher")
+        return jsonify({"success": False, "error": str(error)}), 500
+
+
+@app.route("/saved-cypher", methods=["GET"])
+def load_saved_cypher_list():
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    project = str(request.args.get("project") or user_data["project"] or "").strip()
+    owner_uid = str(user_data["uid"])
+    if not project:
+        return jsonify({"success": False, "error": "A project is required"}), 400
+
+    try:
+        with driver.session() as session:
+            result = session.run(
+                """
+                MATCH (s:SavedCypher {ownerUid: $ownerUid, projectName: $project})
+                RETURN s.name AS name, s.query AS query
+                ORDER BY s.name
+                """,
+                ownerUid=owner_uid,
+                project=project,
+            )
+            saved_queries = [
+                {"name": record["name"], "query": record["query"]}
+                for record in result
+            ]
+        return jsonify({"success": True, "items": saved_queries, "project": project})
+    except Exception as error:
+        app.logger.exception("Failed to load saved Cypher")
+        return jsonify({"success": False, "error": str(error)}), 500
+
 @app.route("/openai-cypher", methods=["POST"])
 def openai_cypher():
     # Validate JWT and extract user data

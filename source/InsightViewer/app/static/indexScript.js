@@ -899,6 +899,7 @@ document.addEventListener("DOMContentLoaded", function () {
    // Open Cypher Query Dialog
    window.openCypherDialog = function () {
        dialog.style.display = "block";
+       refreshSavedCyphers();
    };
 
           
@@ -910,6 +911,70 @@ document.addEventListener("DOMContentLoaded", function () {
    window.closeCypherDialog = function () {
        dialog.style.display = "none";
    };
+
+   window.saveCypher = async function () {
+       const textarea = document.getElementById("cypher-input");
+       const query = textarea && textarea.value.trim();
+       if (!query) {
+           alert("Enter a Cypher query before saving.");
+           return;
+       }
+       const name = window.prompt("Name this Cypher query:");
+       if (!name || !name.trim()) return;
+       if (!currentProject) {
+           alert("Project name is required to save a Cypher query.");
+           return;
+       }
+
+       try {
+           const response = await fetch("/saved-cypher", {
+               method: "POST",
+               headers: { "Content-Type": "application/json" },
+               body: JSON.stringify({ name: name.trim(), query, project: currentProject })
+           });
+           const data = await response.json();
+           if (!response.ok || !data.success) throw new Error(data.error || "Save failed");
+           alert("Cypher query saved.");
+           await refreshSavedCyphers();
+       } catch (error) {
+           console.error("Error saving Cypher:", error);
+           alert("Failed to save Cypher: " + error.message);
+       }
+   };
+
+   window.loadCypher = async function () {
+       const select = document.getElementById("saved-cypher-select");
+       if (!select || !select.value) {
+           alert("Select a saved Cypher query first.");
+           return;
+       }
+       const savedQuery = select.options[select.selectedIndex].dataset.query;
+       if (savedQuery === undefined) return;
+       const textarea = document.getElementById("cypher-input");
+       textarea.value = savedQuery;
+       if (typeof resizeDialog === "function") resizeDialog();
+   };
+
+   async function refreshSavedCyphers() {
+       const select = document.getElementById("saved-cypher-select");
+       if (!select || !currentProject) return;
+       select.innerHTML = "<option value=\"\">Load a saved Cypher</option>";
+       try {
+           const response = await fetch("/saved-cypher?project=" + encodeURIComponent(currentProject));
+           const data = await response.json();
+           if (!response.ok || !data.success) throw new Error(data.error || "Load failed");
+           data.items.forEach(item => {
+               const option = document.createElement("option");
+               option.value = item.name;
+               option.textContent = item.name;
+               option.dataset.query = item.query;
+               select.appendChild(option);
+           });
+       } catch (error) {
+           console.error("Error loading saved Cyphers:", error);
+           select.innerHTML = "<option value=\"\">Saved Cyphers unavailable</option>";
+       }
+   }
 
    // Make the dialog draggable
    var header = dialog.querySelector(".dialog-header");

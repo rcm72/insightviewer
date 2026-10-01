@@ -8,6 +8,7 @@ from datetime import datetime
 import os
 import re
 import uuid 
+import unicodedata
 
 meeting_graph_bp = Blueprint("meeting_graph", __name__, url_prefix="/graph")
 
@@ -57,6 +58,10 @@ def normalize_heading(value: str) -> str:
     )
 
     v = emoji_pattern.sub("", v)
+
+    # Normalize accents so Slovenian headers can be matched consistently.
+    v = unicodedata.normalize("NFKD", v)
+    v = "".join(char for char in v if not unicodedata.combining(char))
 
     # normalize whitespace and lower-case for comparisons
     return clean_text(v).lower()
@@ -312,24 +317,53 @@ def parse_tasks(section) -> list[dict]:
 
     rows = table.find_all("tr")
 
-    # try to detect header indexes so we correctly pick the finished/status columns
+    # Detect indexes from the table headers so localized templates can change
+    # column order without changing the graph field mapping.
+    assigned_idx = None
+    due_idx = None
     status_idx = None
     finished_idx = None
+    finished_date_idx = None
     header_cells = []
+    header_row_index = 0
     if rows:
-        header = rows[0]
+        def header_score(row):
+            labels = [normalize_heading(cell.get_text(" ")) for cell in row.find_all(["td", "th"])]
+            return sum(
+                any(token in label for token in tokens)
+                for label in labels
+                for tokens in (
+                    ("naloga", "task", "title"),
+                    ("odgovorni", "owner", "assignee", "lastnik"),
+                    ("datum dodelitve", "datum zadolzitve", "assigned"),
+                    ("rok dokoncanja", "due date"),
+                    ("dokoncano", "finished", "done", "completed"),
+                    ("status", "stanje"),
+                )
+            )
+
+        header_row_index = max(range(len(rows)), key=lambda index: header_score(rows[index]))
+        header = rows[header_row_index]
         header_cells = [clean_text(td.get_text(" ")) for td in header.find_all(["td", "th"])]
         for i, h in enumerate(header_cells):
             if not h:
                 continue
-            lh = h.lower()
-            if "status" in lh:
+            lh = normalize_heading(h)
+            if "assigned" in lh or "datum dodelitve" in lh or "datum zadolzitve" in lh:
+                assigned_idx = i
+            if "due date" in lh or "rok dokoncanja" in lh:
+                due_idx = i
+            if "status" in lh or "stanje" in lh:
                 status_idx = i
-            if "finished" in lh or "Zaključeno" in lh or "done" in lh or "completed" in lh:
+            if (
+                lh in {"dokoncano", "finished", "done", "completed"}
+                or "dokoncano" in lh
+            ):
                 finished_idx = i
-        # don't stop early; prefer header-detected indexes over positional defaults
+            if "finished date" in lh or "datum zakljucka" in lh:
+                finished_date_idx = i
 
-    for row in rows[1:]:
+    for row in rows[header_row_index + 1:]:
         cells = [clean_text(td.get_text(" ")) for td in row.find_all(["td", "th"])]
 
         if len(cells) < 1 or not cells[0]:
@@ -337,11 +371,22 @@ def parse_tasks(section) -> list[dict]:
 
         title = cells[0]
 
-        # determine finished and status values using detected header indexes when available
+        assigned_raw = cells[assigned_idx] if assigned_idx is not None and len(cells) > assigned_idx else (
+            cells[3] if len(cells) > 3 else None
+        )
+        due_raw = cells[due_idx] if due_idx is not None and len(cells) > due_idx else (
+            cells[4] if len(cells) > 4 else None
+        )
+
         if finished_idx is not None:
             finished_raw = cells[finished_idx] if len(cells) > finished_idx else None
         else:
-            finished_raw = cells[4] if len(cells) > 4 else None
+            finished_raw = None
+
+        if finished_date_idx is not None:
+            finished_date_raw = cells[finished_date_idx] if len(cells) > finished_date_idx else None
+        else:
+            finished_date_raw = cells[5] if finished_idx is None and len(cells) > 5 else None
 
         if status_idx is not None:
             status_val = cells[status_idx] if len(cells) > status_idx else None
@@ -352,32 +397,64 @@ def parse_tasks(section) -> list[dict]:
         if finished_raw is None or status_val is None:
             print("parse_tasks: header:", header_cells, "row:", cells, "finished_raw:", finished_raw, "status:", status_val, flush=True)
 
+        finished_value = None
+        if finished_raw:
+            normalized_finished = normalize_heading(finished_raw)
+            if normalized_finished in {"da", "yes", "true", "1", "x", "completed", "done", "končano", "koncano"}:
+                finished_value = True
+            elif normalized_finished in {"ne", "no", "false", "0", "", "ni"}:
+                finished_value = False
+            else:
+                finished_value = finished_raw
+
         task = {
             "title": title,
             "owner": cells[1] if len(cells) > 1 else None,
             "description": cells[2] if len(cells) > 2 else None,
-            "assignedDate": parse_date(cells[3]) if len(cells) > 3 else None,
-            "dueDate": parse_date(cells[4]) if len(cells) > 4 else None,                        
-            "finishedDate": parse_date(cells[5]) if len(cells) > 5 else None,            
-            # parse finished as date when present
-            "finished": parse_date(finished_raw) if finished_raw else None,
+            "assignedDate": parse_date(assigned_raw) if assigned_raw else None,
+            "dueDate": parse_date(due_raw) if due_raw else None,
+            "finishedDate": parse_date(finished_date_raw) if finished_date_raw else None,
+            "finished": finished_value,
             # status is textual
             "status": status_val,
         }
+
+        task.update({
+            "assigned_to": task["owner"],
+            "assigned_at": task["assignedDate"],
+            "has_due_date": task["dueDate"],
+            "has_finished": task["finished"],
+            "has_status": task["status"],
+        })
 
         tasks.append(task)
 
     return tasks
 
 
-def build_chunks(meeting_title, sections) -> list[dict]:
+def build_chunks(meeting_title, sections, tasks=None) -> list[dict]:
     chunks = []
 
     for key, section in sections.items():
         if not section:
             continue
 
-        text = clean_text(section.get_text(" "))
+        if key == "tasks" and tasks:
+            task_blocks = []
+            for task in tasks:
+                task_blocks.append(
+                    "\n".join([
+                        f"Naloga: {task.get('title') or ''}",
+                        f"assigned_to: {task.get('assigned_to') or task.get('owner') or ''}",
+                        f"assigned_at: {task.get('assigned_at') or task.get('assignedDate') or ''}",
+                        f"has_due_date: {task.get('has_due_date') or task.get('dueDate') or ''}",
+                        f"has_finished: {task.get('has_finished') if task.get('has_finished') is not None else task.get('finished') or ''}",
+                        f"has_status: {task.get('has_status') or task.get('status') or ''}",
+                    ])
+                )
+            text = "\n\n".join(task_blocks)
+        else:
+            text = clean_text(section.get_text(" "))
         if text:
             chunks.append({
                 "id": str(uuid.uuid4()),
@@ -402,7 +479,7 @@ def parse_meeting_html(html: str) -> dict:
     agenda = parse_agenda(sections.get("agenda"))
     notes = parse_notes(sections.get("notes"))
     tasks = parse_tasks(sections.get("tasks"))
-    chunks = build_chunks(graph_node_name, sections)
+    chunks = build_chunks(graph_node_name, sections, tasks)
 
     # graphNodeName may be provided via meta or data attributes in the template
     graph_node_name = get_graph_node_name(soup) or title
@@ -608,7 +685,7 @@ def parse_service_request_html(html: str) -> dict:
         "solution": section_text("solution"),
         "notes": section_text("notes"),
         "tasks": tasks,
-        "chunks": build_chunks(title, sections),
+        "chunks": build_chunks(title, sections, tasks),
     }
 
 
@@ -1133,6 +1210,42 @@ def write_meeting_graph(
 
     if rec and rec.get("id_rc"):
         parsed["meetingId"] = rec.get("id_rc")
+        existing_doc = tx.run(
+            """
+            MATCH (m:MeetingSummary {id_rc: $meetingId})
+            OPTIONAL MATCH (m)-[:DOCUMENTED_BY]->(doc:DocumentHTML)
+            RETURN doc.id_rc AS id_rc
+            LIMIT 1
+            """,
+            {"meetingId": parsed["meetingId"]}
+        ).single()
+        if existing_doc and existing_doc.get("id_rc"):
+            parsed["documentId"] = existing_doc["id_rc"]
+
+        tx.run(
+            """
+            MATCH (m:MeetingSummary {id_rc: $meetingId})
+            MERGE (doc:DocumentHTML {id_rc: $documentId})
+            SET doc.name = $meetingId + '.Document.' + $nodeName,
+                doc.title = $title,
+                doc.html = $html,
+                doc.language = $language,
+                doc.projectName = $projectName,
+                doc.sourceType = $templateType,
+                doc.updatedAt = datetime()
+            MERGE (m)-[:DOCUMENTED_BY]->(doc)
+            """,
+            {
+                "meetingId": parsed["meetingId"],
+                "documentId": parsed["documentId"],
+                "title": parsed["title"],
+                "nodeName": parsed.get("graphNodeName") or parsed.get("title"),
+                "language": parsed["language"],
+                "html": html,
+                "projectName": project_name,
+                "templateType": template_type,
+            }
+        )
     else:
         tx.run("""
             MERGE (m:MeetingSummary {
@@ -1246,7 +1359,16 @@ def write_meeting_graph(
                     WHEN $assignedDate IS NULL THEN NULL
                     ELSE date($assignedDate)
                 END,
+                t.assigned_to = $assignedTo,
+                t.assigned_at = CASE
+                    WHEN $assignedDate IS NULL THEN NULL
+                    ELSE date($assignedDate)
+                END,
                 t.dueDate = CASE
+                    WHEN $dueDate IS NULL THEN NULL
+                    ELSE date($dueDate)
+                END,
+                t.has_due_date = CASE
                     WHEN $dueDate IS NULL THEN NULL
                     ELSE date($dueDate)
                 END,
@@ -1256,6 +1378,8 @@ def write_meeting_graph(
                 END,
                 t.status = $status,
                 t.finished = $finished,
+                t.has_finished = $finished,
+                t.has_status = $status,
                 t.source = 'meeting',
                 t.projectName = $projectName,
                 t.createdAt = datetime()
@@ -1275,6 +1399,7 @@ def write_meeting_graph(
             "taskId": task_id,
             "title": task["title"],
             "description": task.get("description"),
+            "assignedTo": task.get("assigned_to") or task.get("owner"),
             "assignedDate": task.get("assignedDate"),
             "dueDate": task.get("dueDate"),
             "finishedDate": task.get("finishedDate"),
@@ -1286,6 +1411,7 @@ def write_meeting_graph(
 
     for chunk in parsed["chunks"]:
         tx.run("""
+            MATCH (m:MeetingSummary {id_rc: $meetingId})
             MATCH (doc:DocumentHTML {id_rc: $documentId})
 
             MERGE (c:Chunk {id_rc: $chunkId})
@@ -1297,6 +1423,7 @@ def write_meeting_graph(
                 c.createdAt = datetime()
 
             MERGE (doc)-[:HAS_CHUNK]->(c)
+            MERGE (m)-[:HAS_CHUNK]->(c)
         """, {
             "meetingId": parsed["meetingId"],
             "documentId": parsed["documentId"],

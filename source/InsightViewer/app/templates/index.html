@@ -334,7 +334,7 @@ Copyright (c) 2025 Robert Čmrlec
         </div>
         <textarea id="cypher-input" placeholder="" oninput="resizeDialog()">
 MATCH (s)
-WHERE NOT ANY(l IN labels(s) WHERE toLower(l) CONTAINS 'custom') and NOT 'NodeType' IN labels(s)
+WHERE NOT ANY(l IN labels(s) WHERE toLower(l) CONTAINS 'custom') and NOT 'NodeType' IN labels(s) and NOT 'SavedCypher' IN labels(s)
 OPTIONAL MATCH (s)-[r]-(t)
 RETURN s, r, t            
         </textarea>
@@ -344,6 +344,11 @@ RETURN s, r, t
         </div>
         <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
           <button onclick="runCypherQuery()">Run</button>
+          <button type="button" onclick="saveCypher()">Save Cypher</button>
+          <select id="saved-cypher-select" aria-label="Saved Cypher queries" style="min-width:180px;">
+            <option value="">Load a saved Cypher</option>
+          </select>
+          <button type="button" onclick="loadCypher()">Load Cypher</button>
           <button type="button" class="cypher-export-button" onclick="exportCypherGraph('csv')">Export CSV</button>
           <button type="button" class="cypher-export-button" onclick="exportCypherGraph('xlsx')">Export XLSX</button>
           <button onclick="openGuidedSearchDialog()">Guided Search</button>
