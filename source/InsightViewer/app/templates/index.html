@@ -344,8 +344,12 @@ RETURN s, r, t
         </div>
         <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
           <button onclick="runCypherQuery()">Run</button>
+          <button type="button" class="cypher-export-button" onclick="exportCypherGraph('csv')">Export CSV</button>
+          <button type="button" class="cypher-export-button" onclick="exportCypherGraph('xlsx')">Export XLSX</button>
           <button onclick="openGuidedSearchDialog()">Guided Search</button>
         </div>
+        <small id="cypher-export-status" role="status" aria-live="polite">Export runs the current Cypher if needed. RETURN n.name AS name, n.amount AS amount exports one Rows CSV; graph-only results export separate Nodes and Edges CSV files.</small>
+        <small>Manual Cypher runs as written. Include a projectName condition if you need a project-specific properties export.</small>
       </div>
 
       <div id="guided-search-dialog" class="floating-dialog" style="display:none; width:680px; max-width:95vw;">
@@ -1048,7 +1052,9 @@ window.showHtmlEditorDialog = function() {
       })();
     </script>
 
-<script src="{{ url_for('static', filename='indexScript.js') }}"></script>
+<script src="{{ url_for('static', filename='js/xlsx.full.min.js') }}"></script>
+<script src="{{ url_for('static', filename='cypherExport.js', v='3') }}"></script>
+<script src="{{ url_for('static', filename='indexScript.js', v='3') }}"></script>
 <script src="{{ url_for('static', filename='globalSearch.js') }}"></script>
 </body>
 </html>

@@ -31,7 +31,7 @@ import jwt  # Import the jwt module
 from flask.json.provider import DefaultJSONProvider
 from neo4j import GraphDatabase
 import uuid  # For generating unique IDs
-from neo4j.graph import Node, Relationship  # Import for type checking
+from neo4j.graph import Node, Relationship, Path as Neo4jPath  # Import for type checking
 import requests 
 import re 
 from html import unescape
@@ -390,6 +390,44 @@ def convert_dates(obj):
     return obj
 
 
+def _cypher_row_value(value):
+    """Convert a returned Cypher cell into JSON data, including graph values."""
+    if isinstance(value, Node):
+        return {"id": dict(value).get("id_rc", str(value.id)),
+                "labels": list(value.labels), "properties": convert_dates(dict(value))}
+    if isinstance(value, Relationship):
+        return {"id": dict(value).get("id_rc", str(value.id)),
+                "type": value.type, "from": _cypher_row_value(value.start_node)["id"],
+                "to": _cypher_row_value(value.end_node)["id"],
+                "properties": convert_dates(dict(value))}
+    if isinstance(value, Neo4jPath):
+        return {"nodes": [_cypher_row_value(node) for node in value.nodes],
+                "relationships": [_cypher_row_value(rel) for rel in value.relationships]}
+    if isinstance(value, dict):
+        return {str(key): _cypher_row_value(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_cypher_row_value(item) for item in value]
+    return convert_dates(value)
+
+
+def _cypher_row_visible(value, project):
+    """Do not reintroduce excluded graph entities through the tabular response."""
+    if not project:
+        return True
+    if isinstance(value, Node):
+        return dict(value).get("projectName") == project
+    if isinstance(value, Relationship):
+        return (dict(value.start_node).get("projectName") == project and
+            dict(value.end_node).get("projectName") == project)
+    if isinstance(value, Neo4jPath):
+        return all(_cypher_row_visible(node, project) for node in value.nodes)
+    if isinstance(value, dict):
+        return all(_cypher_row_visible(item, project) for item in value.values())
+    if isinstance(value, (list, tuple)):
+        return all(_cypher_row_visible(item, project) for item in value)
+    return True
+
+
 @app.route("/login")
 def login_page():
     return render_template("login.html")
@@ -476,12 +514,22 @@ def run_cypher():
 
         nodes = {}
         edges = []
+        columns = []
+        rows = []
+        has_scalar_columns = False
 
         print(f"[{datetime.now()}] Start.")
 
         with driver.session() as session:
             result = session.run(query)
+            columns = result.keys()
             for record in result:
+                values = record.values()
+                if all(_cypher_row_visible(value, project) for value in values):
+                    rows.append([_cypher_row_value(value) for value in values])
+                    if any(value is not None and not isinstance(value, (Node, Relationship, Neo4jPath))
+                           for value in values):
+                        has_scalar_columns = True
                 for value in record.values():
                     # Debugging
                     print("Debugging value:", value)
@@ -552,6 +600,9 @@ def run_cypher():
             "success": True,
             "nodes": list(nodes.values()),
             "edges": edges,
+            "columns": columns,
+            "rows": rows,
+            "hasScalarColumns": has_scalar_columns,
         }
         payload = convert_dates(payload)
 

@@ -1018,13 +1018,19 @@ document.addEventListener("DOMContentLoaded", function () {
    });
 
    // Function to run Cypher query and fetch results
-   window.runCypherQuery = function () {
+   window.runCypherQuery = function (exportFormat) {
        const textarea = document.getElementById("cypher-input");
        if (!textarea) {
            console.error("Cypher input textarea not found");
            return;
        }
+       window.setCypherExportResult(null);
        const cypherQuery = textarea.value.trim();
+
+       if (!cypherQuery) {
+           alert("Enter a Cypher query before running or exporting.");
+           return;
+       }
 
        // Block write operations — read-only queries only
        const writePattern = /\b(CREATE|MERGE|DELETE|SET|REMOVE|DROP|FOREACH|LOAD\s+CSV|USING\s+PERIODIC\s+COMMIT)\b/i;
@@ -1042,9 +1048,10 @@ document.addEventListener("DOMContentLoaded", function () {
            console.log("Graph cleared");
        }
 
-       // If the text does NOT contain the word MATCH (case-insensitive), call OpenAI endpoint
-       const hasMatch = /\bMATCH\b/i.test(cypherQuery);
-       if (!hasMatch) {
+    // Standalone RETURN/WITH/UNWIND queries also produce exportable columns.
+    const isCypher = /\bMATCH\b/i.test(cypherQuery) || /^(RETURN|WITH|UNWIND)\b/i.test(cypherQuery);
+    if (!isCypher) {
+           if (exportFormat) window.setCypherExportStatus("Generating Cypher. Review the suggestion, then click Export again.");
            console.log("No MATCH found in textarea � calling /openai-cypher to generate/transform Cypher");
            fetch("/openai-cypher", {
                method: "POST",
@@ -1083,7 +1090,7 @@ document.addEventListener("DOMContentLoaded", function () {
            return;
        }
 
-       // Otherwise (contains MATCH) call the original run-cypher endpoint
+    // Otherwise execute Cypher and retain both graph entities and projected columns.
        fetch("/run-cypher", {
            method: "POST",
            headers: { "Content-Type": "application/json" },
@@ -1092,9 +1099,26 @@ document.addEventListener("DOMContentLoaded", function () {
        })
        .then(response => response.json())
        .then(data => {
-           fetchNodeTypesAndVisualizeGraph(data); // Add new data to the graph
+           if (data && data.success && Array.isArray(data.nodes) && Array.isArray(data.edges)) {
+               window.setCypherExportResult(data, cypherQuery);
+               if (exportFormat) window.exportCypherGraph(exportFormat);
+           } else if (exportFormat) {
+               window.setCypherExportStatus("Cypher export failed: " + (data && data.error ? data.error : "Invalid graph response"));
+           }
+           if (data && data.success && Array.isArray(data.nodes) && Array.isArray(data.edges) &&
+               (data.nodes.length || data.edges.length)) {
+               fetchNodeTypesAndVisualizeGraph(data); // Add graph entities, if any
+           } else if (!data || !data.success) {
+               fetchNodeTypesAndVisualizeGraph(data); // Preserve existing error dialog
+           }
        })
-       .catch(error => console.error("Error:", error));
+       .catch(error => {
+           console.error("Error:", error);
+           if (exportFormat) {
+               window.setCypherExportStatus("Cypher export failed: " + error.message);
+               alert("Cypher export failed: " + error.message);
+           }
+       });
    };
 
    function fetchNodeTypesAndVisualizeGraph(data) {
