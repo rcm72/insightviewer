@@ -224,7 +224,7 @@ Copyright (c) 2025 Robert Čmrlec
         <div id="network-container"></div>
     </div>
 
-    <div id="edit-data-dialog" class="floating-dialog" style="display:none; width:900px; max-width:95vw; max-height:85vh; overflow:auto;">
+    <div id="edit-data-dialog" class="floating-dialog edit-data-dialog" style="display:none; width:900px; height:70vh; max-width:95vw; max-height:85vh; overflow:auto;">
       <div class="dialog-header">
         <span>Edit Data</span>
         <button type="button" onclick="closeEditDataDialog()">X</button>
@@ -237,7 +237,7 @@ Copyright (c) 2025 Robert Čmrlec
         <button type="button" onclick="saveEditDataChanges()">Save changes</button>
       </div>
       <div id="edit-data-status" role="status" style="margin:6px 0; font-size:13px;"></div>
-      <div style="overflow:auto; max-height:65vh;">
+      <div class="edit-data-table-viewport" style="overflow:auto; max-height:calc(100% - 105px);">
         <table id="edit-data-table" style="border-collapse:collapse; width:100%;"></table>
       </div>
     </div>

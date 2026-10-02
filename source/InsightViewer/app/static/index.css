@@ -134,6 +134,21 @@ body {
     box-sizing: border-box;
 }
 
+#edit-data-dialog {
+    display: none;
+    resize: both;
+    min-width: min(520px, 90vw);
+    min-height: 320px;
+    max-width: 95vw;
+    max-height: 90vh;
+    overflow: auto;
+}
+
+#edit-data-dialog .edit-data-table-viewport {
+    min-height: 100px;
+    max-height: calc(100% - 105px);
+}
+
 .dialog-header {
     display: flex;
     justify-content: space-between;
