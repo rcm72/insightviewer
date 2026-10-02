@@ -594,6 +594,147 @@ def get_nodes_by_type():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@nodes_bp.route("/edit-data/labels", methods=["GET"])
+def edit_data_labels():
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    _ensure_driver()
+    try:
+        with driver.session() as session:
+            result = session.run(
+                """
+                MATCH (n)
+                WHERE n.projectName = $project
+                UNWIND labels(n) AS label
+                WITH DISTINCT label
+                WHERE label <> 'NodeType'
+                  AND NOT label IN ['CustomGraph', 'CustomGraphNode', 'customGraphNodePosition', 'SavedCypher']
+                RETURN label
+                ORDER BY label
+                """,
+                project=user_data["project"],
+            )
+            return jsonify({"success": True, "labels": [record["label"] for record in result]})
+    except Exception as error:
+        return jsonify({"success": False, "error": str(error)}), 500
+
+
+@nodes_bp.route("/edit-data/records", methods=["POST"])
+def edit_data_records():
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    _ensure_driver()
+    data = request.get_json(silent=True) or {}
+    label = str(data.get("label") or "").strip()
+    text_filter = str(data.get("filter") or "").strip().lower()
+    if not label or len(label) > 128:
+        return jsonify({"success": False, "error": "A valid node label is required."}), 400
+
+    try:
+        with driver.session() as session:
+            label_record = session.run(
+                "MATCH (n) WHERE n.projectName = $project AND $label IN labels(n) RETURN count(n) AS count",
+                project=user_data["project"],
+                label=label,
+            ).single()
+            if not label_record or not label_record["count"]:
+                return jsonify({"success": True, "records": [], "properties": []})
+
+            result = session.run(
+                """
+                MATCH (n)
+                WHERE n.projectName = $project AND $label IN labels(n)
+                WITH n, properties(n) AS props, [key IN keys(n) | n[key]] AS property_values
+                WHERE $filter = '' OR any(value IN property_values
+                    WHERE toLower(toString(value)) CONTAINS $filter)
+                RETURN n.id_rc AS id_rc, props AS properties
+                ORDER BY toString(n.name)
+                LIMIT 500
+                """,
+                project=user_data["project"],
+                label=label,
+                filter=text_filter,
+            )
+            records = []
+            property_names = set()
+            for record in result:
+                props = dict(record["properties"] or {})
+                props.pop("id_rc", None)
+                props.pop("projectName", None)
+                props.pop("createdAt", None)
+                props.pop("updatedAt", None)
+                property_names.update(props)
+                records.append({"id_rc": record["id_rc"], "properties": props})
+            return jsonify({
+                "success": True,
+                "records": records,
+                "properties": sorted(property_names),
+                "limit": 500,
+            })
+    except Exception as error:
+        return jsonify({"success": False, "error": str(error)}), 500
+
+
+@nodes_bp.route("/edit-data/update", methods=["POST"])
+def edit_data_update():
+    user_data, error_response, status_code = validate_jwt()
+    if error_response:
+        return error_response, status_code
+
+    _ensure_driver()
+    data = request.get_json(silent=True) or {}
+    node_id = str(data.get("id_rc") or "").strip()
+    label = str(data.get("label") or "").strip()
+    properties = data.get("properties")
+    if not node_id or not label or not isinstance(properties, dict) or not properties:
+        return jsonify({"success": False, "error": "id_rc, label, and properties are required."}), 400
+    if "id_rc" in properties or "projectName" in properties:
+        return jsonify({"success": False, "error": "id_rc and projectName cannot be edited here."}), 400
+
+    try:
+        with driver.session() as session:
+            existing = session.run(
+                """
+                MATCH (n)
+                WHERE n.id_rc = $id_rc
+                  AND n.projectName = $project
+                  AND $label IN labels(n)
+                RETURN keys(n) AS keys
+                """,
+                id_rc=node_id,
+                project=user_data["project"],
+                label=label,
+            ).single()
+            if not existing:
+                return jsonify({"success": False, "error": "Node was not found in this project/type."}), 404
+            if not set(properties).issubset(set(existing["keys"])):
+                return jsonify({"success": False, "error": "Only existing node properties can be edited."}), 400
+
+            result = session.run(
+                """
+                MATCH (n)
+                WHERE n.id_rc = $id_rc
+                  AND n.projectName = $project
+                  AND $label IN labels(n)
+                SET n += $properties
+                RETURN n.id_rc AS id_rc
+                """,
+                id_rc=node_id,
+                project=user_data["project"],
+                label=label,
+                properties=properties,
+            ).single()
+            if not result:
+                return jsonify({"success": False, "error": "Node was not found in this project/type."}), 404
+        return jsonify({"success": True, "id_rc": node_id})
+    except Exception as error:
+        return jsonify({"success": False, "error": str(error)}), 500
+
+
 @nodes_bp.route("/remove-node-custom-graph", methods=["POST"])
 def remove_node_custom_graph():
     # Validate JWT and extract user data

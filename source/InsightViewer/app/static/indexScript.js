@@ -18,6 +18,183 @@ var network = null;
 var createNodeCurrentShape="ellipse"; // Default shape for new nodes
 var gCustomGraphName = ""; // Global variable to store the custom graph name
 
+// Edit Data dialog helper is global because the menu uses an inline onclick handler.
+window.openEditDataDialog = async function () {
+   const dialog = document.getElementById("edit-data-dialog");
+   const labelSelect = document.getElementById("edit-data-label");
+   const status = document.getElementById("edit-data-status");
+   if (!dialog || !labelSelect) {
+       console.error("Edit Data dialog elements are missing");
+       return;
+   }
+
+   dialog.style.display = "block";
+   if (status) status.textContent = "Loading node types...";
+   try {
+       const response = await fetch("/nodes/edit-data/labels");
+       const data = await response.json();
+       if (!response.ok) throw new Error(data.error || "Failed to load node types");
+       labelSelect.replaceChildren(new Option("Select a node type", ""));
+       (data.labels || []).forEach(label => labelSelect.add(new Option(label, label)));
+       if (status) status.textContent = data.labels?.length ? "Select a node type, then load records." : "No editable node types found.";
+   } catch (error) {
+       console.error("Unable to load Edit Data node types:", error);
+       if (status) status.textContent = error.message || "Failed to load node types.";
+   }
+};
+window.closeEditDataDialog = window.closeEditDataDialog || function () {
+    const dialog = document.getElementById("edit-data-dialog");
+    if (dialog) dialog.style.display = "none";
+};
+
+const editDataState = {
+   label: "",
+   records: [],
+   properties: [],
+   sortKey: "id_rc",
+   sortAscending: true,
+   changed: new Map()
+};
+
+window.loadEditDataRecords = async function () {
+   const label = document.getElementById("edit-data-label")?.value;
+   const filter = document.getElementById("edit-data-filter")?.value || "";
+   const status = document.getElementById("edit-data-status");
+   if (!label) {
+       if (status) status.textContent = "Select a node type first.";
+       return;
+   }
+   if (status) status.textContent = "Loading records...";
+   try {
+       const response = await fetch("/nodes/edit-data/records", {
+           method: "POST",
+           headers: { "Content-Type": "application/json" },
+           body: JSON.stringify({ label, filter })
+       });
+       const data = await response.json();
+       if (!response.ok || !data.success) throw new Error(data.error || "Failed to load records");
+       editDataState.label = label;
+       editDataState.records = data.records || [];
+       editDataState.properties = data.properties || [];
+       editDataState.changed.clear();
+       renderEditDataTable();
+       if (status) status.textContent = `${editDataState.records.length} record(s) loaded${data.limit ? ` (maximum ${data.limit})` : ""}.`;
+   } catch (error) {
+       console.error("Unable to load Edit Data records:", error);
+       if (status) status.textContent = error.message || "Failed to load records.";
+   }
+};
+
+function renderEditDataTable() {
+   const table = document.getElementById("edit-data-table");
+   if (!table) return;
+   table.replaceChildren();
+   const columns = ["id_rc", ...editDataState.properties];
+   const header = table.createTHead().insertRow();
+   columns.forEach(key => {
+       const th = document.createElement("th");
+       th.textContent = key;
+       th.style.cssText = "position:sticky;top:0;background:#f3f3f3;border:1px solid #ccc;padding:6px;cursor:pointer;text-align:left;";
+       th.addEventListener("click", () => {
+           editDataState.sortAscending = editDataState.sortKey === key ? !editDataState.sortAscending : true;
+           editDataState.sortKey = key;
+           renderEditDataTable();
+       });
+       header.appendChild(th);
+   });
+
+   const body = table.createTBody();
+   const rows = [...editDataState.records].sort((a, b) => {
+       const av = keyValue(a, editDataState.sortKey);
+       const bv = keyValue(b, editDataState.sortKey);
+       const cmp = String(av ?? "").localeCompare(String(bv ?? ""), undefined, { numeric: true, sensitivity: "base" });
+       return editDataState.sortAscending ? cmp : -cmp;
+   });
+   rows.forEach(record => {
+       const tr = body.insertRow();
+       const idCell = tr.insertCell();
+       idCell.textContent = String(record.id_rc ?? "");
+       idCell.style.cssText = "border:1px solid #ddd;padding:4px;white-space:nowrap;";
+       editDataState.properties.forEach(key => {
+           const td = tr.insertCell();
+           td.style.cssText = "border:1px solid #ddd;padding:3px;";
+           const input = document.createElement("input");
+           input.type = "text";
+           input.value = displayEditValue(record.properties?.[key]);
+           input.disabled = !record.id_rc;
+           input.style.cssText = "box-sizing:border-box;width:100%;min-width:100px;";
+           input.addEventListener("input", () => {
+               const original = displayEditValue(record.properties?.[key]);
+               let edits = editDataState.changed.get(record.id_rc);
+               if (!edits) {
+                   edits = {};
+                   editDataState.changed.set(record.id_rc, edits);
+               }
+               if (input.value === original) delete edits[key];
+               else edits[key] = coerceEditValue(input.value, record.properties?.[key]);
+               if (!Object.keys(edits).length) editDataState.changed.delete(record.id_rc);
+           });
+           td.appendChild(input);
+       });
+   });
+}
+
+function keyValue(record, key) {
+   return key === "id_rc" ? record.id_rc : record.properties?.[key];
+}
+
+function displayEditValue(value) {
+   if (value === null || value === undefined) return "";
+   if (typeof value === "object") return JSON.stringify(value);
+   return String(value);
+}
+
+function coerceEditValue(value, original) {
+   if (original === null || original === undefined) return value === "" ? null : value;
+   if (typeof original === "number" && value.trim() !== "" && Number.isFinite(Number(value))) return Number(value);
+   if (typeof original === "boolean") return value.trim().toLowerCase() === "true";
+   return value;
+}
+
+window.saveEditDataChanges = async function () {
+   const status = document.getElementById("edit-data-status");
+   const entries = [...editDataState.changed.entries()];
+   if (!editDataState.label || !entries.length) {
+       if (status) status.textContent = entries.length ? "Select a node type first." : "No changes to save.";
+       return;
+   }
+   if (status) status.textContent = `Saving ${entries.length} record(s)...`;
+   let saved = 0;
+   const errors = [];
+   for (const [id_rc, properties] of entries) {
+       try {
+           const response = await fetch("/nodes/edit-data/update", {
+               method: "POST",
+               headers: { "Content-Type": "application/json" },
+               body: JSON.stringify({ id_rc, label: editDataState.label, properties })
+           });
+           const data = await response.json();
+           if (!response.ok || !data.success) throw new Error(data.error || `HTTP ${response.status}`);
+           saved++;
+       } catch (error) {
+           errors.push(`${id_rc}: ${error.message}`);
+       }
+   }
+   if (errors.length) {
+       if (status) status.textContent = `Saved ${saved}; failed ${errors.length}: ${errors.join("; ")}`;
+       return;
+   }
+   if (status) status.textContent = `Saved ${saved} record(s).`;
+   await window.loadEditDataRecords();
+};
+
+document.addEventListener("DOMContentLoaded", function () {
+   const filter = document.getElementById("edit-data-filter");
+   if (filter) filter.addEventListener("keydown", event => {
+       if (event.key === "Enter") window.loadEditDataRecords();
+   });
+});
+
 // Map to store node IDs to node names
 var nodeIdToNameMap = new Map();
 let showProperties = false; // Global variable to control the dialog behavior
@@ -1815,8 +1992,6 @@ document.addEventListener("DOMContentLoaded", function () {
    });
 });
 
-
-
 // Expand/collapse menu items
 document.querySelectorAll('.menu-container ul li').forEach(function(item) {
    item.addEventListener('click', function(event) {
@@ -1828,13 +2003,7 @@ document.querySelectorAll('.menu-container ul li').forEach(function(item) {
    });
 });
 
-var container = document.getElementById("network-container");
-container.addEventListener("contextmenu", function (event) {
-   console.log("Contextmenu event triggered on network-container");
-   event.preventDefault(); // Disable the browser's default context menu
-//});
-
-//document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", function () {
    var selectedNodeId = null;
 
    var container = document.getElementById("network-container");

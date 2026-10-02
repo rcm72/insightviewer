@@ -186,6 +186,7 @@ Copyright (c) 2025 Robert Čmrlec
                 <ul>
                 <li onclick="openGuidedSearchDialog({ mode: 'neo4j-global' })">Global search</li>
                     <li onclick="openCypherDialog()">Explore with cypher</li>   
+                    <li onclick="openEditDataDialog()">Edit data</li>
 
                     <li >Custom graphs
                         <ul>
@@ -221,6 +222,24 @@ Copyright (c) 2025 Robert Čmrlec
     <!-- Graph Container -->
     <div class="content" id="content">
         <div id="network-container"></div>
+    </div>
+
+    <div id="edit-data-dialog" class="floating-dialog" style="display:none; width:900px; max-width:95vw; max-height:85vh; overflow:auto;">
+      <div class="dialog-header">
+        <span>Edit Data</span>
+        <button type="button" onclick="closeEditDataDialog()">X</button>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:8px 0;">
+        <label for="edit-data-label">Node type</label>
+        <select id="edit-data-label" style="min-width:180px;"></select>
+        <input id="edit-data-filter" type="search" placeholder="Filter rows..." style="flex:1; min-width:180px;">
+        <button type="button" onclick="loadEditDataRecords()">Load</button>
+        <button type="button" onclick="saveEditDataChanges()">Save changes</button>
+      </div>
+      <div id="edit-data-status" role="status" style="margin:6px 0; font-size:13px;"></div>
+      <div style="overflow:auto; max-height:65vh;">
+        <table id="edit-data-table" style="border-collapse:collapse; width:100%;"></table>
+      </div>
     </div>
 
     <!-- Floating Cypher Query Dialog -->
