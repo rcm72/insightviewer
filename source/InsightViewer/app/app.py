@@ -669,15 +669,18 @@ def add_node():
             new_id_rc = str(uuid.uuid4()) 
 
             # Add the new node with combined properties including id_rc
+            # Custom type names are also stored as Neo4j labels. Quote the
+            # dynamic identifier so valid names containing dots work safely.
+            safe_node_label = "`" + str(node_label).replace("`", "``") + "`"
             create_node_query = f"""
-            CREATE (n:{node_label} {{name: $name, id_rc: $id_rc, image: $image}})
+            CREATE (n:{safe_node_label} {{name: $name, id_rc: $id_rc, image: $image, projectName: $project}})
             SET n += $properties
             RETURN n.id_rc AS node_id, labels(n) AS labels
             """
             combined_properties = filtered_properties  # Start with filtered NodeType properties
             combined_properties["name"] = node_name  # Explicitly set the node's name
 
-            result = session.run(create_node_query, name=node_name, properties=combined_properties, id_rc=new_id_rc, image=nodeImageField)
+            result = session.run(create_node_query, name=node_name, properties=combined_properties, id_rc=new_id_rc, image=nodeImageField, project=project)
             record = result.single()
             if record:
                 node_id = record["node_id"]

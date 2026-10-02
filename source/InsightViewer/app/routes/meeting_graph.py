@@ -655,6 +655,9 @@ def parse_service_request_html(html: str) -> dict:
         "proposed solution": "solution",
         "notes": "notes",
         "tasks": "tasks",
+        "namen in poslovna potreba": "problem",
+        "opis zahtevane storitve": "description",
+        "potek obravnave": "tasks",
     }
     for section in soup.find_all("section"):
         heading = section.find("h2")
