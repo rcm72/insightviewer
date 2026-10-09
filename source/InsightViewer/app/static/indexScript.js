@@ -51,6 +51,8 @@ const editDataState = {
    label: "",
    records: [],
    properties: [],
+    columnOrder: [],
+    columnWidths: {},
    sortKey: "id_rc",
    sortAscending: true,
    changed: new Map()
@@ -76,6 +78,9 @@ window.loadEditDataRecords = async function () {
        editDataState.label = label;
        editDataState.records = data.records || [];
        editDataState.properties = data.properties || [];
+    const availableColumns = ["id_rc", ...editDataState.properties];
+    const savedOrder = editDataState.columnOrder.filter(key => availableColumns.includes(key));
+    editDataState.columnOrder = [...savedOrder, ...availableColumns.filter(key => !savedOrder.includes(key))];
        editDataState.changed.clear();
        renderEditDataTable();
        if (status) status.textContent = `${editDataState.records.length} record(s) loaded${data.limit ? ` (maximum ${data.limit})` : ""}.`;
@@ -89,17 +94,74 @@ function renderEditDataTable() {
    const table = document.getElementById("edit-data-table");
    if (!table) return;
    table.replaceChildren();
-   const columns = ["id_rc", ...editDataState.properties];
+   const columns = editDataState.columnOrder;
    const header = table.createTHead().insertRow();
    columns.forEach(key => {
        const th = document.createElement("th");
-       th.textContent = key;
-       th.style.cssText = "position:sticky;top:0;background:#f3f3f3;border:1px solid #ccc;padding:6px;cursor:pointer;text-align:left;";
+       th.dataset.columnKey = key;
+       th.draggable = true;
+       th.style.cssText = `position:sticky;top:0;background:#f3f3f3;border:1px solid #ccc;padding:6px;cursor:grab;text-align:left;white-space:nowrap;width:${editDataState.columnWidths[key] || 160}px;min-width:70px;`;
+       const title = document.createElement("span");
+       title.textContent = key;
+       title.title = "Click to sort; drag to reorder";
+       th.appendChild(title);
        th.addEventListener("click", () => {
            editDataState.sortAscending = editDataState.sortKey === key ? !editDataState.sortAscending : true;
            editDataState.sortKey = key;
            renderEditDataTable();
        });
+       th.addEventListener("dragstart", event => {
+           event.dataTransfer.effectAllowed = "move";
+           event.dataTransfer.setData("text/plain", key);
+           th.style.opacity = "0.5";
+       });
+       th.addEventListener("dragend", () => { th.style.opacity = ""; });
+       th.addEventListener("dragover", event => {
+           event.preventDefault();
+           event.dataTransfer.dropEffect = "move";
+       });
+       th.addEventListener("drop", event => {
+           event.preventDefault();
+           const draggedKey = event.dataTransfer.getData("text/plain");
+           if (!draggedKey || draggedKey === key) return;
+           const order = [...editDataState.columnOrder];
+           const from = order.indexOf(draggedKey);
+           const to = order.indexOf(key);
+           if (from < 0 || to < 0) return;
+           order.splice(from, 1);
+           order.splice(to, 0, draggedKey);
+           editDataState.columnOrder = order;
+           renderEditDataTable();
+       });
+       const grip = document.createElement("span");
+       grip.setAttribute("aria-label", `Resize ${key} column`);
+       grip.title = "Drag to resize column";
+       grip.style.cssText = "float:right;width:7px;height:22px;margin:-2px -4px -2px 6px;cursor:col-resize;touch-action:none;";
+       grip.addEventListener("click", event => event.stopPropagation());
+       grip.addEventListener("pointerdown", event => {
+           event.preventDefault();
+           event.stopPropagation();
+           const startX = event.clientX;
+           const startWidth = th.getBoundingClientRect().width;
+           grip.setPointerCapture(event.pointerId);
+           const resize = pointerEvent => {
+               const width = Math.max(70, Math.round(startWidth + pointerEvent.clientX - startX));
+               editDataState.columnWidths[key] = width;
+               table.querySelectorAll(`[data-column-key="${CSS.escape(key)}"]`).forEach(cell => {
+                   cell.style.width = `${width}px`;
+                   cell.style.minWidth = `${width}px`;
+               });
+           };
+           const stopResize = () => {
+               grip.removeEventListener("pointermove", resize);
+               grip.removeEventListener("pointerup", stopResize);
+               grip.removeEventListener("pointercancel", stopResize);
+           };
+           grip.addEventListener("pointermove", resize);
+           grip.addEventListener("pointerup", stopResize);
+           grip.addEventListener("pointercancel", stopResize);
+       });
+       th.appendChild(grip);
        header.appendChild(th);
    });
 
@@ -112,12 +174,16 @@ function renderEditDataTable() {
    });
    rows.forEach(record => {
        const tr = body.insertRow();
-       const idCell = tr.insertCell();
-       idCell.textContent = String(record.id_rc ?? "");
-       idCell.style.cssText = "border:1px solid #ddd;padding:4px;white-space:nowrap;";
-       editDataState.properties.forEach(key => {
+       columns.forEach(key => {
            const td = tr.insertCell();
-           td.style.cssText = "border:1px solid #ddd;padding:3px;";
+           td.dataset.columnKey = key;
+           const width = editDataState.columnWidths[key] || 160;
+           td.style.cssText = `border:1px solid #ddd;padding:3px;width:${width}px;min-width:${width}px;`;
+           if (key === "id_rc") {
+               td.textContent = String(record.id_rc ?? "");
+               td.style.whiteSpace = "nowrap";
+               return;
+           }
            const input = document.createElement("input");
            input.type = "text";
            input.value = displayEditValue(record.properties?.[key]);
@@ -193,6 +259,8 @@ document.addEventListener("DOMContentLoaded", function () {
    if (filter) filter.addEventListener("keydown", event => {
        if (event.key === "Enter") window.loadEditDataRecords();
    });
+    const dialog = document.getElementById("edit-data-dialog");
+    if (dialog) makeDialogDraggable(dialog);
 });
 
 // Map to store node IDs to node names
@@ -2706,13 +2774,18 @@ function closeNodePropertiesDialog() {
 
 function makeDialogDraggable(dialog) {
    const header = dialog.querySelector(".dialog-header");
+   if (!header || header.dataset.dragInitialized === "true") return;
+   header.dataset.dragInitialized = "true";
    let isDragging = false;
    let offsetX, offsetY;
 
    header.addEventListener("mousedown", function (event) {
+       if (event.target.closest("button, input, select, textarea, a")) return;
        isDragging = true;
        offsetX = event.clientX - dialog.offsetLeft;
        offsetY = event.clientY - dialog.offsetTop;
+       dialog.style.right = "auto";
+       dialog.style.bottom = "auto";
 
        document.addEventListener("mousemove", moveDialog);
        document.addEventListener("mouseup", stopDragging);

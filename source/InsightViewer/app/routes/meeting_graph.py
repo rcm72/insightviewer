@@ -319,49 +319,38 @@ def parse_tasks(section) -> list[dict]:
 
     # Detect indexes from the table headers so localized templates can change
     # column order without changing the graph field mapping.
-    assigned_idx = None
-    due_idx = None
-    status_idx = None
-    finished_idx = None
-    finished_date_idx = None
     header_cells = []
     header_row_index = 0
+    column_indexes = {}
+    header_aliases = {
+        "title": {"naloga", "task", "title"},
+        "owner": {"owner", "lastnik", "assignee", "odgovorni"},
+        "ownerIT": {"lastnik it", "it owner", "it assignee"},
+        "ownerUser": {"lastnik user", "user owner", "user assignee", "lastnik uporabnik"},
+        "tester": {"testira", "tester", "tested by", "testing"},
+        "description": {"opis", "description", "details"},
+        "priority": {"prioriteta", "priority"},
+        "assignedDate": {"assigned date", "assigned", "datum dodelitve", "datum zadolzitve"},
+        "dueDate": {"due date", "rok dokoncanja"},
+        "finished": {"dokoncano", "finished", "done", "completed"},
+        "finishedDate": {"finished date", "datum zakljucka"},
+        "status": {"status", "stanje"},
+        "note": {"opomba", "note", "remark", "comments"},
+    }
     if rows:
         def header_score(row):
             labels = [normalize_heading(cell.get_text(" ")) for cell in row.find_all(["td", "th"])]
-            return sum(
-                any(token in label for token in tokens)
-                for label in labels
-                for tokens in (
-                    ("naloga", "task", "title"),
-                    ("odgovorni", "owner", "assignee", "lastnik"),
-                    ("datum dodelitve", "datum zadolzitve", "assigned"),
-                    ("rok dokoncanja", "due date"),
-                    ("dokoncano", "finished", "done", "completed"),
-                    ("status", "stanje"),
-                )
-            )
+            return sum(label in aliases for label in labels for aliases in header_aliases.values())
 
         header_row_index = max(range(len(rows)), key=lambda index: header_score(rows[index]))
         header = rows[header_row_index]
         header_cells = [clean_text(td.get_text(" ")) for td in header.find_all(["td", "th"])]
         for i, h in enumerate(header_cells):
-            if not h:
-                continue
-            lh = normalize_heading(h)
-            if "assigned" in lh or "datum dodelitve" in lh or "datum zadolzitve" in lh:
-                assigned_idx = i
-            if "due date" in lh or "rok dokoncanja" in lh:
-                due_idx = i
-            if "status" in lh or "stanje" in lh:
-                status_idx = i
-            if (
-                lh in {"dokoncano", "finished", "done", "completed"}
-                or "dokoncano" in lh
-            ):
-                finished_idx = i
-            if "finished date" in lh or "datum zakljucka" in lh:
-                finished_date_idx = i
+            label = normalize_heading(h)
+            for field, aliases in header_aliases.items():
+                if label in aliases:
+                    column_indexes[field] = i
+                    break
 
     for row in rows[header_row_index + 1:]:
         cells = [clean_text(td.get_text(" ")) for td in row.find_all(["td", "th"])]
@@ -369,33 +358,33 @@ def parse_tasks(section) -> list[dict]:
         if len(cells) < 1 or not cells[0]:
             continue
 
-        title = cells[0]
+        # Some editor templates include a second header-looking row as their
+        # editable example row. Do not turn that duplicate header into a task.
+        if len(cells) == len(header_cells) and all(
+            normalize_heading(value) == normalize_heading(header_cells[index])
+            for index, value in enumerate(cells)
+        ):
+            continue
 
-        assigned_raw = cells[assigned_idx] if assigned_idx is not None and len(cells) > assigned_idx else (
-            cells[3] if len(cells) > 3 else None
-        )
-        due_raw = cells[due_idx] if due_idx is not None and len(cells) > due_idx else (
-            cells[4] if len(cells) > 4 else None
-        )
+        def cell_value(field, fallback_index=None):
+            index = column_indexes.get(field, fallback_index)
+            if index is None or index >= len(cells):
+                return None
+            return cells[index] or None
 
-        if finished_idx is not None:
-            finished_raw = cells[finished_idx] if len(cells) > finished_idx else None
-        else:
-            finished_raw = None
+        title = cell_value("title", 0)
+        if not title:
+            continue
 
-        if finished_date_idx is not None:
-            finished_date_raw = cells[finished_date_idx] if len(cells) > finished_date_idx else None
-        else:
-            finished_date_raw = cells[5] if finished_idx is None and len(cells) > 5 else None
-
-        if status_idx is not None:
-            status_val = cells[status_idx] if len(cells) > status_idx else None
-        else:
-            status_val = cells[5] if len(cells) > 5 else None
-
-        # debug log extracted cells when finished/status are missing or unexpected
-        if finished_raw is None or status_val is None:
-            print("parse_tasks: header:", header_cells, "row:", cells, "finished_raw:", finished_raw, "status:", status_val, flush=True)
+        owner = cell_value("owner", 1)
+        owner_it = cell_value("ownerIT")
+        owner_user = cell_value("ownerUser")
+        priority = cell_value("priority")
+        assigned_raw = cell_value("assignedDate", 3)
+        due_raw = cell_value("dueDate", 4)
+        finished_raw = cell_value("finished", 5)
+        finished_date_raw = cell_value("finishedDate")
+        status_val = cell_value("status", 6)
 
         finished_value = None
         if finished_raw:
@@ -409,8 +398,13 @@ def parse_tasks(section) -> list[dict]:
 
         task = {
             "title": title,
-            "owner": cells[1] if len(cells) > 1 else None,
-            "description": cells[2] if len(cells) > 2 else None,
+            "owner": owner or owner_it or owner_user,
+            "ownerIT": owner_it,
+            "ownerUser": owner_user,
+            "tester": cell_value("tester"),
+            "description": cell_value("description", 2),
+            "priority": priority,
+            "note": cell_value("note"),
             "assignedDate": parse_date(assigned_raw) if assigned_raw else None,
             "dueDate": parse_date(due_raw) if due_raw else None,
             "finishedDate": parse_date(finished_date_raw) if finished_date_raw else None,
@@ -446,10 +440,15 @@ def build_chunks(meeting_title, sections, tasks=None) -> list[dict]:
                     "\n".join([
                         f"Naloga: {task.get('title') or ''}",
                         f"assigned_to: {task.get('assigned_to') or task.get('owner') or ''}",
+                        f"owner_it: {task.get('ownerIT') or ''}",
+                        f"owner_user: {task.get('ownerUser') or ''}",
+                        f"tester: {task.get('tester') or ''}",
+                        f"priority: {task.get('priority') or ''}",
                         f"assigned_at: {task.get('assigned_at') or task.get('assignedDate') or ''}",
                         f"has_due_date: {task.get('has_due_date') or task.get('dueDate') or ''}",
                         f"has_finished: {task.get('has_finished') if task.get('has_finished') is not None else task.get('finished') or ''}",
                         f"has_status: {task.get('has_status') or task.get('status') or ''}",
+                        f"note: {task.get('note') or ''}",
                     ])
                 )
             text = "\n\n".join(task_blocks)
@@ -650,6 +649,8 @@ def parse_service_request_html(html: str) -> dict:
     title = get_title(soup)
     sections = {}
     headings = {
+        "basic information": "basic_info",
+        "osnovni podatki": "basic_info",
         "description": "description",
         "definition of problem": "problem",
         "proposed solution": "solution",
@@ -676,6 +677,39 @@ def parse_service_request_html(html: str) -> dict:
             return clean_text(" ".join(content.stripped_strings).removeprefix(clean_text(heading.get_text(" "))))
         return clean_text(content.get_text(" "))
 
+    basic_fields = {}
+    basic_info = sections.get("basic_info")
+    if basic_info:
+        table = basic_info.find("table")
+        if table:
+            field_names = {
+                "vlagatelj": "applicant",
+                "applicant": "applicant",
+                "requester": "applicant",
+                "datum zahtevka": "requestDate",
+                "request date": "requestDate",
+                "requested date": "requestDate",
+                "prioriteta": "priority",
+                "priority": "priority",
+                "zeljeni rok": "desiredDueDate",
+                "desired due date": "desiredDueDate",
+                "requested due date": "desiredDueDate",
+            }
+            for row in table.find_all("tr"):
+                cells = row.find_all(["th", "td"], recursive=False)
+                if len(cells) < 2:
+                    continue
+                label = normalize_heading(cells[0].get_text(" "))
+                field = field_names.get(label)
+                value = clean_text(cells[1].get_text(" "))
+                if field and value:
+                    basic_fields[field] = value
+
+    if basic_fields.get("requestDate"):
+        basic_fields["requestDate"] = parse_date(basic_fields["requestDate"])
+    if basic_fields.get("desiredDueDate"):
+        basic_fields["desiredDueDate"] = parse_date(basic_fields["desiredDueDate"])
+
     tasks = parse_tasks(sections.get("tasks"))
     return {
         "serviceRequestId": str(uuid.uuid4()),
@@ -687,6 +721,10 @@ def parse_service_request_html(html: str) -> dict:
         "problem": section_text("problem"),
         "solution": section_text("solution"),
         "notes": section_text("notes"),
+        "applicant": basic_fields.get("applicant"),
+        "requestDate": basic_fields.get("requestDate"),
+        "priority": basic_fields.get("priority"),
+        "desiredDueDate": basic_fields.get("desiredDueDate"),
         "tasks": tasks,
         "chunks": build_chunks(title, sections, tasks),
     }
@@ -1358,6 +1396,11 @@ def write_meeting_graph(
                 t.name = $meetingId +'.Task.' + $title,
                 t.title = $title,
                 t.description = $description,
+                t.ownerIT = $ownerIT,
+                t.ownerUser = $ownerUser,
+                t.tester = $tester,
+                t.priority = $priority,
+                t.note = $note,
                 t.assignedDate = CASE
                     WHEN $assignedDate IS NULL THEN NULL
                     ELSE date($assignedDate)
@@ -1402,6 +1445,11 @@ def write_meeting_graph(
             "taskId": task_id,
             "title": task["title"],
             "description": task.get("description"),
+            "ownerIT": task.get("ownerIT"),
+            "ownerUser": task.get("ownerUser"),
+            "tester": task.get("tester"),
+            "priority": task.get("priority"),
+            "note": task.get("note"),
             "assignedTo": task.get("assigned_to") or task.get("owner"),
             "assignedDate": task.get("assignedDate"),
             "dueDate": task.get("dueDate"),
@@ -1411,6 +1459,28 @@ def write_meeting_graph(
             "ownerName": task.get("owner"),
             "projectName": project_name
         })
+
+        # Keep the existing ASSIGNED_TO edge for the primary/legacy owner and
+        # preserve the specific roles represented by the new meeting columns.
+        task_name = f"{parsed['meetingId']}.Task.{task['title']}"
+        for person_name, relationship in (
+            (task.get("ownerIT"), "HAS_IT_OWNER"),
+            (task.get("ownerUser"), "HAS_USER_OWNER"),
+            (task.get("tester"), "TESTED_BY"),
+        ):
+            if not person_name:
+                continue
+            tx.run(f"""
+                MATCH (t:ServiceRequest {{name: $taskName}})
+                MERGE (person:Person {{name: $personName}})
+                SET person.id_rc = coalesce(person.id_rc, randomUUID()),
+                    person.projectName = $projectName
+                MERGE (t)-[:{relationship}]->(person)
+            """, {
+                "taskName": task_name,
+                "personName": person_name,
+                "projectName": project_name,
+            })
 
     for chunk in parsed["chunks"]:
         tx.run("""
@@ -1464,7 +1534,11 @@ def write_service_request_graph(
         ON CREATE SET sr.id_rc = randomUUID(), sr.createdAt = datetime()
         SET sr.title = $title, sr.description = $description,
             sr.problem = $problem, sr.proposedSolution = $solution,
-            sr.notes = $notes, sr.language = $language,
+            sr.notes = $notes, sr.applicant = $applicant,
+            sr.requestDate = CASE WHEN $requestDate IS NULL THEN NULL ELSE date($requestDate) END,
+            sr.priority = $priority,
+            sr.desiredDueDate = CASE WHEN $desiredDueDate IS NULL THEN NULL ELSE date($desiredDueDate) END,
+            sr.language = $language,
             sr.projectName = $projectName, sr.updatedAt = datetime()
         MERGE (doc:DocumentHTML {name: $docName})
         ON CREATE SET doc.id_rc = randomUUID(), doc.createdAt = datetime()
@@ -1477,6 +1551,10 @@ def write_service_request_graph(
         "name": name, "docName": doc_name, "title": parsed["title"],
         "description": parsed["description"], "problem": parsed["problem"],
         "solution": parsed["solution"], "notes": parsed["notes"],
+        "applicant": parsed.get("applicant"),
+        "requestDate": parsed.get("requestDate"),
+        "priority": parsed.get("priority"),
+        "desiredDueDate": parsed.get("desiredDueDate"),
         "language": parsed["language"], "projectName": project_name,
         "html": html, "templateType": template_type,
     }).single()
@@ -1504,6 +1582,9 @@ def write_service_request_graph(
             MERGE (t:Task {name: $taskName})
             ON CREATE SET t.id_rc = randomUUID(), t.createdAt = datetime()
             SET t.title = $title, t.description = $description,
+                t.ownerIT = $ownerIT, t.ownerUser = $ownerUser,
+                t.tester = $tester, t.priority = $priority,
+                t.note = $note,
                 t.assignedDate = CASE WHEN $assignedDate IS NULL THEN NULL ELSE date($assignedDate) END,
                 t.dueDate = CASE WHEN $dueDate IS NULL THEN NULL ELSE date($dueDate) END,
                 t.finished = $finished, t.status = $status,
@@ -1520,12 +1601,35 @@ def write_service_request_graph(
             "serviceRequestId": parsed["serviceRequestId"],
             "taskName": f"{name}.Task.{task['title']}",
             "title": task["title"], "description": task.get("description"),
+            "ownerIT": task.get("ownerIT"), "ownerUser": task.get("ownerUser"),
+            "tester": task.get("tester"), "priority": task.get("priority"),
+            "note": task.get("note"),
             "assignedDate": task.get("assignedDate"), "dueDate": task.get("dueDate"),
             "finishedDate": task.get("finishedDate"),
             "finished": task.get("finished"), "status": task.get("status") or "OPEN",
             "ownerName": task.get("owner"), "projectName": project_name,
             "templateType": template_type,
         }).consume()
+
+        task_name = f"{name}.Task.{task['title']}"
+        for person_name, relationship in (
+            (task.get("ownerIT"), "HAS_IT_OWNER"),
+            (task.get("ownerUser"), "HAS_USER_OWNER"),
+            (task.get("tester"), "TESTED_BY"),
+        ):
+            if not person_name:
+                continue
+            tx.run(f"""
+                MATCH (t:Task {{name: $taskName}})
+                MERGE (person:Person {{name: $personName}})
+                SET person.id_rc = coalesce(person.id_rc, randomUUID()),
+                    person.projectName = $projectName
+                MERGE (t)-[:{relationship}]->(person)
+            """, {
+                "taskName": task_name,
+                "personName": person_name,
+                "projectName": project_name,
+            }).consume()
 
     if node_id:
         tx.run("""

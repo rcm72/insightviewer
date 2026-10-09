@@ -195,6 +195,139 @@ class MeetingGraphTests(unittest.TestCase):
                 self.assertIn("finishedDate", params)
                 self.assertEqual(params["finishedDate"], finished_date)
 
+        def test_meeting_parser_and_writer_support_additional_action_item_columns(self):
+                html = """
+                <html lang="sl"><body>
+                    <h1>Meeting</h1>
+                    <section><h2>Naloge</h2><table>
+                        <thead><tr>
+                            <th>Naloga</th><th>Lastnik IT</th><th>Lastnik User</th>
+                            <th>Testira</th><th>Opis</th><th>Datum zadolžitve</th>
+                            <th>Rok dokončanja</th><th>Dokončano</th><th>Status</th><th>Opomba</th>
+                        </tr></thead>
+                        <tbody><tr>
+                            <td>Deploy</td><td>IT Alice</td><td>Business Bob</td>
+                            <td>QA Carol</td><td>Deploy build</td><td>01.10.2026</td>
+                            <td>15.10.2026</td><td>Ne</td><td>In progress</td><td>After approval</td>
+                        </tr></tbody>
+                    </table></section>
+                </body></html>
+                """
+                parsed = meeting_graph.parse_meeting_html(html)
+                task = parsed["tasks"][0]
+                self.assertEqual(task["owner"], "IT Alice")
+                self.assertEqual(task["ownerIT"], "IT Alice")
+                self.assertEqual(task["ownerUser"], "Business Bob")
+                self.assertEqual(task["tester"], "QA Carol")
+                self.assertEqual(task["note"], "After approval")
+                self.assertEqual(task["assignedDate"], "2026-10-01")
+                self.assertEqual(task["dueDate"], "2026-10-15")
+                self.assertEqual(task["status"], "In progress")
+
+                tx = FakeTransaction()
+                meeting_graph.write_meeting_graph(tx, "TestProject", html, parsed)
+                task_query, params = next(
+                        (query, parameters) for query, parameters in tx.calls
+                        if "t.ownerIT = $ownerIT" in query
+                )
+                self.assertEqual(params["ownerIT"], "IT Alice")
+                self.assertEqual(params["ownerUser"], "Business Bob")
+                self.assertEqual(params["tester"], "QA Carol")
+                self.assertEqual(params["note"], "After approval")
+                role_relationships = [
+                        query for query, _ in tx.calls
+                        if "MERGE (t)-[:HAS_IT_OWNER]" in query
+                        or "MERGE (t)-[:HAS_USER_OWNER]" in query
+                        or "MERGE (t)-[:TESTED_BY]" in query
+                ]
+                self.assertEqual(len(role_relationships), 3)
+
+    def test_meeting_task_priority_is_parsed_and_written(self):
+        html = """
+        <html lang="sl"><body>
+            <h1>Meeting</h1>
+            <section><h2>Naloge</h2><table>
+                <thead><tr><th>Naloga</th><th>Prioriteta</th><th>Status</th></tr></thead>
+                <tbody><tr><td>Deploy</td><td>Visoka</td><td>V teku</td></tr></tbody>
+            </table></section>
+        </body></html>
+        """
+
+        parsed = meeting_graph.parse_meeting_html(html)
+        task = parsed["tasks"][0]
+        self.assertEqual(task["priority"], "Visoka")
+        self.assertIn("priority: Visoka", parsed["chunks"][0]["text"])
+
+        tx = FakeTransaction()
+        meeting_graph.write_meeting_graph(tx, "TestProject", html, parsed)
+        task_query, params = next(
+            (query, parameters) for query, parameters in tx.calls
+            if "t.priority = $priority" in query
+        )
+        self.assertIn("$priority", task_query)
+        self.assertEqual(params["priority"], "Visoka")
+
+
+class ServiceRequestGraphTests(unittest.TestCase):
+    def test_service_request_metadata_and_task_priority_are_parsed_and_written(self):
+        html = """
+        <html lang="sl"><body>
+            <h1>Zahtevek</h1>
+            <section><h2>📋 Osnovni podatki</h2><table><tbody>
+                <tr><th>Vlagatelj</th><td>Ana Novak</td></tr>
+                <tr><th>Datum zahtevka</th><td>01.10.2026</td></tr>
+                <tr><th>Prioriteta</th><td>Visoka</td></tr>
+                <tr><th>Želeni rok</th><td>15.10.2026</td></tr>
+            </tbody></table></section>
+            <section><h2>🕓 Potek obravnave</h2><table><tbody>
+                <tr><th>Naloga</th><th>Lastnik IT</th><th>Lastnik User</th>
+                    <th>Testira</th><th>Opis</th><th>Prioriteta</th>
+                    <th>Datum zadolžitve</th><th>Rok dokončanja</th>
+                    <th>Dokončano</th><th>Status</th><th>Opomba</th></tr>
+                <tr><td>Izdelava</td><td>IT Ana</td><td>Marko</td>
+                    <td>Eva</td><td>Opis naloge</td><td>Visoka</td>
+                    <td>02.10.2026</td><td>12.10.2026</td>
+                    <td>Ne</td><td>V teku</td><td>Opomba</td></tr>
+            </tbody></table></section>
+        </body></html>
+        """
+
+        parsed = meeting_graph.parse_service_request_html(html)
+        self.assertEqual(parsed["applicant"], "Ana Novak")
+        self.assertEqual(parsed["requestDate"], "2026-10-01")
+        self.assertEqual(parsed["priority"], "Visoka")
+        self.assertEqual(parsed["desiredDueDate"], "2026-10-15")
+        self.assertEqual(parsed["tasks"][0]["priority"], "Visoka")
+
+        class ServiceRequestTransaction(FakeTransaction):
+            def run(self, query, params):
+                self.calls.append((query, params))
+                if "RETURN sr.id_rc AS serviceRequestId" in query:
+                    return FakeResult({
+                        "serviceRequestId": "service-request-id",
+                        "documentId": "document-id",
+                    })
+                return FakeResult()
+
+        tx = ServiceRequestTransaction()
+        meeting_graph.write_service_request_graph(tx, "TestProject", html, parsed)
+        request_query, request_params = next(
+            (query, params) for query, params in tx.calls
+            if "RETURN sr.id_rc AS serviceRequestId" in query
+        )
+        self.assertIn("sr.priority = $priority", request_query)
+        self.assertEqual(request_params["priority"], "Visoka")
+        self.assertEqual(request_params["applicant"], "Ana Novak")
+        self.assertEqual(request_params["requestDate"], "2026-10-01")
+        task_query, task_params = next(
+            (query, params) for query, params in tx.calls
+            if "t.priority = $priority" in query
+        )
+        self.assertEqual(task_params["priority"], "Visoka")
+        self.assertEqual(task_params["ownerIT"], "IT Ana")
+        self.assertEqual(task_params["ownerUser"], "Marko")
+        self.assertEqual(task_params["tester"], "Eva")
+
 
 if __name__ == "__main__":
     unittest.main()
