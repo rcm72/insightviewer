@@ -96,3 +96,29 @@ def format_context_for_prompt(ctx: GraphContext) -> str:
             parts.append(f"  - labels={n.get('labels')} name={n.get('name')} id_rc={n.get('id_rc')}")
     return "\n".join(parts).strip() + "\n"
 
+
+def format_nodes_for_prompt(node_ids: list[str], visited_nodes: list[dict[str, Any]]) -> str:
+    """Describe selected start nodes and a compact traversal neighborhood."""
+    by_id = {
+        str(node.get("id_rc")): node
+        for node in visited_nodes
+        if node.get("id_rc") is not None
+    }
+    parts = ["Selected starting node(s):"]
+    for node_id in node_ids:
+        node = by_id.get(str(node_id), {})
+        labels = node.get("labels") or []
+        name = node.get("name")
+        parts.append(f"- id_rc={node_id}; labels={labels}; name={name or '(not set)'}")
+
+    if visited_nodes:
+        parts.append("Nodes reached in the selected node's graph neighborhood:")
+        for node in visited_nodes[:50]:
+            parts.append(
+                f"- id_rc={node.get('id_rc')}; labels={node.get('labels') or []}; "
+                f"name={node.get('name') or '(not set)'}"
+            )
+        if len(visited_nodes) > 50:
+            parts.append(f"- ({len(visited_nodes) - 50} additional nodes omitted)")
+    return "\n".join(parts)
+

@@ -23,6 +23,12 @@ import sys
 import uuid
 import re  # add near other imports
 
+# Support direct execution of this legacy CLI module as well as app imports.
+if __package__ in (None, ""):
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+
+from app.services.node_types import create_node_types as create_node_types_with_driver
+
 # JWT configuration
 JWT_SECRET = os.environ.get("JWT_SECRET")
 JWT_ALG = "HS256"
@@ -88,35 +94,15 @@ def _ensure_driver():
 # Function to create NodeType nodes
 def create_node_types(projectName=None, createdBy=None, color="#808080", shape="ellipse", size=25, url="url"):
     _ensure_driver()
-    query = """
-    MATCH (n)
-    WHERE ($projectName IS NULL OR n.projectName = $projectName)
-      AND NOT n:NodeType
-    UNWIND labels(n) AS label
-    WITH DISTINCT label
-    MERGE (nt:NodeType {name: label, projectName: $projectName})
-    SET nt.id_rc = coalesce(nt.id_rc, randomUUID()),
-        nt.shape = coalesce(nt.shape, $shape),
-        nt.color = coalesce(nt.color, $color),
-        nt.size = coalesce(nt.size, $size),
-        nt.url = coalesce(nt.url, $url)
-    FOREACH (_ IN CASE WHEN $createdBy IS NOT NULL THEN [1] ELSE [] END |
-      SET nt.createdBy = coalesce(nt.createdBy, $createdBy)
+    node_types = create_node_types_with_driver(
+        driver,
+        project_name=projectName,
+        created_by=createdBy,
+        color=color,
+        shape=shape,
+        size=size,
+        url=url,
     )
-    RETURN nt.name;
-    """
-    with driver.session() as session:
-        result = session.run(
-            query,
-            projectName=projectName,
-            createdBy=createdBy,
-            color=color,
-            shape=shape,
-            size=size,
-            url=url,
-        )
-        node_types = [record["nt.name"] for record in result]
-    
     print("Created NodeType nodes:", node_types)
 
 @nodes_bp.route("/update-node-properties", methods=["POST"])

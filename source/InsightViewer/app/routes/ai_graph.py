@@ -15,7 +15,7 @@ from ai.selection import (
     validate_selection,
 )
 from ai.types import ChatRequest, ModelSelection
-from graph.context import fetch_graph_context, format_context_for_prompt
+from graph.context import fetch_graph_context, format_context_for_prompt, format_nodes_for_prompt
 from routes.retrieval import build_chunks_by_depth_response
 
 
@@ -277,6 +277,7 @@ def ask_graph_by_depth():
         schema_block = "\n\n".join(schema_parts)
 
         chunks_block = _chunks_to_prompt(chunks, max_chars=max_chunk_chars)
+        nodes_block = format_nodes_for_prompt(node_ids, visited_nodes)
         system_prompt = str(
             payload.get("system")
             or (
@@ -294,9 +295,12 @@ def ask_graph_by_depth():
             f"- traversal_depth: {depth}\n"
             f"- visited_nodes_count: {len(visited_nodes)}\n"
             f"- chunks_count: {len(chunks)}\n\n"
+            f"{nodes_block}\n\n"
             "Evidence chunks:\n"
             f"{chunks_block}\n\n"
             "Task instructions:\n"
+            "- The user is asking about the selected starting node(s) listed above; use that identity and the neighborhood as context.\n"
+            "- Do not ask the user for a node ID or name when a selected starting node is provided. If the evidence is insufficient, say what the graph context does show and what is missing.\n"
             "- Prefer the evidence chunks when answering; use your general knowledge to fill gaps when chunks are insufficient.\n"
             "- Use only label names and relationship types from the graph context above.\n"
             "- Do NOT add projectName filters to any Cypher query you write.\n"
