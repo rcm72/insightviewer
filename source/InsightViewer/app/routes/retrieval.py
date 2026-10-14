@@ -404,17 +404,6 @@ def _fulltext_hits(session, *, index_name, query_text, node_type, project, limit
         project=project,
         limit=limit,
     ).data()
-
-    if not rows and project:
-        rows = session.run(
-            cypher,
-            index_name=index_name,
-            query_text=query_text,
-            node_type=node_type,
-            project=None,
-            limit=limit,
-        ).data()
-
     return rows
 
 

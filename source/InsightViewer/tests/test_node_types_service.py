@@ -55,6 +55,16 @@ class NodeTypesServiceTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Neo4j driver is required"):
             create_node_types(None, project_name="demo")
 
+    def test_global_scope_discovers_labels_without_null_merge_properties(self):
+        driver = _FakeDriver()
+
+        node_types = create_node_types(driver, global_scope=True)
+
+        self.assertEqual(node_types, ["Person", "Organization"])
+        self.assertIn("WHERE TRUE", driver.fake_session.query)
+        self.assertIn("scope: 'GLOBAL'", driver.fake_session.query)
+        self.assertNotIn("projectName: $projectName", driver.fake_session.query)
+
 
 if __name__ == "__main__":
     unittest.main()

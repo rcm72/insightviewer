@@ -22,11 +22,13 @@ from ai.selection import (
 from ai.types import ChatRequest, ModelSelection
 from graph.context import fetch_graph_context, format_context_for_prompt
 from routes.retrieval import build_fulltext_error_response, build_query_cypher_response
+from services.node_types import create_node_types
 
 ## BUILDERS
 
 JWT_SECRET = os.environ["JWT_SECRET"]
 JWT_ALG = "HS256"
+FULLTEXT_ANALYZER = "simple"
 
 global_search_bp = Blueprint("global_search", __name__, url_prefix="/api/search")
 
@@ -335,14 +337,31 @@ def _fetch_all_node_labels(session):
 def _read_fulltext_index_info(session, index_name):
     rows = session.run(
         """
-        SHOW INDEXES YIELD name, type, state, labelsOrTypes, properties
+        SHOW INDEXES YIELD name, type, state, labelsOrTypes, properties, options
         WHERE type = 'FULLTEXT' AND name = $index_name
-        RETURN name, type, state, labelsOrTypes AS labels, properties
+        RETURN name, type, state, labelsOrTypes AS labels, properties, options
         LIMIT 1
         """,
         index_name=index_name,
     ).data()
     return rows[0] if rows else None
+
+
+def _fulltext_index_analyzer(index_info):
+    options = (index_info or {}).get("options") or {}
+    index_config = options.get("indexConfig") or {}
+    return index_config.get("fulltext.analyzer")
+
+
+def _build_fulltext_index_create_cypher(index_name, labels, properties):
+    labels_pattern = "|".join(_quote_cypher_identifier(label) for label in labels)
+    property_clause = ", ".join(f"n.{_quote_cypher_identifier(name)}" for name in properties)
+    return (
+        f"CREATE FULLTEXT INDEX {_quote_cypher_identifier(index_name)} IF NOT EXISTS "
+        f"FOR (n:{labels_pattern}) ON EACH [{property_clause}] "
+        "OPTIONS {indexConfig: {`fulltext.analyzer`: 'simple', "
+        "`fulltext.eventually_consistent`: false}}"
+    )
 
 
 def _lookup_nodes_by_type_and_name(session, node_type, name, project):
@@ -969,6 +988,7 @@ def fulltext_index_status():
             "state": index_info.get("state") if index_info else None,
             "labels": index_info.get("labels") if index_info else None,
             "properties": index_info.get("properties") if index_info else None,
+            "analyzer": _fulltext_index_analyzer(index_info),
         }
     )
 
@@ -987,15 +1007,6 @@ def fulltext_index_ensure():
         raw_properties = payload.get("properties", None)
         raw_labels = payload.get("labels", None)
 
-        DEFAULT_LABELS = [
-            "DocumentHTML",
-            "Chunk",
-            "MeetingNote",
-            "Task",
-            "Meeting",
-            "Person",
-            "Project",
-        ]
         REQUIRED_PROPERTIES = [
             "name",
             "id_rc",
@@ -1016,23 +1027,24 @@ def fulltext_index_ensure():
             seen_props.add(prop)
             properties.append(prop)
 
-        requested_labels = _normalize_fulltext_labels(raw_labels) if raw_labels is not None else DEFAULT_LABELS
+        requested_labels = _normalize_fulltext_labels(raw_labels) if raw_labels is not None else None
     except ValueError as e:
         return jsonify({"success": False, "error": str(e)}), 400
 
     try:
-        with driver.session() as session:
-            # decide labels to use (requested or discovered)
-            labels = requested_labels or _fetch_all_node_labels(session)
-            if not labels:
-                return jsonify({"success": False, "error": "Could not discover any labels for fulltext index creation."}), 400
+        # A single shared index must cover labels from every project. Explicit
+        # labels still allow callers to request a narrower index.
+        labels = requested_labels
+        if labels is None:
+            labels = sorted(set(create_node_types(driver, global_scope=True)))
+        if not labels:
+            return jsonify({
+                "success": False,
+                "error": "No node labels were found for fulltext index creation.",
+            }), 400
 
-            labels_pattern = "|".join(_quote_cypher_identifier(label) for label in labels)
-            property_clause = ", ".join(f"n.{_quote_cypher_identifier(name)}" for name in properties)
-            create_cypher = (
-                f"CREATE FULLTEXT INDEX {_quote_cypher_identifier(index_name)} IF NOT EXISTS "
-                f"FOR (n:{labels_pattern}) ON EACH [{property_clause}]"
-            )
+        with driver.session() as session:
+            create_cypher = _build_fulltext_index_create_cypher(index_name, labels, properties)
 
             before = _read_fulltext_index_info(session, index_name)
 
@@ -1041,10 +1053,15 @@ def fulltext_index_ensure():
             if before:
                 existing_labels = [str(l) for l in (before.get("labels") or [])]
                 existing_props = [str(p) for p in (before.get("properties") or [])]
+                existing_analyzer = _fulltext_index_analyzer(before)
 
                 # Normalize for comparison
-                if set(existing_labels) != set(labels) or set(existing_props) != set(properties):
-                    # Drop existing index then recreate with desired labels/properties
+                if (
+                    set(existing_labels) != set(labels)
+                    or set(existing_props) != set(properties)
+                    or existing_analyzer != FULLTEXT_ANALYZER
+                ):
+                    # Drop and recreate if labels, properties, or analyzer differ.
                     session.run(f"DROP INDEX {_quote_cypher_identifier(index_name)} IF EXISTS").consume()
                     session.run(create_cypher).consume()
                     dropped_and_recreated = True
@@ -1066,6 +1083,7 @@ def fulltext_index_ensure():
             "state": after.get("state") if after else None,
             "labels": after.get("labels") if after else None,
             "properties": after.get("properties") if after else properties,
+            "analyzer": _fulltext_index_analyzer(after),
             "used_labels": labels,
         }
     )

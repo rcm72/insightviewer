@@ -113,6 +113,29 @@ class RetrievalContractTests(unittest.TestCase):
 
         self.assertEqual(body["telemetry"]["strategy_used"], "fulltext_to_cypher")
 
+    def test_fulltext_search_does_not_retry_without_project_filter(self):
+        class _NoMatchSession:
+            def __init__(self):
+                self.calls = []
+
+            def run(self, query, **kwargs):
+                self.calls.append(kwargs)
+                return _FakeResult([])
+
+        session = _NoMatchSession()
+        rows = retrieval._fulltext_hits(
+            session,
+            index_name="iv_global_search_idx",
+            query_text="test",
+            node_type="",
+            project="TestProject",
+            limit=24,
+        )
+
+        self.assertEqual(rows, [])
+        self.assertEqual(len(session.calls), 1)
+        self.assertEqual(session.calls[0]["project"], "TestProject")
+
     def test_chunks_by_depth_contract(self):
         response = self.client.post(
             "/api/retrieval/chunks-by-depth",
