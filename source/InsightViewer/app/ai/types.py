@@ -32,6 +32,7 @@ class ChatResponse:
 class EmbedRequest:
     text: str
     model: str
+    dimensions: int | None = None
 
 
 @dataclass(frozen=True)

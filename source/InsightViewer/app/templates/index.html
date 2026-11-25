@@ -265,6 +265,7 @@ Copyright (c) 2025 Robert Čmrlec
         </div>
         <div style="padding:8px;">
             <label for="customLoadGraphSelect">Graph name</label>
+            <input id="customLoadGraphFilter" type="search" placeholder="Filter graphs by name..." autocomplete="off" oninput="filterCustomGraphs()" style="width:100%; box-sizing:border-box; margin-top:6px;" disabled>
             <select id="customLoadGraphSelect" style="width:100%; margin-top:6px;">
               <option value="">Loading...</option>
             </select>
@@ -278,15 +279,55 @@ Copyright (c) 2025 Robert Čmrlec
     
     <script>
       // Dialog helpers for Load Custom Graph - replaces previous simple open/close
+      let customLoadGraphNames = [];
+
+      function filterCustomGraphs() {
+        const sel = document.getElementById('customLoadGraphSelect');
+        const filter = document.getElementById('customLoadGraphFilter');
+        const loadBtn = document.getElementById('loadCustomGraphBtn');
+        if (!sel || !filter || !loadBtn) return;
+
+        const searchText = filter.value.trim().toLocaleLowerCase();
+        const matchingNames = customLoadGraphNames.filter(name =>
+          name.toLocaleLowerCase().includes(searchText)
+        );
+        sel.innerHTML = '';
+
+        if (!matchingNames.length) {
+          const option = document.createElement('option');
+          option.value = '';
+          option.textContent = customLoadGraphNames.length
+            ? '(no matching graphs)'
+            : '(no saved graphs)';
+          sel.appendChild(option);
+          loadBtn.disabled = true;
+          return;
+        }
+
+        matchingNames.forEach(name => {
+          const option = document.createElement('option');
+          option.value = name;
+          option.textContent = name;
+          sel.appendChild(option);
+        });
+        loadBtn.disabled = false;
+      }
+
       async function openLoadCustomGraphDialog(){
         const d = document.getElementById('LoadCustomGraph');
         const sel = document.getElementById('customLoadGraphSelect');
+        const filter = document.getElementById('customLoadGraphFilter');
         const msg = document.getElementById('customLoadGraphMsg');
         const loadBtn = document.getElementById('loadCustomGraphBtn');
         if(!d || !sel) return;
         // show dialog immediately
         d.style.display = 'block';
         sel.innerHTML = '<option value="">Loading...</option>';
+        customLoadGraphNames = [];
+        if (filter) {
+          filter.value = '';
+          filter.disabled = true;
+        }
         msg.style.display = 'none';
         loadBtn.disabled = true;
 
@@ -305,35 +346,29 @@ Copyright (c) 2025 Robert Čmrlec
           else if (data && Array.isArray(data.graphs)) list = data.graphs;
           else if (data && Array.isArray(data.items)) list = data.items;
           
-          sel.innerHTML = '';
-          if (list.length === 0) {
+          customLoadGraphNames = list
+            .map(g => (typeof g === 'string') ? g : (g.name || g.title || g.label || JSON.stringify(g)))
+            .filter(name => typeof name === 'string' && name.trim());
+
+          if (customLoadGraphNames.length === 0) {
             sel.innerHTML = '<option value="">(no saved graphs)</option>';
             msg.textContent = 'No saved custom graphs found.';
             msg.style.display = 'block';
             loadBtn.disabled = true;
           } else {
-            const placeholder = document.createElement('option');
-            placeholder.value = '';
-            placeholder.textContent = '-- select graph --';
-            sel.appendChild(placeholder);
-            list.forEach(g => {
-              const opt = document.createElement('option');
-              // support objects with name property
-              const name = (typeof g === 'string') ? g : (g.name || g.title || g.label || JSON.stringify(g));
-              opt.value = name;
-              opt.textContent = name;
-              sel.appendChild(opt);
-            });
-            loadBtn.disabled = false;
+            if (filter) filter.disabled = false;
+            filterCustomGraphs();
             // focus/select first real option
             setTimeout(()=> {
+              if (sel.options.length) sel.selectedIndex = 0;
               sel.focus();
-              if (sel.options.length>1) sel.selectedIndex = 1;
             }, 50);
           }
         } catch (err) {
           console.error('Failed to load custom graphs', err);
+          customLoadGraphNames = [];
           sel.innerHTML = '<option value="">(load failed)</option>';
+          if (filter) filter.disabled = true;
           msg.textContent = 'Failed to load list. See console for details.';
           msg.style.display = 'block';
           loadBtn.disabled = true;
@@ -469,7 +504,8 @@ RETURN s, r, t
                 <select id="gs-global-retrieval-mode" style="width:100%; background:#eef5ff; color:#0f3d75; border:1px solid #8fb5e6;">
                   <option value="auto" selected style="color:#0f3d75; background:#eef5ff;">Smart (semantic + keyword fallback)</option>
                   <option value="vector" style="color:#1f4f8f; background:#eef5ff;">Semantic only</option>
-                  <option value="fulltext" style="color:#2f5fa1; background:#eef5ff;">Keyword only</option>
+                  <option value="fulltext" style="color:#2f5fa1; background:#eef5ff;">Full-text index only</option>
+                  <option value="name_text" style="color:#2f5fa1; background:#eef5ff;">By name and text (contains)</option>
                 </select>
                 <div id="gs-search-method-help" style="font-size:12px; color:#666;">Smart search tries semantic results first, then keyword fallback if needed.</div>
               </div>
@@ -503,6 +539,11 @@ RETURN s, r, t
                   <div style="display:grid; gap:4px;">
                     <label for="gs-global-vector-index">Vector index name</label>
                     <input id="gs-global-vector-index" type="text" value="chunk_embedding_index" placeholder="chunk_embedding_index" style="background:#effaf0; color:#1d4d2a; border:1px solid #8fcd99;">
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                      <button type="button" onclick="checkGuidedVectorIndex()">Check index</button>
+                      <button type="button" onclick="ensureGuidedVectorIndex()">Create index</button>
+                    </div>
+                    <div id="gs-vector-index-status" role="status" aria-live="polite" style="font-size:12px; color:#666;"></div>
                   </div>
                 </div>
 
@@ -522,6 +563,16 @@ RETURN s, r, t
                     <label for="gs-global-embed-model">Embedding model</label>
                     <input id="gs-global-embed-model" type="text" value="mxbai-embed-large:latest" placeholder="mxbai-embed-large:latest" style="background:#effaf0; color:#1d4d2a; border:1px solid #8fcd99;">
                   </div>
+                </div>
+
+                <div style="display:grid; gap:6px; border-top:1px solid #ddd; padding-top:10px;">
+                  <strong>Vector embeddings</strong>
+                  <div id="gs-vector-embedding-coverage" role="status" aria-live="polite" style="font-size:12px; color:#666;">Checking project embedding coverage…</div>
+                  <div id="gs-vector-embedding-job" role="status" aria-live="polite" style="font-size:12px; color:#666;"></div>
+                  <div>
+                    <button id="gs-generate-embeddings" type="button" onclick="generateGuidedVectorEmbeddings()" disabled>Generate missing embeddings</button>
+                  </div>
+                  <div style="font-size:12px; color:#666;">Generates only missing vectors for Chunk nodes in your authenticated project. The selected model must match the model used by existing vectors; the vector index must be ONLINE and configured for 1024 dimensions.</div>
                 </div>
               </div>
             </details>
@@ -659,7 +710,8 @@ RETURN s, r, t
         <details>
             <summary>Edit</summary>
             <ul>
-                <li onclick="openHtml()">Edit html for user</li>
+                <li onclick="openHtml()">Show HTML</li>
+                <li onclick="openHtmlEditor()">Edit HTML with CKEditor</li>
                 <li onclick="openHtml_v4()">Edit html for user old version</li>
                 <li onclick="openHtml_jsEditor()">Edit html for power user</li>
             </ul>
@@ -736,13 +788,14 @@ RETURN s, r, t
             <span>Add Existing Nodes</span>
             <button onclick="closeExistingNodesDialog()">X</button>
         </div>
-        <div style="display:flex; flex-direction:column; gap:8px; width:320px;">
+      <div class="existing-nodes-content">
             <label for="existing-node-type-selector">Select Node Type:</label>
             <select id="existing-node-type-selector" style="width:100%;" onchange="onExistingNodeTypeChange(this.value)"></select>
 
-            <div>
-                <label>Existing Nodes (click to add):</label>
-                <div id="existing-nodes-list" style="max-height:260px; overflow:auto; border:1px solid #ccc; padding:6px;"></div>
+        <div class="existing-nodes-list-section">
+              <label for="existing-nodes-filter">Existing Nodes (click to add):</label>
+              <input id="existing-nodes-filter" type="search" placeholder="Filter by name or short name" autocomplete="off" oninput="renderExistingNodeList()" style="width:100%; box-sizing:border-box; margin:4px 0 8px;">
+          <div id="existing-nodes-list"></div>
             </div>
 
             <div style="display:flex; gap:8px; justify-content:flex-end;">
@@ -773,6 +826,15 @@ RETURN s, r, t
     <div id="html-editor-preview" style="display:none; margin-top:8px; border:1px solid #eee; height:260px;">
       <iframe id="html-preview-iframe" title="Preview" style="width:100%; height:100%;" sandbox="allow-same-origin allow-scripts"></iframe>
     </div>
+</div>
+
+<!-- Rendered node HTML preview dialog -->
+<div id="html-preview-dialog" class="floating-dialog" style="display:none; top:5vh; left:5vw; width:70vw; height:85vh; max-width:95vw; max-height:70vh; min-width:min(320px, 90vw); min-height:240px; resize:both; overflow:auto;">
+    <div class="dialog-header">
+      <span>HTML Preview</span>
+      <button type="button" onclick="closeHtmlPreviewDialog()">Close</button>
+    </div>
+    <iframe id="html-preview-frame" title="Rendered HTML preview" src="about:blank" sandbox="allow-scripts allow-forms" style="display:block; width:calc(100% - 18px); height:calc(100% - 54px); margin:0 18px 18px 0; border:0; background:#fff;"></iframe>
 </div>
 
 <!-- AI Snippet Dialog -->
@@ -1078,7 +1140,7 @@ window.showHtmlEditorDialog = function() {
 
 <script src="{{ url_for('static', filename='js/xlsx.full.min.js') }}"></script>
 <script src="{{ url_for('static', filename='cypherExport.js', v='3') }}"></script>
-<script src="{{ url_for('static', filename='indexScript.js', v='3') }}"></script>
+<script src="{{ url_for('static', filename='indexScript.js', v='4') }}"></script>
 <script src="{{ url_for('static', filename='globalSearch.js') }}"></script>
 </body>
 </html>

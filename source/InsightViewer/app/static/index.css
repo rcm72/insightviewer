@@ -123,7 +123,7 @@ body {
     /* allow height to grow but cap to viewport so dialog can expand */
     height: auto;
     max-height: calc(100vh - 80px);
-    min-width: 300px;
+    min-width: 400px;
     min-height: 220px;
     border: 1px solid #ccc;
     background-color: #fff;
@@ -132,6 +132,41 @@ body {
     overflow: auto; /* ensure scroll if content overflows */
     display: none;
     box-sizing: border-box;
+}
+
+#existing-nodes-dialog {
+    width: min(640px, 95vw);
+    height: min(560px, 85vh);
+    min-width: min(400px, 95vw);
+    min-height: min(360px, 85vh);
+    max-width: 95vw;
+    max-height: 90vh;
+    resize: both;
+}
+
+#existing-nodes-dialog .existing-nodes-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    height: calc(100% - 32px);
+    padding: 8px;
+    box-sizing: border-box;
+}
+
+#existing-nodes-dialog .existing-nodes-list-section {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+}
+
+#existing-nodes-dialog #existing-nodes-list {
+    flex: 1;
+    min-height: 120px;
+    overflow: auto;
+    border: 1px solid #ccc;
+    padding: 6px;
 }
 
 #edit-data-dialog {

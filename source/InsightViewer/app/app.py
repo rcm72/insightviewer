@@ -232,16 +232,20 @@ from routes.retrieval import retrieval_bp
 from routes.ops_vector import ops_vector_bp
 from routes.templates_api import bp as templates_api_bp
 from routes.meeting_graph import meeting_graph_bp
+from oracle_bridge.routes import oracle_bp, packages_page
 
 # Register Blueprints
 app.register_blueprint(relations_bp, url_prefix="/relations")
-app.register_blueprint(nodes_bp, url_prefix="/nodes")
+app.register_blueprint(nodes_bp)
 app.register_blueprint(ai_graph_bp)
 app.register_blueprint(global_search_bp)
 app.register_blueprint(retrieval_bp)
 app.register_blueprint(ops_vector_bp)
 app.register_blueprint(templates_api_bp, url_prefix="/api")
 app.register_blueprint(meeting_graph_bp)
+app.register_blueprint(oracle_bp)
+app.add_url_rule("/oracle_packages", endpoint="oracle_packages_page", view_func=packages_page, methods=["GET"])
+app.add_url_rule("/oracle_packages.html", endpoint="oracle_packages_html", view_func=packages_page, methods=["GET"])
 
 @app.route("/")
 def root():
@@ -765,10 +769,13 @@ def expand_node():
         data = request.get_json() or {}
         node_id = data.get("node_id")
         edge_types = data.get("edge_types")  # Read the edge_types parameter
+        direction = (data.get("direction") or "both").strip().lower()
         print(f"expand_node called with node_id: {node_id}")
 
         if not node_id:
             return jsonify({"success": False, "error": "Missing node ID"}), 400
+        if direction not in {"incoming", "outgoing", "both"}:
+            return jsonify({"success": False, "error": "Invalid direction"}), 400
 
         # If edge_types is provided, we can add a filter to the query to only return relationships of those types.    
         edge_type_filter = ""
@@ -776,9 +783,19 @@ def expand_node():
             edge_type_filter = "AND type(r) IN $edge_types"
 
         
-        query = """
-        MATCH (n)-[r]-(m)
-        WHERE (n.id_rc = $node_id OR m.id_rc = $node_id)
+        if direction == "incoming":
+            match_pattern = "MATCH (m)-[r]->(n)"
+            node_condition = "n.id_rc = $node_id"
+        elif direction == "outgoing":
+            match_pattern = "MATCH (n)-[r]->(m)"
+            node_condition = "n.id_rc = $node_id"
+        else:
+            match_pattern = "MATCH (n)-[r]-(m)"
+            node_condition = "(n.id_rc = $node_id OR m.id_rc = $node_id)"
+
+        query = f"""
+        {match_pattern}
+        WHERE {node_condition}
         AND NOT 'CustomGraph' IN labels(n)
         AND NOT 'CustomGraph' IN labels(m)
         AND NOT 'customGraphNode' IN labels(n)
@@ -2596,8 +2613,12 @@ def get_edge_types_for_node(node_id):
     project = user_data["project"]
 
     try:
-        query = """
-        MATCH (n)-[r]->() WHERE n.id_rc = $node_id
+        direction = (request.args.get("direction") or "outgoing").strip().lower()
+        if direction not in {"incoming", "outgoing"}:
+            return jsonify({"success": False, "error": "Invalid direction"}), 400
+        relationship_pattern = "(n)<-[r]-()" if direction == "incoming" else "(n)-[r]->()"
+        query = f"""
+        MATCH {relationship_pattern} WHERE n.id_rc = $node_id
         RETURN DISTINCT type(r) AS edge_type
         """
         with driver.session() as session:

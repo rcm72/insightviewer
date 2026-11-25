@@ -8,3 +8,27 @@
     display: block;
   }
   
+  .content {
+    display: none;
+    transition: all 0.3s ease;
+}
+
+.content.open {
+    display: block;
+}
+
+/* Tables created by CKEditor */
+figure.table {
+    margin: 1em 0;
+}
+
+figure.table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+figure.table th,
+figure.table td {
+    border: 1px solid #ddd;
+    padding: 10px;
+}

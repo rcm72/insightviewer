@@ -8,6 +8,7 @@ from neo4j.exceptions import ClientError, CypherSyntaxError
 
 from ai.registry import ProviderRegistry
 from ai.types import EmbedRequest
+from ai.vector_config import VECTOR_DIMENSIONS
 
 JWT_SECRET = os.environ["JWT_SECRET"]
 JWT_ALG = "HS256"
@@ -272,8 +273,8 @@ def _normalize_fulltext_request(payload, user_project):
 
 def _normalize_retrieval_mode(payload: dict[str, Any]) -> dict[str, Any]:
     mode = str(payload.get("retrieval_mode") or "auto").strip().lower()
-    if mode not in {"auto", "vector", "fulltext"}:
-        raise ValueError("retrieval_mode must be one of: auto, vector, fulltext")
+    if mode not in {"auto", "vector", "fulltext", "name_text"}:
+        raise ValueError("retrieval_mode must be one of: auto, vector, fulltext, name_text")
 
     vector_index_name = str(payload.get("vector_index_name") or "chunk_embedding_index").strip()
     if not vector_index_name:
@@ -407,6 +408,41 @@ def _fulltext_hits(session, *, index_name, query_text, node_type, project, limit
     return rows
 
 
+def _name_text_hits(session, *, query_text, node_type, project, limit):
+        """Search common node name and text fields using case-insensitive substrings."""
+        cypher = """
+        MATCH (node)
+        WHERE node.id_rc IS NOT NULL
+            AND ($node_type = '' OR $node_type IN labels(node))
+            AND ($project IS NULL OR node.projectName = $project OR node.projectName IS NULL)
+            AND (
+                toLower(toString(coalesce(node.name, ''))) CONTAINS toLower($query_text)
+                OR toLower(toString(coalesce(node.title, ''))) CONTAINS toLower($query_text)
+                OR toLower(toString(coalesce(node.text, ''))) CONTAINS toLower($query_text)
+                OR toLower(toString(coalesce(node.html, ''))) CONTAINS toLower($query_text)
+                OR toLower(toString(coalesce(node.description, ''))) CONTAINS toLower($query_text)
+            )
+        WITH node,
+            CASE
+                WHEN coalesce(toString(node.name), '') <> '' THEN toString(node.name)
+                WHEN coalesce(toString(node.title), '') <> '' THEN toString(node.title)
+                WHEN coalesce(toString(node.description), '') <> '' THEN toString(node.description)
+                WHEN coalesce(toString(node.text), '') <> '' THEN substring(toString(node.text), 0, 120)
+                ELSE substring(toString(node.html), 0, 120)
+            END AS display_name
+        RETURN node.id_rc AS id_rc, display_name AS name, labels(node) AS labels, 1.0 AS score
+        ORDER BY name
+        LIMIT $limit
+        """
+        return session.run(
+                cypher,
+                query_text=query_text,
+                node_type=node_type,
+                project=project,
+                limit=limit,
+        ).data()
+
+
 def _vector_hits(
         session,
         *,
@@ -421,7 +457,13 @@ def _vector_hits(
 ):
         registry = ProviderRegistry()
         embed_provider = registry.get_provider(provider)
-        qvec = embed_provider.embed(EmbedRequest(text=query_text, model=embedding_model)).embedding
+        qvec = embed_provider.embed(
+            EmbedRequest(text=query_text, model=embedding_model, dimensions=VECTOR_DIMENSIONS)
+        ).embedding
+        if len(qvec) != VECTOR_DIMENSIONS:
+            raise ValueError(
+                f"Embedding model returned {len(qvec)} dimensions; expected {VECTOR_DIMENSIONS}."
+            )
 
         cypher = """
         CALL db.index.vector.queryNodes($vector_index_name, $vector_k, $qvec) YIELD node, score
@@ -518,6 +560,16 @@ def retrieve_nodes_for_query(session, payload, user_project):
         )
         strategy_used = "fulltext_query"
 
+    if retrieval_mode["mode"] == "name_text":
+        rows = _name_text_hits(
+            session,
+            query_text=normalized["query"],
+            node_type=normalized["node_type"],
+            project=normalized["project"],
+            limit=normalized["limit"],
+        )
+        strategy_used = "name_text_query"
+
     if retrieval_mode["mode"] == "vector" and vector_error and not rows:
         raise ValueError(f"Vector retrieval failed: {vector_error}")
 
@@ -602,6 +654,12 @@ def build_query_cypher_response(session, payload, user_project):
             },
         }
 
+    cypher_strategy = {
+        "vector_query": "vector_to_cypher",
+        "fulltext_query": "fulltext_to_cypher",
+        "name_text_query": "name_text_to_cypher",
+    }.get(retrieval["telemetry"]["strategy_used"], "fulltext_to_cypher")
+
     return {
         "status_code": 200,
         "body": {
@@ -614,7 +672,7 @@ def build_query_cypher_response(session, payload, user_project):
             },
             "telemetry": {
                 **retrieval["telemetry"],
-                "strategy_used": "fulltext_to_cypher",
+                "strategy_used": cypher_strategy,
             },
         },
     }

@@ -478,16 +478,15 @@ def connect_custom_graph_position():
     if not custom_graph_name or not nodes:
         return jsonify({"success": False, "error": "Missing required parameters"}), 400
 
-    id_rc = str(uuid.uuid4())
+    # Each position record needs its own identity, separate from the source node.
     query = """
                 MATCH (g:CustomGraph {name: $customGraphName})
                 UNWIND $nodeDataCgPos AS nodeDataCgPos
                 WITH nodeDataCgPos,
-                    'cg_' + nodeDataCgPos.properties.name + '.' + $customGraphName AS customName,
-                    $id_rc AS idRc
+                    'cg_' + nodeDataCgPos.properties.name + '.' + $customGraphName AS customName
                 MERGE (newNodeCg:CustomGraphNode { name: customName })
                 ON CREATE SET
-                    newNodeCg.id_rc       = idRc,
+                    newNodeCg.id_rc       = randomUUID(),
                     newNodeCg.original_id = nodeDataCgPos.vis_id,
                     newNodeCg.x           = nodeDataCgPos.x,
                     newNodeCg.y           = nodeDataCgPos.y,
@@ -503,7 +502,7 @@ def connect_custom_graph_position():
 
     try:
         with driver.session() as session:
-            result=session.run(query, customGraphName=custom_graph_name, nodeDataCgPos=nodes, id_rc=id_rc)
+            result=session.run(query, customGraphName=custom_graph_name, nodeDataCgPos=nodes)
 
             for record in result:
                 # print properties name
@@ -550,10 +549,12 @@ def get_nodes_by_type():
         node_type = data.get("nodeType")
         if not node_type:
             return jsonify({"success": False, "error": "Missing 'nodeType' in request"}), 400
+        all_node_types = node_type == "__ALL__"
 
         query = """
         MATCH (n)
-        WHERE $nodeType IN labels(n)
+        WHERE ($allNodeTypes OR $nodeType IN labels(n))
+          AND n.projectName = $project
         RETURN id(n) AS id, n.name AS name, properties(n) AS properties, labels(n) AS labels
         LIMIT 1000
         """
@@ -564,7 +565,12 @@ def get_nodes_by_type():
             return str(v)
 
         with driver.session() as session:
-            result = session.run(query, nodeType=node_type)
+            result = session.run(
+                query,
+                nodeType=node_type,
+                allNodeTypes=all_node_types,
+                project=project,
+            )
             nodes_list = []
             for record in result:
                 rec_props = record["properties"] if record["properties"] is not None else {}
@@ -734,48 +740,32 @@ def remove_node_custom_graph():
 
     _ensure_driver()
     """
-    Remove references so a node no longer appears in custom graph.
-    Accepts JSON: { "node_id": "<neo4j_internal_id_or_id_rc_or_id_property>" }
+    Remove one source node's saved position from the named custom graph.
+    Accepts JSON: {"node_id": "<source id_rc>", "custom_graph_name": "<name>"}
     """
     try:
         data = request.json or {}
         node_id = data.get("node_id")
-        if not node_id:
-            return jsonify({"success": False, "error": "Missing 'node_id' in request"}), 400
+        custom_graph_name = str(data.get("custom_graph_name") or "").strip()
+        if not node_id or not custom_graph_name:
+            return jsonify({
+                "success": False,
+                "error": "Both 'node_id' and 'custom_graph_name' are required",
+            }), 400
 
-        # Determine if node_id looks like an integer (neo4j internal id)
-        if re.fullmatch(r"\d+", str(node_id)):
-            # Match by internal id
-            id_int = int(node_id)
-            query = """
-            MATCH (n)
-            WHERE id(n) = $id_int
-            // remove all relationships from/to the node (so it's not attached to CustomGraph)
-            OPTIONAL MATCH (n)-[r]-()
-            DELETE r
-            // remove customGraphNode label if present
-            REMOVE n:customGraphNode
-            WITH n
-            // delete associated position node(s) if present
-            OPTIONAL MATCH (p:customGraphNodePosition {id: n.id})
-            DETACH DELETE p
-            RETURN count(n) AS removed
-            """
-            params = {"id_int": id_int}
-        else:
-            # Match by id_rc or id property
-            query = """
-            MATCH (n)
-            WHERE n.id_rc = $node_id OR n.id = $node_id
-            OPTIONAL MATCH (n)-[r]-()
-            DELETE r
-            REMOVE n:customGraphNode
-            WITH n
-            OPTIONAL MATCH (p:customGraphNodePosition {id: n.id})
-            DETACH DELETE p
-            RETURN count(n) AS removed
-            """
-            params = {"node_id": str(node_id)}
+        # Delete only this graph's layout node(s). The original node and its
+        # relationships to the rest of the graph must remain untouched.
+        query = """
+        MATCH (g:CustomGraph {name: $custom_graph_name})-[:isPartOf]-(position:CustomGraphNode)
+        WHERE position.original_id = $node_id
+        WITH DISTINCT position
+        DETACH DELETE position
+        RETURN count(position) AS removed
+        """
+        params = {
+            "node_id": str(node_id),
+            "custom_graph_name": custom_graph_name,
+        }
 
         with driver.session() as session:
             result = session.run(query, **params)

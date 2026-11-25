@@ -359,7 +359,8 @@ def _build_fulltext_index_create_cypher(index_name, labels, properties):
     return (
         f"CREATE FULLTEXT INDEX {_quote_cypher_identifier(index_name)} IF NOT EXISTS "
         f"FOR (n:{labels_pattern}) ON EACH [{property_clause}] "
-        "OPTIONS {indexConfig: {`fulltext.analyzer`: 'simple', "
+        "OPTIONS {indexConfig: {"
+        f"`fulltext.analyzer`: '{FULLTEXT_ANALYZER}', "
         "`fulltext.eventually_consistent`: false}}"
     )
 

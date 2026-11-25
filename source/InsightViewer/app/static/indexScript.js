@@ -505,6 +505,7 @@ async function submitNode(shape) {
        if (result.success) {
            console.log("Submitting node with result.id:", result.node_id); // Debugging log
            data.id = result.node_id;
+           data.id_rc = result.node_id;
            data.label = nodeName;
            data.labels = result.labels; // Store labels in the node object
 
@@ -521,7 +522,8 @@ async function submitNode(shape) {
                    const finalShape = nodeVisuals.shape || shape || createNodeCurrentShape || "ellipse";
                    data.shape = finalShape;
                    data.color = nodeVisuals.color || "#97C2FC";
-                   data.properties = { ...nodeVisuals.properties, name: nodeName };
+                   // Type defaults must not replace the new node's identity.
+                   data.properties = { ...nodeVisuals.properties, name: nodeName, id_rc: result.node_id };
 
                    // If the node is an image type, pick up the user-specified image URL (if provided)
                    if (finalShape === "image" || finalShape === "circularImage") {
@@ -937,6 +939,232 @@ function visualizeGraph(data, allowedNodeLabels = []) {
 
 
 
+function collectExpansionCandidates(expandData, anchorNodeId) {
+    const anchorId = String(anchorNodeId);
+    const nodesById = new Map(
+        (expandData.nodes || []).map((node) => [String(node.id_rc || node.id), node])
+    );
+    const candidates = new Map();
+
+    (expandData.edges || []).forEach((edge) => {
+        const fromId = String(edge.from);
+        const toId = String(edge.to);
+        let endpointId = null;
+
+        if (fromId === anchorId) endpointId = toId;
+        else if (toId === anchorId) endpointId = fromId;
+        if (!endpointId || endpointId === anchorId) return;
+
+        const node = nodesById.get(endpointId);
+        if (!node) return;
+
+        let candidate = candidates.get(endpointId);
+        if (!candidate) {
+            const fullName = node.properties?.name || node.label || endpointId;
+            candidate = {
+                id: endpointId,
+                name: String(fullName),
+                textAfterLastDot: String(fullName).slice(String(fullName).lastIndexOf(".") + 1),
+                nodeType: node.nodeType || (node.labels || []).find((label) => label !== "NodeType") || "Node",
+                edgeTypes: new Set(),
+            };
+            candidates.set(endpointId, candidate);
+        }
+        if (edge.label) candidate.edgeTypes.add(String(edge.label));
+    });
+
+    return Array.from(candidates.values()).sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
+    );
+}
+
+function showNodeNameSelectionDialog(candidates, titleText = "Select nodes to expand") {
+    return new Promise((resolve) => {
+        const dialog = document.createElement("div");
+        dialog.className = "edge-type-dialog";
+        dialog.style.cssText = "position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);box-sizing:border-box;width:min(620px,90vw);height:min(80vh,700px);min-width:min(360px,90vw);min-height:240px;max-width:90vw;max-height:80vh;resize:both;background:#fff;border:1px solid #ccc;padding:20px;z-index:1000;overflow:auto;box-shadow:0 8px 30px rgba(0,0,0,.2);";
+
+        const title = document.createElement("h3");
+        title.textContent = titleText;
+        dialog.appendChild(title);
+
+        const selectionControls = document.createElement("div");
+        selectionControls.style.cssText = "display:flex;gap:8px;margin:8px 0;";
+        const selectAllButton = document.createElement("button");
+        selectAllButton.type = "button";
+        selectAllButton.textContent = "Select all";
+        const selectNoneButton = document.createElement("button");
+        selectNoneButton.type = "button";
+        selectNoneButton.textContent = "Select none";
+        selectionControls.append(selectAllButton, selectNoneButton);
+        dialog.appendChild(selectionControls);
+
+        const filterInput = document.createElement("input");
+        filterInput.type = "search";
+        filterInput.placeholder = "Filter by node name, type, ID, or edge type…";
+        filterInput.setAttribute("aria-label", "Filter nodes");
+        filterInput.autocomplete = "off";
+        filterInput.style.cssText = "box-sizing:border-box;width:100%;margin:0 0 8px;padding:8px;";
+        dialog.appendChild(filterInput);
+
+        const list = document.createElement("div");
+        list.style.cssText = "max-height:50vh;overflow:auto;border:1px solid #ddd;";
+        const table = document.createElement("table");
+        table.setAttribute("aria-label", titleText);
+        table.style.cssText = "width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0;";
+        const columns = document.createElement("colgroup");
+        ["36px", "40%", "auto"].forEach((width) => {
+            const column = document.createElement("col");
+            column.style.width = width;
+            columns.appendChild(column);
+        });
+        table.appendChild(columns);
+
+        const tableHead = document.createElement("thead");
+        const header = document.createElement("tr");
+        const selectionHeader = document.createElement("th");
+        selectionHeader.setAttribute("aria-label", "Select node");
+        const suffixHeader = document.createElement("th");
+        suffixHeader.textContent = "Short name";
+        const nameHeader = document.createElement("th");
+        nameHeader.textContent = "Name";
+        [selectionHeader, suffixHeader, nameHeader].forEach((cell) => {
+            cell.scope = "col";
+            cell.style.cssText = "padding:8px;text-align:left;vertical-align:top;border-bottom:1px solid #ccc;border-right:1px solid #eee;position:sticky;top:0;background:#f5f5f5;z-index:1;overflow-wrap:anywhere;";
+            header.appendChild(cell);
+        });
+        tableHead.appendChild(header);
+        table.appendChild(tableHead);
+        const tableBody = document.createElement("tbody");
+        table.appendChild(tableBody);
+        const checkboxes = [];
+        const candidateRows = [];
+        candidates.forEach((candidate, index) => {
+            const row = document.createElement("tr");
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.id = `expansion-node-${index}`;
+            checkbox.value = candidate.id;
+            checkbox.checked = true;
+            checkbox.setAttribute("aria-label", `Select ${candidate.name}`);
+            checkboxes.push(checkbox);
+
+            const description = document.createElement("label");
+            description.htmlFor = checkbox.id;
+            const edgeTypes = Array.from(candidate.edgeTypes).join(", ");
+            const metadataText = `${candidate.nodeType} (id: ${candidate.id})${edgeTypes ? ` · ${edgeTypes}` : ""}`;
+            description.style.cssText = "display:block;cursor:pointer;";
+            const nameText = document.createElement("span");
+            nameText.textContent = candidate.name;
+            const metadata = document.createElement("small");
+            metadata.textContent = metadataText;
+            metadata.style.cssText = "display:block;color:#666;margin-top:2px;";
+            description.append(nameText, metadata);
+
+            const suffix = document.createElement("label");
+            suffix.htmlFor = checkbox.id;
+            suffix.textContent = candidate.textAfterLastDot;
+            suffix.style.cssText = "display:block;cursor:pointer;";
+            candidateRows.push({
+                row,
+                checkbox,
+                searchText: `${candidate.name} ${candidate.textAfterLastDot} ${metadataText}`.toLowerCase(),
+            });
+            [checkbox, suffix, description].forEach((content) => {
+                const cell = document.createElement("td");
+                cell.style.cssText = "padding:8px;vertical-align:top;text-align:left;border-bottom:1px solid #eee;border-right:1px solid #eee;overflow-wrap:anywhere;";
+                cell.appendChild(content);
+                row.appendChild(cell);
+            });
+            tableBody.appendChild(row);
+        });
+
+        const noMatches = document.createElement("tr");
+        noMatches.style.display = "none";
+        const noMatchesCell = document.createElement("td");
+        noMatchesCell.colSpan = 3;
+        noMatchesCell.textContent = "No nodes match this filter.";
+        noMatchesCell.style.cssText = "padding:8px;color:#666;";
+        noMatches.appendChild(noMatchesCell);
+        tableBody.appendChild(noMatches);
+        list.appendChild(table);
+        dialog.appendChild(list);
+
+        const updateFilter = () => {
+            const query = filterInput.value.trim().toLowerCase();
+            let visibleCount = 0;
+            candidateRows.forEach(({ row, searchText }) => {
+                const matches = !query || searchText.includes(query);
+                row.hidden = !matches;
+                row.style.setProperty("display", matches ? "table-row" : "none", "important");
+                if (matches) visibleCount += 1;
+            });
+            noMatches.style.display = visibleCount ? "none" : "table-row";
+        };
+
+        filterInput.oninput = updateFilter;
+        updateFilter();
+        selectAllButton.addEventListener("click", () => {
+            candidateRows.forEach(({ row, checkbox }) => {
+                if (!row.hidden) checkbox.checked = true;
+            });
+        });
+        selectNoneButton.addEventListener("click", () => {
+            candidateRows.forEach(({ row, checkbox }) => {
+                if (!row.hidden) checkbox.checked = false;
+            });
+        });
+
+        const buttons = document.createElement("div");
+        buttons.style.marginTop = "10px";
+        const okButton = document.createElement("button");
+        okButton.textContent = "Expand selected";
+        okButton.onclick = () => {
+            const selected = checkboxes.filter((checkbox) => checkbox.checked).map((checkbox) => checkbox.value);
+            document.body.removeChild(dialog);
+            resolve(selected);
+        };
+        buttons.appendChild(okButton);
+
+        const cancelButton = document.createElement("button");
+        cancelButton.textContent = "Cancel";
+        cancelButton.style.marginLeft = "10px";
+        cancelButton.onclick = () => {
+            document.body.removeChild(dialog);
+            resolve([]);
+        };
+        buttons.appendChild(cancelButton);
+        dialog.appendChild(buttons);
+        document.body.appendChild(dialog);
+    });
+}
+
+async function chooseExpansionTargets(expandData, anchorNodeId, directionLabel) {
+    const candidates = collectExpansionCandidates(expandData, anchorNodeId);
+    if (!candidates.length) {
+        alert(`No ${directionLabel} connections found for the selected edge types.`);
+        return null;
+    }
+
+    const selectedIds = await showNodeNameSelectionDialog(
+        candidates,
+        `Select ${directionLabel} nodes to expand`
+    );
+    if (!selectedIds.length) return null;
+
+    const allowedIds = new Set([String(anchorNodeId), ...selectedIds.map(String)]);
+    return {
+        ...expandData,
+        nodes: (expandData.nodes || []).filter((node) => allowedIds.has(String(node.id_rc || node.id))),
+        edges: (expandData.edges || []).filter((edge) => {
+            const fromId = String(edge.from);
+            const toId = String(edge.to);
+            return allowedIds.has(fromId) && allowedIds.has(toId) &&
+                (fromId === String(anchorNodeId) || toId === String(anchorNodeId));
+        }),
+    };
+}
+
 async function expandByEdgeType() {
     const selectedNodes = network.getSelectedNodes();
     if (selectedNodes.length === 0) {
@@ -963,7 +1191,7 @@ async function expandByEdgeType() {
         }
 
         // Show a dialog to let the user select edge types
-        const selectedEdgeTypes = await showEdgeTypeSelectionDialog(edgeTypes);
+        const selectedEdgeTypes = await showEdgeTypeSelectionDialog(edgeTypes, "Select outgoing edge types");
         if (!selectedEdgeTypes || selectedEdgeTypes.length === 0) {
             alert("No edge types selected.");
             return;
@@ -976,7 +1204,7 @@ async function expandByEdgeType() {
         const expandResponse = await fetch(`/expand-node`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ node_id: nodeId, edge_types: selectedEdgeTypes })
+            body: JSON.stringify({ node_id: nodeId, edge_types: selectedEdgeTypes, direction: "outgoing" })
         });
 
         const expandData = await expandResponse.json();
@@ -985,17 +1213,20 @@ async function expandByEdgeType() {
             return;
         }
 
+        const selectedExpansion = await chooseExpansionTargets(expandData, nodeId, "outgoing");
+        if (!selectedExpansion) return;
+
         console.log("visualizeGraph:", typeof visualizeGraph);
-        console.log("visualizeGraph:", expandData);
+        console.log("visualizeGraph:", selectedExpansion);
         console.log("visualizeGraph:", gAllowedNodeLabels);
-        visualizeGraph(expandData, gAllowedNodeLabels);
+        visualizeGraph(selectedExpansion, gAllowedNodeLabels);
     } catch (error) {
         console.error("Error in expandByEdgeType:", error);
         alert("An error occurred while expanding the node.");
     }
 }
 
-// Show only incoming connections to the selected node
+// Show incoming connections of selected relationship types to the selected node.
 async function incomingConnections() {
     const selectedNodes = network.getSelectedNodes();
     if (selectedNodes.length === 0) {
@@ -1007,10 +1238,28 @@ async function incomingConnections() {
     console.log("Fetching incoming connections for node ID:", nodeId);
 
     try {
+        const typesResponse = await fetch(`/api/node/${encodeURIComponent(nodeId)}/edge-types?direction=incoming`);
+        const typesData = await typesResponse.json();
+        if (!typesResponse.ok || !typesData.success) {
+            alert("Failed to fetch incoming edge types: " + (typesData.error || "Unknown error"));
+            return;
+        }
+
+        const edgeTypes = typesData.edge_types || [];
+        if (!edgeTypes.length) {
+            alert("No incoming edge types available for this node.");
+            return;
+        }
+
+        const selectedEdgeTypes = await showEdgeTypeSelectionDialog(edgeTypes, "Select incoming edge types");
+        if (!selectedEdgeTypes || selectedEdgeTypes.length === 0) {
+            return;
+        }
+
         const expandResponse = await fetch(`/expand-node`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ node_id: nodeId })
+            body: JSON.stringify({ node_id: nodeId, edge_types: selectedEdgeTypes, direction: "incoming" })
         });
 
         const expandData = await expandResponse.json();
@@ -1019,37 +1268,22 @@ async function incomingConnections() {
             return;
         }
 
-        const allEdges = expandData.edges || [];
-        const allNodes = expandData.nodes || [];
-
-        // Keep edges where the selected node is the 'to' side (incoming)
-        const incomingEdges = allEdges.filter(e => String(e.to) === String(nodeId));
-
-        if (!incomingEdges.length) {
+        if (!(expandData.edges || []).length) {
             alert('No incoming connections found for the selected node.');
             return;
         }
 
-        // Collect node ids we need to include (selected node + sources of incoming edges)
-        const neededIds = new Set();
-        neededIds.add(String(nodeId));
-        incomingEdges.forEach(e => neededIds.add(String(e.from)));
+        const selectedExpansion = await chooseExpansionTargets(expandData, nodeId, "incoming");
+        if (!selectedExpansion) return;
 
-        // Pick nodes from returned list that match needed ids (match id or id_rc)
-        const subsetNodes = allNodes.filter(n => {
-            const nid = n.id || n.id_rc || (n.properties && n.properties.id_rc) || n.properties && n.properties.id;
-            return nid && neededIds.has(String(nid));
-        });
-
-        const payload = { nodes: subsetNodes, edges: incomingEdges };
-        visualizeGraph(payload, gAllowedNodeLabels);
+        visualizeGraph(selectedExpansion, gAllowedNodeLabels);
     } catch (err) {
         console.error('incomingConnections error:', err);
         alert('Failed to load incoming connections: ' + (err && err.message ? err.message : err));
     }
 }
 
-function showEdgeTypeSelectionDialog(edgeTypes) {
+function showEdgeTypeSelectionDialog(edgeTypes, titleText = "Select Edge Types") {
     return new Promise((resolve) => {
         const dialog = document.createElement("div");
         dialog.className = "edge-type-dialog";
@@ -1063,7 +1297,7 @@ function showEdgeTypeSelectionDialog(edgeTypes) {
         dialog.style.zIndex = "1000";
 
         const title = document.createElement("h3");
-        title.textContent = "Select Edge Types";
+        title.textContent = titleText;
         dialog.appendChild(title);
 
         const list = document.createElement("ul");
@@ -1486,19 +1720,42 @@ document.addEventListener("DOMContentLoaded", function () {
        menu.style.display = "none";
    });
 
-   // Expand Node
+   // Show the saved HTML as a rendered document in a dialog.
    window.openHtml = function () {
        const selectedNodes = network.getSelectedNodes(); // Get the selected nodes
        if (selectedNodes.length === 0) {
-           alert("Please select a node to expand.");
+           alert("Please select a node to show its HTML.");
            return;
        }
 
        const nodeId = selectedNodes[0]; // Get the first selected node ID
-       console.log("Expanding node with ID:", nodeId);
+       const dialog = document.getElementById("html-preview-dialog");
+       const frame = document.getElementById("html-preview-frame");
+       if (!dialog || !frame) {
+           console.error("HTML preview dialog elements are missing");
+           return;
+       }
 
-       // Open CKEditor for the node (or perform your expand logic here)
-       window.open(`/edit/${nodeId}`, '_blank');
+       frame.src = `/show-html/${encodeURIComponent(nodeId)}`;
+       dialog.style.display = "block";
+       makeDialogDraggable(dialog);
+   };
+
+   // Keep the CKEditor workflow available separately from the HTML preview.
+   window.openHtmlEditor = function () {
+       const selectedNodes = network.getSelectedNodes();
+       if (selectedNodes.length === 0) {
+           alert("Please select a node to edit its HTML.");
+           return;
+       }
+       window.open(`/edit/${encodeURIComponent(selectedNodes[0])}`, "_blank");
+   };
+
+   window.closeHtmlPreviewDialog = function () {
+       const dialog = document.getElementById("html-preview-dialog");
+       const frame = document.getElementById("html-preview-frame");
+       if (dialog) dialog.style.display = "none";
+       if (frame) frame.src = "about:blank";
    };
 
    function getSelectedGraphNodeId() {
@@ -3001,6 +3258,8 @@ function cancelConnection() {
 }
 
 // --- New: Add Existing Nodes flow ---
+let existingNodesCache = [];
+
 // Open the dialog to let user pick a node type and then an existing node to add
 function AddExistingNodes() {
    isManualGraph = true; // we are adding nodes manually
@@ -3016,6 +3275,9 @@ function AddExistingNodes() {
    const selector = document.getElementById("existing-node-type-selector");
    if (!selector) return;
    selector.innerHTML = "<option value=''>Loading...</option>";
+    existingNodesCache = [];
+    const filter = document.getElementById("existing-nodes-filter");
+    if (filter) filter.value = "";
 
    const projectName = window.projectName
        || window.currentProject
@@ -3028,6 +3290,10 @@ function AddExistingNodes() {
        .then(resp => resp.json())
        .then(nodeTypes => {
            selector.innerHTML = ""; // clear
+           const allOption = document.createElement("option");
+           allOption.value = "__ALL__";
+           allOption.textContent = "All nodes in this project";
+           selector.appendChild(allOption);
            nodeTypes.forEach(type => {
                const opt = document.createElement("option");
                opt.value = type.name;
@@ -3055,6 +3321,7 @@ function closeExistingNodesDialog() {
 function onExistingNodeTypeChange(nodeType) {
    const list = document.getElementById("existing-nodes-list");
    if (!list) return;
+    existingNodesCache = [];
    list.innerHTML = "Loading...";
 
    if (!nodeType) {
@@ -3073,7 +3340,8 @@ function onExistingNodeTypeChange(nodeType) {
            list.innerHTML = `<div style="color:red">Error: ${data.error || "unknown"}</div>`;
            return;
        }
-       renderExistingNodeList(data.nodes || []);
+    existingNodesCache = Array.isArray(data.nodes) ? data.nodes : [];
+    renderExistingNodeList();
    })
    .catch(err => {
        console.error("Error fetching nodes by type:", err);
@@ -3082,7 +3350,7 @@ function onExistingNodeTypeChange(nodeType) {
 }
 
 // Render clickable list of nodes inside the dialog
-function renderExistingNodeList(nodesArray) {
+function renderExistingNodeList(nodesArray = existingNodesCache) {
    const list = document.getElementById("existing-nodes-list");
    if (!list) return;
    list.innerHTML = "";
@@ -3092,19 +3360,56 @@ function renderExistingNodeList(nodesArray) {
        return;
    }
 
-   nodesArray.forEach(node => {
-       const item = document.createElement("div");
-       item.style.padding = "6px";
-       item.style.borderBottom = "1px solid #eee";
+   const filterText = document.getElementById("existing-nodes-filter")?.value.trim().toLocaleLowerCase() || "";
+   const filteredNodes = nodesArray.filter(node => {
+       const fullName = String(node.name || node.properties?.name || node.label || "");
+       const shortName = fullName.split(".").pop();
+       return !filterText || fullName.toLocaleLowerCase().includes(filterText) || shortName.toLocaleLowerCase().includes(filterText);
+   });
+
+   if (!filteredNodes.length) {
+       list.innerHTML = "<div style='color:#777'>No nodes match that name</div>";
+       return;
+   }
+
+   const table = document.createElement("table");
+   table.style.width = "100%";
+   table.style.borderCollapse = "collapse";
+   const header = document.createElement("thead");
+   const headerRow = document.createElement("tr");
+   ["Short name", "Name"].forEach(columnName => {
+       const cell = document.createElement("th");
+       cell.scope = "col";
+       cell.textContent = columnName;
+       cell.style.textAlign = "left";
+       cell.style.padding = "6px";
+       cell.style.borderBottom = "1px solid #ccc";
+       headerRow.appendChild(cell);
+   });
+   header.appendChild(headerRow);
+   table.appendChild(header);
+
+   const body = document.createElement("tbody");
+   filteredNodes.forEach(node => {
+       const item = document.createElement("tr");
        item.style.cursor = "pointer";
        item.title = JSON.stringify(node.properties || {});
-       const nodeLabel = node.label || (node.properties && node.properties.name) || (`${(node.labels && node.labels[0]) || "Node"} (${node.id})`);
-       item.textContent = `${nodeLabel} (id:${node.id})`;
+       const fullName = String(node.name || node.properties?.name || node.label || `${(node.labels && node.labels[0]) || "Node"} (${node.id})`);
+       const shortName = fullName.split(".").pop();
+       [shortName, fullName].forEach(value => {
+           const cell = document.createElement("td");
+           cell.textContent = value;
+           cell.style.padding = "6px";
+           cell.style.borderBottom = "1px solid #eee";
+           item.appendChild(cell);
+       });
        item.onclick = function () {
            addExistingNodeToGraph(node);
        };
-       list.appendChild(item);
+       body.appendChild(item);
    });
+   table.appendChild(body);
+   list.appendChild(table);
 }
 
 // Add selected existing node into the vis.js graph
@@ -3196,82 +3501,30 @@ async function removeNodeCustomGraph() {
    }
 
    const nodeIdStr = String(idParam);
-   const payload = { node_id: nodeIdStr };
-
-   // Sequence of attempts to handle different server expectations (POST/DELETE/GET or different endpoint)
-   const attempts = [
-       { method: "POST", url: "/remove-node-custom-graph", body: true },
-       { method: "POST", url: "/nodes/remove-node-custom-graph", body: true },
-       // Some servers expect DELETE without JSON body, with a query param
-       { method: "DELETE", url: `/remove-node-custom-graph?node_id=${encodeURIComponent(nodeIdStr)}`, body: false },
-       // Last resort: GET with query param
-       { method: "GET", url: `/remove-node-custom-graph?node_id=${encodeURIComponent(nodeIdStr)}`, body: false }
-   ];
-
-   let finalResult = null;
-   for (const attempt of attempts) {
-       try {
-           console.log(`Attempting ${attempt.method} ${attempt.url}`);
-           const options = {
-               method: attempt.method,
-               headers: {}
-           };
-           if (attempt.body) {
-               options.headers["Content-Type"] = "application/json";
-               options.body = JSON.stringify(payload);
-           }
-
-           const resp = await fetch(attempt.url, options);
-
-           // If server returns 405 Method Not Allowed, try next attempt
-           if (resp.status === 405) {
-               console.warn(`${attempt.method} ${attempt.url} -> 405 Method Not Allowed, trying next option`);
-               continue;
-           }
-
-           // Read response safely depending on content type
-           const contentType = resp.headers.get("Content-Type") || "";
-           const text = await resp.text();
-
-           // If the response is not JSON, show status and returned HTML/text for debugging
-           if (!contentType.toLowerCase().includes("application/json")) {
-               console.error(`Non-JSON response from ${attempt.url}:`, { status: resp.status, body: text });
-               alert(`Server returned non-JSON response (status ${resp.status}). See console for details.`);
-               // If it was an error page (HTML), don't try further attempts � but continue loop if you prefer
-               // We'll stop here to avoid accidental repeated side-effects.
-               finalResult = { success: false, error: `Non-JSON response (status ${resp.status}).` };
-               break;
-           }
-
-           // Parse JSON safely now
-           let result = null;
-           try {
-               result = JSON.parse(text);
-           } catch (parseErr) {
-               console.error("Failed to parse JSON from response:", text, parseErr);
-               alert("Failed to parse server response. See console for details.");
-               finalResult = { success: false, error: "Invalid JSON response" };
-               break;
-           }
-
-           // If backend indicated failure, bubble up
-           if (!result || !result.success) {
-               console.warn("Backend returned failure:", result);
-               finalResult = result;
-               break;
-           }
-
-           // Success
-           finalResult = result;
-           break;
-       } catch (err) {
-           console.error(`Error while trying ${attempt.method} ${attempt.url}:`, err);
-           // try next attempt
+   let finalResult;
+   try {
+       const resp = await fetch("/nodes/remove-node-custom-graph", {
+           method: "POST",
+           headers: { "Content-Type": "application/json" },
+           body: JSON.stringify({ node_id: nodeIdStr, custom_graph_name: gCustomGraphName })
+       });
+       const contentType = resp.headers.get("Content-Type") || "";
+       if (!contentType.toLowerCase().includes("application/json")) {
+           const responseText = await resp.text();
+           console.error("Non-JSON response while removing custom graph node:", {
+               status: resp.status,
+               body: responseText
+           });
+           alert(`Failed to remove node from custom graph (HTTP ${resp.status}). Check the server route and console.`);
+           return;
        }
-   }
-
-   if (!finalResult) {
-       alert("Failed to remove node from custom graph: no successful response from server. Check console for details.");
+       finalResult = await resp.json();
+       if (!resp.ok && finalResult.success !== false) {
+           finalResult = { ...finalResult, success: false };
+       }
+   } catch (error) {
+       console.error("Error removing node from custom graph:", error);
+       alert("Failed to remove node from custom graph. Check the console for details.");
        return;
    }
 

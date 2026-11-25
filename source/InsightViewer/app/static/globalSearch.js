@@ -10,6 +10,9 @@
     targetSelection: null,
     sourceTimer: null,
     targetTimer: null,
+    vectorEmbeddingJob: null,
+    vectorEmbeddingPollTimer: null,
+    vectorEmbeddingMissing: null,
   };
 
   function byId(id) {
@@ -30,13 +33,17 @@
   function prettyMode(mode) {
     if (mode === "auto") return "Smart";
     if (mode === "vector") return "Semantic";
-    if (mode === "fulltext") return "Keyword";
+    if (mode === "fulltext") return "Full-text index";
     return mode || "Unknown";
   }
 
   function prettyStrategy(strategy) {
     if (strategy === "vector_query") return "Semantic search";
+    if (strategy === "vector_to_cypher") return "Semantic search";
     if (strategy === "fulltext_query") return "Keyword search";
+    if (strategy === "name_text_query") return "Name and text contains search";
+    if (strategy === "name_text_to_cypher") return "Name and text contains search";
+    if (strategy === "fulltext_to_cypher") return "Keyword search";
     return strategy || "Unknown";
   }
 
@@ -48,8 +55,10 @@
       help.textContent = "Smart search tries semantic results first, then keyword fallback if needed.";
     } else if (mode === "vector") {
       help.textContent = "Semantic search only. If semantic retrieval fails, no keyword fallback is used.";
+    } else if (mode === "name_text") {
+      help.textContent = "Case-insensitive substring search across node names and text fields. This scans matching node properties and may be slower on large graphs.";
     } else {
-      help.textContent = "Keyword search only. Uses the fulltext index path.";
+      help.textContent = "Full-text index search only. Runs Neo4j db.index.fulltext.queryNodes; no semantic or name-substring fallback is used.";
     }
   }
 
@@ -564,18 +573,15 @@
   }
 
   function payloadForAiBuild() {
-    const scopedSourceId = state.sourceSelection?.id_rc || state.globalScopeNodeId || "";
-    const scopedSourceName = byId("gs-source-name")?.value.trim() || state.globalScopeNodeLabel || "";
-
     return {
       question: byId("gs-ai-question")?.value.trim() || "",
       provider: byId("gs-ai-provider")?.value || "",
       model: byId("gs-ai-model")?.value || "",
       project: currentProject(),
       source: {
-        id_rc: scopedSourceId,
+        id_rc: state.sourceSelection?.id_rc || "",
         node_type: byId("gs-source-type")?.value || "",
-        name: scopedSourceName,
+        name: byId("gs-source-name")?.value.trim() || "",
       },
       target: {
         id_rc: state.targetSelection?.id_rc || "",
@@ -619,6 +625,160 @@
       }),
     });
   }
+
+  function guidedVectorIndexName() {
+    return byId("gs-global-vector-index")?.value.trim() || "chunk_embedding_index";
+  }
+
+  function renderGuidedVectorIndexStatus(data, prefix = "") {
+    const statusEl = byId("gs-vector-index-status");
+    if (!statusEl) return;
+    if (!data.exists) {
+      statusEl.textContent = `${prefix}Index '${data.index_name}' does not exist. Create it before generating embeddings.`;
+      statusEl.style.color = "#b00020";
+      return;
+    }
+    if (!data.compatible) {
+      statusEl.textContent = `${prefix}Index '${data.index_name}' is incompatible: expected Chunk.embedding with ${data.expected_dimensions} dimensions; found ${data.labels?.join(", ") || "no labels"} / ${data.properties?.join(", ") || "no properties"} / ${data.dimensions ?? "unknown"} dimensions.`;
+      statusEl.style.color = "#b00020";
+      return;
+    }
+    statusEl.textContent = data.ready
+      ? `${prefix}Index '${data.index_name}' is ONLINE and ready (${data.dimensions} dimensions).`
+      : `${prefix}Index '${data.index_name}' is ${data.state || "not ready"}; wait for ONLINE, then check again.`;
+    statusEl.style.color = data.ready ? "#1d6b2a" : "#8a5a00";
+  }
+
+  window.checkGuidedVectorIndex = async function () {
+    const statusEl = byId("gs-vector-index-status");
+    if (statusEl) statusEl.textContent = "Checking vector index…";
+    try {
+      const params = new URLSearchParams({ index_name: guidedVectorIndexName() });
+      const data = await getJson(`/api/ops/vector-index-status?${params.toString()}`);
+      renderGuidedVectorIndexStatus(data);
+    } catch (error) {
+      if (statusEl) {
+        statusEl.textContent = `Could not check vector index: ${error.message || error}`;
+        statusEl.style.color = "#b00020";
+      }
+    }
+  };
+
+  window.ensureGuidedVectorIndex = async function () {
+    const statusEl = byId("gs-vector-index-status");
+    if (statusEl) statusEl.textContent = "Creating or verifying vector index…";
+    try {
+      const data = await getJson("/api/ops/vector-index-ensure", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ index_name: guidedVectorIndexName() }),
+      });
+      renderGuidedVectorIndexStatus(data, data.created ? "Index created. " : "Index verified. ");
+    } catch (error) {
+      if (statusEl) {
+        statusEl.textContent = `Could not create vector index: ${error.message || error}`;
+        statusEl.style.color = "#b00020";
+      }
+    }
+  };
+
+  function renderVectorEmbeddingJob(job) {
+    const statusEl = byId("gs-vector-embedding-job");
+    const button = byId("gs-generate-embeddings");
+    const active = job && ["queued", "starting", "running"].includes(job.status);
+    if (statusEl) {
+      if (!job) {
+        statusEl.textContent = "";
+      } else if (active) {
+        statusEl.textContent = `Embedding job ${job.status}: ${job.processed || 0}/${job.total || 0} processed; ${job.skipped || 0} skipped; ${job.failed || 0} failed.`;
+      } else if (job.status === "failed") {
+        statusEl.textContent = `Embedding job failed: ${job.error || "Unknown error"}`;
+      } else {
+        statusEl.textContent = `Embedding job finished: ${job.processed || 0} generated; ${job.skipped || 0} skipped (no text); ${job.failed || 0} failed.`;
+      }
+      const samples = Array.isArray(job?.error_samples) ? job.error_samples : [];
+      if (samples.length) statusEl.textContent += ` Examples: ${samples.join(" | ")}`;
+    }
+    if (button) {
+      button.disabled = Boolean(active) || state.vectorEmbeddingMissing === null || state.vectorEmbeddingMissing < 1;
+      button.textContent = active ? "Generating embeddings…" : "Generate missing embeddings";
+    }
+  }
+
+  function scheduleVectorEmbeddingPoll(jobId) {
+    clearTimeout(state.vectorEmbeddingPollTimer);
+    state.vectorEmbeddingPollTimer = setTimeout(async () => {
+      try {
+        const data = await getJson(`/api/ops/vector-embeddings/${encodeURIComponent(jobId)}`);
+        state.vectorEmbeddingJob = data.job;
+        renderVectorEmbeddingJob(data.job);
+        if (["queued", "starting", "running"].includes(data.job.status)) {
+          scheduleVectorEmbeddingPoll(jobId);
+        } else {
+          await refreshGuidedVectorEmbeddingCoverage(false);
+        }
+      } catch (error) {
+        const statusEl = byId("gs-vector-embedding-job");
+        if (statusEl) statusEl.textContent = `Could not read embedding job status: ${error.message || error}`;
+      }
+    }, 1400);
+  }
+
+  async function refreshGuidedVectorEmbeddingCoverage(recoverJob = true) {
+    const coverageEl = byId("gs-vector-embedding-coverage");
+    const button = byId("gs-generate-embeddings");
+    if (button) button.disabled = true;
+    try {
+      const health = await getJson("/api/ops/vector-health?coverage_only=1");
+      const coverage = health.coverage?.project || {};
+      const total = Number(coverage.total || 0);
+      const withEmbedding = Number(coverage.withEmbedding || 0);
+      const missing = Number(coverage.missing || 0);
+      state.vectorEmbeddingMissing = missing;
+      if (coverageEl) {
+        coverageEl.textContent = `Project chunks: ${total}; with embeddings: ${withEmbedding}; missing: ${missing}.`;
+      }
+
+      if (recoverJob) {
+        const active = await getJson("/api/ops/vector-embeddings");
+        state.vectorEmbeddingJob = active.job || null;
+        if (active.job) scheduleVectorEmbeddingPoll(active.job.id);
+        else renderVectorEmbeddingJob(null);
+      } else {
+        renderVectorEmbeddingJob(state.vectorEmbeddingJob);
+      }
+      if (button && (!state.vectorEmbeddingJob || !["queued", "starting", "running"].includes(state.vectorEmbeddingJob.status))) {
+        button.disabled = missing < 1;
+      }
+    } catch (error) {
+      if (coverageEl) coverageEl.textContent = `Could not load embedding coverage: ${error.message || error}`;
+      state.vectorEmbeddingMissing = null;
+    }
+  }
+
+  window.generateGuidedVectorEmbeddings = async function () {
+    const button = byId("gs-generate-embeddings");
+    const statusEl = byId("gs-vector-embedding-job");
+    if (button) button.disabled = true;
+    if (statusEl) statusEl.textContent = "Starting project embedding job…";
+    try {
+      const data = await getJson("/api/ops/vector-embeddings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider: byId("gs-global-embed-provider")?.value || "ollama",
+          model: byId("gs-global-embed-model")?.value.trim() || "mxbai-embed-large:latest",
+          vector_index_name: byId("gs-global-vector-index")?.value.trim() || "chunk_embedding_index",
+        }),
+      });
+      state.vectorEmbeddingJob = data.job;
+      renderVectorEmbeddingJob(data.job);
+      if (data.job?.id) scheduleVectorEmbeddingPoll(data.job.id);
+    } catch (error) {
+      if (statusEl) statusEl.textContent = `Could not start embedding job: ${error.message || error}`;
+      if (button) button.disabled = state.vectorEmbeddingMissing === null || state.vectorEmbeddingMissing < 1;
+    }
+  };
 
   function focusCypherDialog() {
     if (typeof window.openCypherDialog === "function") {
@@ -696,6 +856,7 @@
         setStatus("Describe the graph you want in natural language.", false);
       } else if (mode === "neo4j-global") {
         setStatus(state.globalScopeNodeId ? "Neo4j global search scoped to selected node." : "Neo4j global search across the whole project.", false);
+        await refreshGuidedVectorEmbeddingCoverage(true);
       } else {
         setStatus("Choose a template and a source node.", false);
       }
@@ -829,6 +990,7 @@
           setStatus("Describe the graph you want in natural language.", false);
         } else if (mode === "neo4j-global") {
           setStatus(state.globalScopeNodeId ? "Neo4j global search scoped to selected node." : "Neo4j global search across the whole project.", false);
+          refreshGuidedVectorEmbeddingCoverage(true);
         } else {
           setStatus("Choose a template and a source node.", false);
         }
@@ -848,6 +1010,24 @@
     if (retrievalModeSelect) {
       retrievalModeSelect.addEventListener("change", updateSearchMethodHelp);
       updateSearchMethodHelp();
+    }
+
+    const embeddingProvider = byId("gs-global-embed-provider");
+    const embeddingModel = byId("gs-global-embed-model");
+    if (embeddingProvider && embeddingModel) {
+      embeddingProvider.dataset.previousProvider = embeddingProvider.value || "ollama";
+      embeddingProvider.addEventListener("change", function () {
+        const defaults = {
+          ollama: "mxbai-embed-large:latest",
+          openai: "text-embedding-3-large",
+        };
+        const previousProvider = embeddingProvider.dataset.previousProvider || "ollama";
+        const currentModel = embeddingModel.value.trim();
+        if (currentModel === defaults[previousProvider]) {
+          embeddingModel.value = defaults[embeddingProvider.value] || currentModel;
+        }
+        embeddingProvider.dataset.previousProvider = embeddingProvider.value;
+      });
     }
 
     const templateSelect = byId("gs-template");

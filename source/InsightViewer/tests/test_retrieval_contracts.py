@@ -10,11 +10,11 @@ from flask import Flask
 
 os.environ.setdefault("JWT_SECRET", "test-secret")
 
-APP_ROOT = Path("/home/robert/insightViewer/source/InsightViewer/app")
+APP_ROOT = Path(__file__).resolve().parents[1] / "app"
 if str(APP_ROOT) not in sys.path:
     sys.path.insert(0, str(APP_ROOT))
 
-RETRIEVAL_PATH = Path("/home/robert/insightViewer/source/InsightViewer/app/routes/retrieval.py")
+RETRIEVAL_PATH = APP_ROOT / "routes" / "retrieval.py"
 spec = importlib.util.spec_from_file_location("retrieval_under_test", RETRIEVAL_PATH)
 retrieval = importlib.util.module_from_spec(spec)
 assert spec is not None and spec.loader is not None
@@ -135,6 +135,79 @@ class RetrievalContractTests(unittest.TestCase):
         self.assertEqual(rows, [])
         self.assertEqual(len(session.calls), 1)
         self.assertEqual(session.calls[0]["project"], "TestProject")
+
+    def test_fulltext_mode_uses_fulltext_only(self):
+        original_vector_hits = retrieval._vector_hits
+        original_fulltext_hits = retrieval._fulltext_hits
+        fulltext_calls = []
+
+        def _unexpected_vector(*args, **kwargs):
+            raise AssertionError("fulltext mode must not invoke vector search")
+
+        def _fulltext(*args, **kwargs):
+            fulltext_calls.append(kwargs)
+            return []
+
+        retrieval._vector_hits = _unexpected_vector
+        retrieval._fulltext_hits = _fulltext
+        try:
+            with _FakeSession() as session:
+                result = retrieval.retrieve_nodes_for_query(
+                    session,
+                    {"query": "LJTEST.REINSURANCE.BORDEROS", "retrieval_mode": "fulltext"},
+                    "TEST",
+                )
+        finally:
+            retrieval._vector_hits = original_vector_hits
+            retrieval._fulltext_hits = original_fulltext_hits
+
+        self.assertEqual(len(fulltext_calls), 1)
+        self.assertEqual(result["items"], [])
+        self.assertEqual(result["meta"]["retrieval_mode"], "fulltext")
+        self.assertEqual(result["telemetry"]["strategy_used"], "fulltext_query")
+
+    def test_name_text_mode_uses_substring_search_without_vector_or_fulltext(self):
+        original_vector_hits = retrieval._vector_hits
+        original_fulltext_hits = retrieval._fulltext_hits
+        original_name_text_hits = retrieval._name_text_hits
+        calls = []
+
+        def _unexpected_search(*args, **kwargs):
+            raise AssertionError("name_text mode must not invoke vector or full-text search")
+
+        def _name_text(*args, **kwargs):
+            calls.append(kwargs)
+            return [{
+                "id_rc": "node-substring-1",
+                "name": "ProdukcijaNadrejene_20261103",
+                "labels": ["Reinsurance.SubMeeting"],
+                "score": 1.0,
+            }]
+
+        retrieval._vector_hits = _unexpected_search
+        retrieval._fulltext_hits = _unexpected_search
+        retrieval._name_text_hits = _name_text
+        try:
+            with _FakeSession() as session:
+                result = retrieval.retrieve_nodes_for_query(
+                    session,
+                    {
+                        "query": "nadrejene",
+                        "retrieval_mode": "name_text",
+                        "project": "Reinsurance",
+                    },
+                    "TestProject",
+                )
+        finally:
+            retrieval._vector_hits = original_vector_hits
+            retrieval._fulltext_hits = original_fulltext_hits
+            retrieval._name_text_hits = original_name_text_hits
+
+        self.assertEqual(calls[0]["query_text"], "nadrejene")
+        self.assertEqual(calls[0]["project"], "Reinsurance")
+        self.assertEqual(result["items"][0]["id_rc"], "node-substring-1")
+        self.assertEqual(result["telemetry"]["strategy_used"], "name_text_query")
+        self.assertEqual(result["meta"]["retrieval_mode"], "name_text")
 
     def test_chunks_by_depth_contract(self):
         response = self.client.post(
